@@ -80,7 +80,7 @@ PF00079.19	Serpin	Serpin (serine protease inhibitor)	not_in_edm
 PF00080.19	Sod_Cu	Copper/zinc superoxide dismutase (SODC)	included
 PF00081.21	Sod_Fe_N	Iron/manganese superoxide dismutases, alpha-hairpin domain	included
 PF00082.21	Peptidase_S8	Subtilase family	included
-PF00083.23	Sugar_tr	Sugar (and other) transporter	not_in_edm
+PF00083.23	Sugar_tr	Sugar (and other) transporter	included
 PF00084.19	Sushi	Sushi repeat (SCR repeat)	not_in_bgc
 PF00085.19	Thioredoxin	Thioredoxin	included
 PF00086.17	Thyroglobulin_1	Thyroglobulin type-1 repeat	not_in_edm
@@ -415,7 +415,7 @@ PF00428.18	Ribosomal_60s	60s Acidic ribosomal protein	not_in_edm
 PF00429.18	TLV_coat	ENV polyprotein (coat polyprotein)	not_in_edm
 PF00430.17	ATP-synt_B	ATP synthase B/B' CF(0)	not_in_edm
 PF00431.19	CUB	CUB domain	not_in_bgc
-PF00432.20	Prenyltrans	Prenyltransferase and squalene oxidase repeat	not_in_edm
+PF00432.20	Prenyltrans	Prenyltransferase and squalene oxidase repeat	included
 PF00433.23	Pkinase_C	Protein kinase C terminal domain	included
 PF00434.17	VP7	Glycoprotein VP7	not_in_edm
 PF00435.20	Spectrin	Spectrin repeat	not_in_edm
@@ -921,7 +921,7 @@ PF00956.17	NAP	Nucleosome assembly protein (NAP)	not_in_edm
 PF00957.20	Synaptobrevin	Synaptobrevin	not_in_edm
 PF00958.21	GMP_synt_C	GMP synthase C terminal domain	included
 PF00959.18	Phage_lysozyme	Phage lysozyme	auto_discard
-PF00960.17	Neocarzinostat	Neocarzinostatin family	not_in_edm
+PF00960.17	Neocarzinostat	Neocarzinostatin family	included
 PF00961.18	LAGLIDADG_1	LAGLIDADG endonuclease	not_in_edm
 PF00962.21	A_deaminase	Adenosine/AMP deaminase	included
 PF00963.17	Cohesin	Cohesin domain	not_in_bgc
@@ -1194,7 +1194,7 @@ PF01253.21	SUI1	Translation initiation factor SUI1	not_in_edm
 PF01254.17	TP2	Nuclear transition protein 2	not_in_edm
 PF01255.18	Prenyltransf	Putative undecaprenyl diphosphate synthase	included
 PF01256.16	Carb_kinase	Carbohydrate kinase	included
-PF01257.18	2Fe-2S_thioredx	Thioredoxin-like [2Fe-2S] ferredoxin	not_in_edm
+PF01257.18	2Fe-2S_thioredx	Thioredoxin-like [2Fe-2S] ferredoxin	included
 PF01258.16	zf-dskA_traR	Prokaryotic dksA/traR C4-type zinc finger	not_in_edm
 PF01259.17	SAICAR_synt	SAICAR synthetase	included
 PF01261.23	AP_endonuc_2	Xylose isomerase-like TIM barrel	included
@@ -2429,7 +2429,7 @@ PF02620.16	DUF177	Uncharacterized ACR, COG1399	not_in_edm
 PF02621.13	VitK2_biosynth	Menaquinone biosynthesis	included
 PF02622.14	DUF179	Uncharacterized ACR, COG1678	not_in_edm
 PF02623.14	FliW	FliW protein	not_in_edm
-PF02624.15	YcaO	YcaO cyclodehydratase, ATP-ad Mg2+-binding	not_in_edm
+PF02624.15	YcaO	YcaO cyclodehydratase, ATP-ad Mg2+-binding	included
 PF02625.15	XdhC_CoxI	XdhC and CoxI family	included
 PF02626.14	CT_A_B	Carboxyltransferase domain, subdomain A and B	included
 PF02627.19	CMD	Carboxymuconolactone decarboxylase family	included
@@ -3099,7 +3099,7 @@ PF03360.15	Glyco_transf_43	Glycosyltransferase family 43	included
 PF03361.13	Herpes_IE2_3	Herpes virus intermediate/early protein 2/3	not_in_edm
 PF03362.12	Herpes_UL47	Herpesvirus UL47 protein	not_in_edm
 PF03363.12	Herpes_LP	Herpesvirus leader protein	not_in_edm
-PF03364.19	Polyketide_cyc	Polyketide cyclase / dehydrase and lipid transport	not_in_edm
+PF03364.19	Polyketide_cyc	Polyketide cyclase / dehydrase and lipid transport	included
 PF03366.15	YEATS	YEATS family	not_in_edm
 PF03367.12	zf-ZPR1	ZPR1 zinc-finger domain	not_in_edm
 PF03368.13	Dicer_dimer	Dicer dimerisation domain	manual_discard
@@ -3468,7 +3468,7 @@ PF03752.12	ALF	Short repeats of unknown function	not_in_edm
 PF03753.12	HHV6-IE	Human herpesvirus 6 immediate early protein	not_in_edm
 PF03754.12	DUF313	Domain of unknown function (DUF313)	not_in_edm
 PF03755.12	YicC_N	YicC-like family, N-terminal region	not_in_edm
-PF03756.12	AfsA	A-factor biosynthesis hotdog domain	not_in_edm
+PF03756.12	AfsA	A-factor biosynthesis hotdog domain	included
 PF03759.12	PRONE	PRONE (Plant-specific Rop nucleotide exchanger)	not_in_edm
 PF03760.14	LEA_1	Late embryogenesis abundant (LEA) group 1	not_in_edm
 PF03761.14	DUF316	Chymotrypsin family Peptidase-S1	not_in_edm
@@ -3975,7 +3975,7 @@ PF04295.12	GD_AH_C	D-galactarate dehydratase / Altronate hydrolase, C terminus	i
 PF04296.12	DUF448	Protein of unknown function (DUF448)	not_in_edm
 PF04297.13	UPF0122	Putative helix-turn-helix protein, YlxM / p13 like	not_in_edm
 PF04298.11	Zn_peptidase_2	Putative neutral zinc metallopeptidase	not_in_edm
-PF04299.11	FMN_bind_2	Putative FMN-binding domain	not_in_edm
+PF04299.11	FMN_bind_2	Putative FMN-binding domain	included
 PF04300.12	FBA	F-box associated region	not_in_edm
 PF04301.12	DUF452	Protein of unknown function (DUF452)	included
 PF04303.12	PrpF	PrpF protein	included
@@ -4318,7 +4318,7 @@ PF04668.11	Tsg	Twisted gastrulation (Tsg) protein conserved region	not_in_edm
 PF04669.12	Polysacc_synt_4	Polysaccharide biosynthesis	included
 PF04670.11	Gtr1_RagA	Gtr1/RagA G protein conserved region	not_in_edm
 PF04671.11	Ag332	Erythrocyte membrane-associated giant protein antigen 332	not_in_edm
-PF04672.11	Methyltransf_19	S-adenosyl methyltransferase	not_in_edm
+PF04672.11	Methyltransf_19	S-adenosyl methyltransferase	included
 PF04673.11	Cyclase_polyket	Polyketide synthesis cyclase	included
 PF04674.11	Phi_1	Phosphate-induced protein 1 conserved region	not_in_edm
 PF04675.13	DNA_ligase_A_N	DNA ligase N terminus	auto_discard
@@ -4383,7 +4383,7 @@ PF04733.13	Coatomer_E	Coatomer epsilon subunit	not_in_edm
 PF04734.12	Ceramidase_alk	Neutral/alkaline non-lysosomal ceramidase, N-terminal	included
 PF04735.11	Baculo_helicase	Baculovirus DNA helicase	not_in_edm
 PF04736.11	Eclosion	Eclosion hormone	not_in_edm
-PF04738.12	Lant_dehydr_N	Lantibiotic dehydratase, C terminus	not_in_edm
+PF04738.12	Lant_dehydr_N	Lantibiotic dehydratase, C terminus	included
 PF04739.14	AMPKBI	5'-AMP-activated protein kinase beta subunit, interaction domain	not_in_edm
 PF04740.11	LXG	LXG domain of WXG superfamily	not_in_edm
 PF04741.11	InvH	InvH outer membrane lipoprotein	not_in_edm
@@ -4674,7 +4674,7 @@ PF05046.13	Img2	Mitochondrial large subunit ribosomal protein (Img2)	not_in_edm
 PF05047.15	L51_S25_CI-B8	Mitochondrial ribosomal protein L51 / S25 / CI-B8 domain	not_in_edm
 PF05048.12	NosD	Periplasmic copper-binding protein (NosD)	included
 PF05049.12	IIGP	Interferon-inducible GTPase (IIGP)	not_in_edm
-PF05050.11	Methyltransf_21	Methyltransferase FkbM domain	not_in_edm
+PF05050.11	Methyltransf_21	Methyltransferase FkbM domain	included
 PF05051.12	COX17	Cytochrome C oxidase copper chaperone (COX17)	not_in_edm
 PF05052.11	MerE	MerE protein	not_in_edm
 PF05053.12	Menin	Menin	not_in_edm
@@ -4766,7 +4766,7 @@ PF05141.11	DIT1_PvcA	Pyoverdine/dityrosine biosynthesis protein	not_in_edm
 PF05142.11	DUF702	Domain of unknown function (DUF702)	not_in_edm
 PF05144.13	Phage_CRI	Phage replication protein CRI	not_in_bgc
 PF05145.11	AbrB	Transition state regulatory protein AbrB	not_in_edm
-PF05147.12	LANC_like	Lanthionine synthetase C-like protein	not_in_edm
+PF05147.12	LANC_like	Lanthionine synthetase C-like protein	included
 PF05148.14	Methyltransf_8	Hypothetical methyltransferase	included
 PF05149.11	Flagellar_rod	Paraflagellar rod protein	not_in_edm
 PF05150.11	Legionella_OMP	Legionella pneumophila major outer membrane protein precursor	not_in_edm
@@ -5630,7 +5630,7 @@ PF06085.10	Rz1	Lipoprotein Rz1 precursor	not_in_edm
 PF06086.11	Pox_A30L_A26L	Orthopoxvirus A26L/A30L protein	not_in_edm
 PF06087.11	Tyr-DNA_phospho	Tyrosyl-DNA phosphodiesterase	not_in_edm
 PF06088.10	TLP-20	Nucleopolyhedrovirus telokin-like protein-20 (TLP20)	not_in_edm
-PF06089.11	Asparaginase_II	L-asparaginase II	not_in_edm
+PF06089.11	Asparaginase_II	L-asparaginase II	included
 PF06090.11	Ins_P5_2-kin	Inositol-pentakisphosphate 2-kinase	included
 PF06092.11	DUF943	Enterobacterial putative membrane protein (DUF943)	not_in_edm
 PF06093.12	Spt4	Spt4/RpoE2 zinc finger	not_in_edm
@@ -5784,7 +5784,7 @@ PF06255.12	MafB	Neisseria toxin MafB	not_in_edm
 PF06256.10	Nucleo_LEF-12	Nucleopolyhedrovirus LEF-12 protein	not_in_edm
 PF06257.10	VEG	Biofilm formation stimulator VEG	not_in_edm
 PF06258.10	Mito_fiss_Elm1	Mitochondrial fission ELM1	not_in_edm
-PF06259.11	Abhydrolase_8	Alpha/beta hydrolase	not_in_edm
+PF06259.11	Abhydrolase_8	Alpha/beta hydrolase	included
 PF06260.11	DUF1024	Protein of unknown function (DUF1024)	not_in_edm
 PF06261.10	LktC	Actinobacillus actinomycetemcomitans leukotoxin activator LktC	not_in_edm
 PF06262.10	Zincin_1	Zincin-like metallopeptidase	not_in_edm
@@ -7746,7 +7746,7 @@ PF08381.10	BRX	Transcription factor regulating root and shoot growth via Pin3	no
 PF08383.10	Maf_N	Maf N-terminal region	not_in_edm
 PF08384.9	NPP	Pro-opiomelanocortin, N-terminal region	not_in_edm
 PF08385.11	DHC_N1	Dynein heavy chain, N-terminal region 1	not_in_edm
-PF08386.9	Abhydrolase_4	TAP-like protein	not_in_edm
+PF08386.9	Abhydrolase_4	TAP-like protein	included
 PF08387.9	FBD	FBD	not_in_edm
 PF08388.10	GIIM	Group II intron, maturase-specific domain	auto_discard
 PF08389.11	Xpo1	Exportin 1-like protein	not_in_edm
@@ -7777,7 +7777,7 @@ PF08414.9	NADPH_Ox	Respiratory burst NADPH oxidase	not_in_edm
 PF08416.12	PTB	Phosphotyrosine-binding domain	not_in_edm
 PF08417.11	PaO	Pheophorbide a oxygenase	included
 PF08418.9	Pol_alpha_B_N	DNA polymerase alpha subunit B N-terminal	not_in_edm
-PF08421.10	Methyltransf_13	Putative zinc binding domain	not_in_edm
+PF08421.10	Methyltransf_13	Putative zinc binding domain	included
 PF08423.10	Rad51	Rad51	not_in_edm
 PF08424.9	NRDE-2	NRDE-2, necessary for RNA interference	not_in_edm
 PF08426.9	ICE2	ICE2	not_in_edm
@@ -7837,7 +7837,7 @@ PF08480.9	Disaggr_assoc	Disaggregatase related	not_in_edm
 PF08481.9	GBS_Bsp-like	GBS Bsp-like repeat	not_in_bgc
 PF08482.9	HrpB_C	ATP-dependent helicase C-terminal	not_in_edm
 PF08483.10	IstB_IS21_ATP	IstB-like ATP binding N-terminal	not_in_edm
-PF08484.10	Methyltransf_14	C-methyltransferase C-terminal domain	not_in_edm
+PF08484.10	Methyltransf_14	C-methyltransferase C-terminal domain	included
 PF08485.9	Polysacc_syn_2C	Polysaccharide biosynthesis protein C-terminal	included
 PF08486.9	SpoIID	Stage II sporulation protein	not_in_edm
 PF08487.9	VIT	Vault protein inter-alpha-trypsin domain	included
@@ -9836,7 +9836,7 @@ PF10599.8	Nup_retrotrp_bd	Retro-transposon transporting motif	not_in_edm
 PF10600.8	PDZ_assoc	PDZ-associated domain of NMDA receptors	not_in_edm
 PF10601.8	zf-LITAF-like	LITAF-like zinc ribbon domain	not_in_edm
 PF10602.8	RPN7	26S proteasome subunit RPN7	not_in_edm
-PF10604.8	Polyketide_cyc2	Polyketide cyclase / dehydrase and lipid transport	not_in_edm
+PF10604.8	Polyketide_cyc2	Polyketide cyclase / dehydrase and lipid transport	included
 PF10605.8	3HBOH	3HB-oligomer hydrolase (3HBOH)	included
 PF10606.8	GluR_Homer-bdg	Homer-binding domain of metabotropic glutamate receptor	not_in_edm
 PF10607.8	CLTH	CTLH/CRA C-terminal to LisH motif domain	not_in_edm
@@ -11981,7 +11981,7 @@ PF12802.6	MarR_2	MarR family	not_in_edm
 PF12803.6	G-7-MTase	mRNA (guanine-7-)methyltransferase (G-7-MTase)	not_in_bgc
 PF12804.6	NTP_transf_3	MobA-like NTP transferase domain	included
 PF12805.6	FUSC-like	FUSC-like inner membrane protein yccS	not_in_edm
-PF12806.6	Acyl-CoA_dh_C	Acetyl-CoA dehydrogenase C-terminal like	not_in_edm
+PF12806.6	Acyl-CoA_dh_C	Acetyl-CoA dehydrogenase C-terminal like	included
 PF12807.6	eIF3_p135	Translation initiation factor eIF3 subunit 135	not_in_edm
 PF12808.6	Mto2_bdg	Micro-tubular organiser Mto1 C-term Mto2-binding region	not_in_edm
 PF12809.6	Metallothi_Euk2	Eukaryotic metallothionein	not_in_edm
@@ -12005,7 +12005,7 @@ PF12827.6	Peroxin-22	Peroxisomal biogenesis protein family	not_in_edm
 PF12828.6	PXB	PX-associated	not_in_edm
 PF12829.6	Mhr1	Transcriptional regulation of mitochondrial recombination	not_in_edm
 PF12830.6	Nipped-B_C	Sister chromatid cohesion C-terminus	not_in_edm
-PF12831.6	FAD_oxidored	FAD dependent oxidoreductase	not_in_edm
+PF12831.6	FAD_oxidored	FAD dependent oxidoreductase	included
 PF12832.6	MFS_1_like	MFS_1 like family	not_in_edm
 PF12833.6	HTH_18	Helix-turn-helix domain	auto_discard
 PF12834.6	Phage_int_SAM_2	Phage integrase, N-terminal	not_in_edm
@@ -12069,7 +12069,7 @@ PF12896.6	ANAPC4	Anaphase-promoting complex, cyclosome, subunit 4	not_in_edm
 PF12897.6	Aminotran_MocR	Alanine-glyoxylate amino-transferase	not_in_edm
 PF12898.6	Stc1	Stc1 domain	not_in_edm
 PF12899.6	Glyco_hydro_100	Alkaline and neutral invertase	included
-PF12900.6	Pyridox_ox_2	Pyridoxamine 5'-phosphate oxidase	not_in_edm
+PF12900.6	Pyridox_ox_2	Pyridoxamine 5'-phosphate oxidase	included
 PF12901.6	SUZ-C	SUZ-C motif	not_in_edm
 PF12902.6	Ferritin-like	Ferritin-like	not_in_edm
 PF12903.6	DUF3830	Protein of unknown function (DUF3830)	not_in_edm
@@ -12411,7 +12411,7 @@ PF13245.5	AAA_19	AAA domain	not_in_edm
 PF13246.5	Cation_ATPase	Cation transport ATPase (P-type)	not_in_edm
 PF13247.5	Fer4_11	4Fe-4S dicluster domain	included
 PF13248.5	zf-ribbon_3	zinc-ribbon domain	not_in_edm
-PF13249.5	SQHop_cyclase_N	Squalene-hopene cyclase N-terminal domain	not_in_edm
+PF13249.5	SQHop_cyclase_N	Squalene-hopene cyclase N-terminal domain	included
 PF13250.5	DUF4041	Domain of unknown function (DUF4041)	not_in_edm
 PF13251.5	DUF4042	Domain of unknown function (DUF4042)	not_in_edm
 PF13252.5	DUF4043	Protein of unknown function (DUF4043)	not_in_edm
@@ -12577,7 +12577,7 @@ PF13416.5	SBP_bac_8	Bacterial extracellular solute-binding protein	not_in_edm
 PF13417.5	GST_N_3	Glutathione S-transferase, N-terminal domain	included
 PF13418.5	Kelch_4	Galactose oxidase, central domain	not_in_edm
 PF13419.5	HAD_2	Haloacid dehalogenase-like hydrolase	included
-PF13420.6	Acetyltransf_4	Acetyltransferase (GNAT) domain	not_in_edm
+PF13420.6	Acetyltransf_4	Acetyltransferase (GNAT) domain	included
 PF13421.5	Band_7_1	SPFH domain-Band 7 family	not_in_edm
 PF13422.5	DUF4110	Domain of unknown function (DUF4110)	not_in_edm
 PF13423.5	UCH_1	Ubiquitin carboxyl-terminal hydrolase	included
@@ -12601,7 +12601,7 @@ PF13440.5	Polysacc_synt_3	Polysaccharide biosynthesis protein	not_in_edm
 PF13441.5	Gly-zipper_YMGG	YMGG-like Gly-zipper	not_in_edm
 PF13442.5	Cytochrome_CBB3	Cytochrome C oxidase, cbb3-type, subunit III	included
 PF13443.5	HTH_26	Cro/C1-type HTH DNA-binding domain	auto_discard
-PF13444.5	Acetyltransf_5	Acetyltransferase (GNAT) domain	not_in_edm
+PF13444.5	Acetyltransf_5	Acetyltransferase (GNAT) domain	included
 PF13445.5	zf-RING_UBOX	RING-type zinc-finger	not_in_edm
 PF13446.5	RPT	A repeated domain in UCH-protein	manual_discard
 PF13447.5	Multi-haem_cyto	Seven times multi-haem cytochrome CxxCH	included
@@ -12611,13 +12611,13 @@ PF13450.5	NAD_binding_8	NAD(P)-binding Rossmann-like domain	included
 PF13451.5	zf-trcl	Probable zinc-ribbon domain	not_in_edm
 PF13452.5	MaoC_dehydrat_N	N-terminal half of MaoC dehydratase	not_in_edm
 PF13453.5	zf-TFIIB	Transcription factor zinc-finger	not_in_edm
-PF13454.5	NAD_binding_9	FAD-NAD(P)-binding	not_in_edm
+PF13454.5	NAD_binding_9	FAD-NAD(P)-binding	included
 PF13455.5	MUG113	Meiotically up-regulated gene 113	not_in_edm
 PF13456.5	RVT_3	Reverse transcriptase-like	not_in_edm
 PF13457.5	SH3_8	SH3-like domain	not_in_edm
 PF13458.5	Peripla_BP_6	Periplasmic binding protein	included
 PF13459.5	Fer4_15	4Fe-4S single cluster domain	not_in_edm
-PF13460.5	NAD_binding_10	NAD(P)H-binding	not_in_edm
+PF13460.5	NAD_binding_10	NAD(P)H-binding	included
 PF13462.5	Thioredoxin_4	Thioredoxin	not_in_edm
 PF13463.5	HTH_27	Winged helix DNA-binding domain	auto_discard
 PF13464.5	DUF4115	Domain of unknown function (DUF4115)	not_in_edm
@@ -12636,7 +12636,7 @@ PF13476.5	AAA_23	AAA domain	not_in_edm
 PF13477.5	Glyco_trans_4_2	Glycosyl transferase 4-like	included
 PF13478.5	XdhC_C	XdhC Rossmann domain	included
 PF13479.5	AAA_24	AAA domain	not_in_edm
-PF13480.6	Acetyltransf_6	Acetyltransferase (GNAT) domain	not_in_edm
+PF13480.6	Acetyltransf_6	Acetyltransferase (GNAT) domain	included
 PF13481.5	AAA_25	AAA domain	not_in_edm
 PF13482.5	RNase_H_2	RNase_H superfamily	not_in_edm
 PF13483.5	Lactamase_B_3	Beta-lactamase superfamily domain	not_in_edm
@@ -12645,7 +12645,7 @@ PF13485.5	Peptidase_MA_2	Peptidase MA superfamily	not_in_edm
 PF13486.5	Dehalogenase	Reductive dehalogenase subunit	not_in_bgc
 PF13487.5	HD_5	HD domain	not_in_edm
 PF13488.5	Gly-zipper_Omp	Glycine zipper	not_in_edm
-PF13489.5	Methyltransf_23	Methyltransferase domain	not_in_edm
+PF13489.5	Methyltransf_23	Methyltransferase domain	included
 PF13490.5	zf-HC2	Putative zinc-finger	not_in_edm
 PF13491.5	FtsK_4TM	4TM region of DNA translocase FtsK/SpoIIIE	not_in_edm
 PF13492.5	GAF_3	GAF domain	included
@@ -12678,11 +12678,11 @@ PF13519.5	VWA_2	von Willebrand factor type A domain	not_in_edm
 PF13520.5	AA_permease_2	Amino acid permease	not_in_edm
 PF13521.5	AAA_28	AAA domain	not_in_edm
 PF13522.5	GATase_6	Glutamine amidotransferase domain	not_in_edm
-PF13523.5	Acetyltransf_8	Acetyltransferase (GNAT) domain	not_in_edm
+PF13523.5	Acetyltransf_8	Acetyltransferase (GNAT) domain	included
 PF13524.5	Glyco_trans_1_2	Glycosyl transferases group 1	not_in_edm
 PF13525.5	YfiO	Outer membrane lipoprotein	not_in_edm
 PF13526.5	DUF4125	Protein of unknown function (DUF4125)	not_in_edm
-PF13527.6	Acetyltransf_9	Acetyltransferase (GNAT) domain	not_in_edm
+PF13527.6	Acetyltransf_9	Acetyltransferase (GNAT) domain	included
 PF13528.5	Glyco_trans_1_3	Glycosyl transferase family 1	not_in_edm
 PF13529.5	Peptidase_C39_2	Peptidase_C39 like family	not_in_edm
 PF13530.5	SCP2_2	Sterol carrier protein domain	not_in_edm
@@ -12690,7 +12690,7 @@ PF13531.5	SBP_bac_11	Bacterial extracellular solute-binding protein	not_in_edm
 PF13532.5	2OG-FeII_Oxy_2	2OG-Fe(II) oxygenase superfamily	included
 PF13533.5	Biotin_lipoyl_2	Biotin-lipoyl like	not_in_edm
 PF13534.5	Fer4_17	4Fe-4S dicluster domain	not_in_edm
-PF13535.5	ATP-grasp_4	ATP-grasp domain	not_in_edm
+PF13535.5	ATP-grasp_4	ATP-grasp domain	included
 PF13536.5	EmrE	Putative multidrug resistance efflux transporter	not_in_edm
 PF13537.5	GATase_7	Glutamine amidotransferase domain	included
 PF13538.5	UvrD_C_2	UvrD-like helicase C-terminal domain	auto_discard
@@ -12703,7 +12703,7 @@ PF13545.5	HTH_Crp_2	Crp-like helix-turn-helix domain	not_in_edm
 PF13546.5	DDE_5	DDE superfamily endonuclease	not_in_edm
 PF13547.5	GTA_TIM	GTA TIM-barrel-like domain	not_in_edm
 PF13548.5	DUF4126	Domain of unknown function (DUF4126)	not_in_edm
-PF13549.5	ATP-grasp_5	ATP-grasp domain	not_in_edm
+PF13549.5	ATP-grasp_5	ATP-grasp domain	included
 PF13550.5	Phage-tail_3	Putative phage tail protein	not_in_edm
 PF13551.5	HTH_29	Winged helix-turn helix	not_in_edm
 PF13552.5	DUF4127	Protein of unknown function (DUF4127)	not_in_edm
@@ -12715,7 +12715,7 @@ PF13557.5	Phenol_MetA_deg	Putative MetA-pathway of phenol degradation	not_in_edm
 PF13558.5	SbcCD_C	Putative exonuclease SbcCD, C subunit	not_in_edm
 PF13559.5	DUF4129	Domain of unknown function (DUF4129)	included
 PF13560.5	HTH_31	Helix-turn-helix domain	not_in_edm
-PF13561.5	adh_short_C2	Enoyl-(Acyl carrier protein) reductase	not_in_edm
+PF13561.5	adh_short_C2	Enoyl-(Acyl carrier protein) reductase	included
 PF13562.5	NTP_transf_4	Sugar nucleotidyl transferase	not_in_edm
 PF13563.5	2_5_RNA_ligase2	2'-5' RNA ligase superfamily	not_in_edm
 PF13564.5	DoxX_2	DoxX-like family	not_in_edm
@@ -12754,7 +12754,7 @@ PF13598.5	DUF4139	Domain of unknown function (DUF4139)	not_in_edm
 PF13599.5	Pentapeptide_4	Pentapeptide repeats (9 copies)	not_in_edm
 PF13600.5	DUF4140	N-terminal domain of unknown function (DUF4140)	not_in_edm
 PF13601.5	HTH_34	Winged helix DNA-binding domain	not_in_edm
-PF13602.5	ADH_zinc_N_2	Zinc-binding dehydrogenase	not_in_edm
+PF13602.5	ADH_zinc_N_2	Zinc-binding dehydrogenase	included
 PF13603.5	tRNA-synt_1_2	Leucyl-tRNA synthetase, Domain 2	not_in_bgc
 PF13604.5	AAA_30	AAA domain	not_in_edm
 PF13605.5	DUF4141	Domain of unknown function (DUF4141)	not_in_edm
@@ -12790,7 +12790,7 @@ PF13637.5	Ank_4	Ankyrin repeats (many copies)	not_in_edm
 PF13638.5	PIN_4	PIN domain	not_in_edm
 PF13639.5	zf-RING_2	Ring finger domain	not_in_edm
 PF13640.5	2OG-FeII_Oxy_3	2OG-Fe(II) oxygenase superfamily	included
-PF13641.5	Glyco_tranf_2_3	Glycosyltransferase like family 2	not_in_edm
+PF13641.5	Glyco_tranf_2_3	Glycosyltransferase like family 2	included
 PF13642.5	DUF4144	protein structure with unknown function	not_in_edm
 PF13643.5	DUF4145	Domain of unknown function (DUF4145)	manual_discard
 PF13644.5	DKNYY	DKNYY family	not_in_edm
@@ -12865,7 +12865,7 @@ PF13719.5	zinc_ribbon_5	zinc-ribbon domain	not_in_edm
 PF13720.5	Acetyltransf_11	Udp N-acetylglucosamine O-acyltransferase; Domain 2	included
 PF13721.5	SecD-TM1	SecD export protein N-terminal TM region	not_in_edm
 PF13722.5	CstA_5TM	5TM C-terminal transporter carbon starvation CstA	not_in_edm
-PF13723.5	Ketoacyl-synt_2	Beta-ketoacyl synthase, N-terminal domain	not_in_edm
+PF13723.5	Ketoacyl-synt_2	Beta-ketoacyl synthase, N-terminal domain	included
 PF13724.5	DNA_binding_2	DNA-binding domain	not_in_edm
 PF13725.5	tRNA_bind_2	Possible tRNA binding domain	auto_discard
 PF13726.5	Na_H_antiport_2	Na+-H+ antiporter family	not_in_edm
@@ -12879,7 +12879,7 @@ PF13733.5	Glyco_transf_7N	N-terminal region of glycosyl transferase group 7	not_
 PF13734.5	Inhibitor_I69	Spi protease inhibitor	not_in_bgc
 PF13735.5	tRNA_NucTran2_2	tRNA nucleotidyltransferase domain 2 putative	not_in_edm
 PF13737.5	DDE_Tnp_1_5	Transposase DDE domain	not_in_edm
-PF13738.5	Pyr_redox_3	Pyridine nucleotide-disulphide oxidoreductase	not_in_edm
+PF13738.5	Pyr_redox_3	Pyridine nucleotide-disulphide oxidoreductase	included
 PF13739.5	DUF4163	Domain of unknown function (DUF4163)	not_in_edm
 PF13740.5	ACT_6	ACT domain	not_in_edm
 PF13741.5	MRP-S25	Mitochondrial ribosomal protein S25	not_in_edm
@@ -13159,7 +13159,7 @@ PF14024.5	DUF4240	Protein of unknown function (DUF4240)	not_in_edm
 PF14025.5	DUF4241	Protein of unknown function (DUF4241)	not_in_edm
 PF14026.5	DUF4242	Protein of unknown function (DUF4242)	not_in_edm
 PF14027.5	DUF4243	Protein of unknown function (DUF4243)	not_in_edm
-PF14028.5	Lant_dehydr_C	Lantibiotic biosynthesis dehydratase C-term	not_in_edm
+PF14028.5	Lant_dehydr_C	Lantibiotic biosynthesis dehydratase C-term	included
 PF14029.5	DUF4244	Protein of unknown function (DUF4244)	not_in_edm
 PF14030.5	DUF4245	Protein of unknown function (DUF4245)	not_in_edm
 PF14031.5	D-ser_dehydrat	Putative serine dehydratase domain	included
@@ -13392,7 +13392,7 @@ PF14265.5	DUF4355	Domain of unknown function (DUF4355)	not_in_edm
 PF14266.5	YceG_bac	Putative component of 'biosynthetic module'	not_in_edm
 PF14267.5	DUF4357	Domain of unknown function (DUF4357)	not_in_edm
 PF14268.5	YoaP	YoaP-like	not_in_edm
-PF14269.5	Arylsulfotran_2	Arylsulfotransferase (ASST)	not_in_edm
+PF14269.5	Arylsulfotran_2	Arylsulfotransferase (ASST)	included
 PF14270.5	DUF4358	Domain of unknown function (DUF4358)	not_in_edm
 PF14271.5	DUF4359	Domain of unknown function (DUF4359)	not_in_edm
 PF14272.5	Gly_rich_SFCGS	Glycine-rich SFCGS	not_in_edm
@@ -13530,7 +13530,7 @@ PF14403.5	CP_ATPgrasp_2	Circularly permuted ATP-grasp type 2	not_in_edm
 PF14404.5	Strep_pep	Ribosomally synthesized peptide in Streptomyces species	not_in_edm
 PF14406.5	Bacteroid_pep	Ribosomally synthesized peptide in Bacteroidetes	not_in_edm
 PF14407.5	Frankia_peptide	Ribosomally synthesized peptide prototyped by Frankia Franean1_4349.	not_in_edm
-PF14408.5	Actino_peptide	Ribosomally synthesised peptide in actinomycetes	not_in_edm
+PF14408.5	Actino_peptide	Ribosomally synthesised peptide in actinomycetes	included
 PF14409.5	Herpeto_peptide	Ribosomally synthesized peptide in Herpetosiphon	not_in_edm
 PF14410.5	GH-E	HNH/ENDO VII superfamily nuclease with conserved GHE residues	not_in_edm
 PF14411.5	LHH	A nuclease of the HNH/ENDO VII superfamily with conserved LHH	not_in_edm
@@ -13660,7 +13660,7 @@ PF14538.5	Raptor_N	Raptor N-terminal CASPase like domain	not_in_edm
 PF14539.5	DUF4442	Domain of unknown function (DUF4442)	not_in_edm
 PF14540.5	NTF-like	Nucleotidyltransferase-like	not_in_edm
 PF14541.5	TAXi_C	Xylanase inhibitor C-terminal	not_in_edm
-PF14542.5	Acetyltransf_CG	GCN5-related N-acetyl-transferase	not_in_edm
+PF14542.5	Acetyltransf_CG	GCN5-related N-acetyl-transferase	included
 PF14543.5	TAXi_N	Xylanase inhibitor N-terminal	not_in_edm
 PF14544.5	DUF4443	Domain of unknown function (DUF4443)	not_in_edm
 PF14545.5	DBB	Dof, BCAP, and BANK (DBB) motif,	not_in_edm
@@ -13979,7 +13979,7 @@ PF14860.5	DrrA_P4M	DrrA phosphatidylinositol 4-phosphate binding domain	not_in_e
 PF14861.5	Antimicrobial21	Plant antimicrobial peptide	not_in_edm
 PF14862.5	Defensin_big	Big defensin	not_in_edm
 PF14863.5	Alkyl_sulf_dimr	Alkyl sulfatase dimerisation	not_in_edm
-PF14864.5	Alkyl_sulf_C	Alkyl sulfatase C-terminal	not_in_edm
+PF14864.5	Alkyl_sulf_C	Alkyl sulfatase C-terminal	included
 PF14865.5	Macin	Macin	not_in_edm
 PF14866.5	Toxin_38	Potassium channel toxin	not_in_edm
 PF14867.5	Lantibiotic_a	Lantibiotic alpha	not_in_edm
@@ -14733,7 +14733,7 @@ PF15628.5	RRM_DME	RRM in Demeter	not_in_edm
 PF15629.5	Perm-CXXC	Permuted single zf-CXXC unit	not_in_edm
 PF15630.5	CENP-S	CENP-S protein	not_in_edm
 PF15631.5	Imm-NTF2-2	NTF2 fold immunity protein	not_in_edm
-PF15632.5	ATPgrasp_Ter	ATP-grasp in the biosynthetic pathway with Ter operon	not_in_edm
+PF15632.5	ATPgrasp_Ter	ATP-grasp in the biosynthetic pathway with Ter operon	included
 PF15633.5	Tox-ART-HYD1	HYD1 signature containing ADP-ribosyltransferase	not_in_edm
 PF15634.5	Tox-ART-HYE1	HYE1 signature containing ADP-ribosyltransferase	not_in_edm
 PF15635.5	Tox-GHH2	GHH signature containing HNH/Endo VII superfamily nuclease toxin 2	not_in_edm
@@ -15285,7 +15285,7 @@ PF16191.4	E1_4HB	Ubiquitin-activating enzyme E1 four-helix bundle	not_in_edm
 PF16192.4	PMT_4TMC	C-terminal four TMM region of protein-O-mannosyltransferase	not_in_edm
 PF16193.4	AAA_assoc_2	AAA C-terminal domain	not_in_edm
 PF16195.4	UBA2_C	SUMO-activating enzyme subunit 2 C-terminus	not_in_edm
-PF16197.4	KAsynt_C_assoc	Ketoacyl-synthetase C-terminal extension	not_in_edm
+PF16197.4	KAsynt_C_assoc	Ketoacyl-synthetase C-terminal extension	included
 PF16198.4	TruB_C_2	tRNA pseudouridylate synthase B C-terminal domain	not_in_edm
 PF16199.4	Radical_SAM_C	Radical_SAM C-terminal domain	not_in_edm
 PF16200.4	Band_7_C	C-terminal region of band_7	not_in_edm
@@ -15727,7 +15727,7 @@ PF16648.4	Calpain_u2	Unstructured region on Calpain-3	not_in_edm
 PF16649.4	IL23	Interleukin 23 subunit alpha	not_in_edm
 PF16650.4	SPEG_u2	Unstructured region on SPEG complex protein	not_in_edm
 PF16652.4	PH_13	Pleckstrin homology domain	not_in_edm
-PF16653.4	Sacchrp_dh_C	Saccharopine dehydrogenase C-terminal domain	not_in_edm
+PF16653.4	Sacchrp_dh_C	Saccharopine dehydrogenase C-terminal domain	included
 PF16654.4	DAPDH_C	Diaminopimelic acid dehydrogenase C-terminal domain	not_in_edm
 PF16655.4	PhoD_N	PhoD-like phosphatase, N-terminal domain	not_in_edm
 PF16656.4	Pur_ac_phosph_N	Purple acid Phosphatase, N-terminal domain	not_in_edm
@@ -15957,7 +15957,7 @@ PF16880.4	EHD_N	N-terminal EH-domain containing protein	not_in_edm
 PF16881.4	LIAS_N	N-terminal domain of lipoyl synthase of Radical_SAM family	not_in_edm
 PF16882.4	DUF5079	Domain of unknown function (DUF5079)	not_in_edm
 PF16883.4	DUF5080	Domain of unknown function (DUF5080)	not_in_edm
-PF16884.4	ADH_N_2	N-terminal domain of oxidoreductase	not_in_edm
+PF16884.4	ADH_N_2	N-terminal domain of oxidoreductase	included
 PF16885.4	CAC1F_C	Voltage-gated calcium channel subunit alpha, C-term	not_in_edm
 PF16886.4	ATP-synt_ab_Xtn	ATPsynthase alpha/beta subunit N-term extension	not_in_edm
 PF16887.4	DUF5081	Domain of unknown function (DUF5081)	not_in_edm
