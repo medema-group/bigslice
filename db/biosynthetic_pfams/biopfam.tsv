@@ -147,7 +147,7 @@ PF00148.18	Oxidored_nitro	Nitrogenase component 1 type Oxidoreductase	included
 PF00149.27	Metallophos	Calcineurin-like phosphoesterase	included
 PF00150.17	Cellulase	Cellulase (glycosyl hydrolase family 5)	included
 PF00151.18	Lipase	Lipase	not_in_bgc
-PF00152.19	tRNA-synt_2	tRNA synthetases class II (D, K and N)	auto_discard
+PF00152.19	tRNA-synt_2	tRNA synthetases class II (D, K and N)	included
 PF00153.26	Mito_carr	Mitochondrial carrier protein	not_in_edm
 PF00154.20	RecA	recA bacterial DNA recombination protein	not_in_edm
 PF00155.20	Aminotran_1_2	Aminotransferase class I and II	included
@@ -735,7 +735,7 @@ PF00761.19	Polyoma_coat2	Polyomavirus coat protein	not_in_edm
 PF00762.18	Ferrochelatase	Ferrochelatase	included
 PF00763.22	THF_DHG_CYH	Tetrahydrofolate dehydrogenase/cyclohydrolase, catalytic domain	included
 PF00764.18	Arginosuc_synth	Arginosuccinate synthase	included
-PF00765.16	Autoind_synth	Autoinducer synthase	auto_discard
+PF00765.16	Autoind_synth	Autoinducer synthase	included
 PF00766.18	ETF_alpha	Electron transfer flavoprotein FAD-binding domain	not_in_edm
 PF00767.17	Poty_coat	Potyvirus coat protein	not_in_bgc
 PF00768.19	Peptidase_S11	D-alanyl-D-alanine carboxypeptidase	included
@@ -3289,7 +3289,7 @@ PF03555.13	Flu_C_NS2	Influenza C non-structural protein (NS2)	not_in_edm
 PF03556.14	Cullin_binding	Cullin binding	not_in_edm
 PF03557.14	Bunya_G1	Bunyavirus glycoprotein G1	not_in_edm
 PF03558.12	TBSV_P22	TBSV core protein P21/P22	not_in_edm
-PF03559.13	Hexose_dehydrat	NDP-hexose 2,3-dehydratase	not_in_edm
+PF03559.13	Hexose_dehydrat	NDP-hexose 2,3-dehydratase	included
 PF03561.14	Allantoicase	Allantoicase repeat	included
 PF03562.16	MltA	MltA specific insert domain	not_in_edm
 PF03563.12	Bunya_G2	Bunyavirus glycoprotein G2	not_in_edm
@@ -3996,7 +3996,7 @@ PF04317.11	DUF463	YcjX-like family, DUF463	not_in_edm
 PF04318.11	DUF468	Protein of unknown function (DUF468)	not_in_edm
 PF04319.12	NifZ	NifZ domain	not_in_edm
 PF04320.13	DUF469	Protein with unknown function (DUF469)	not_in_edm
-PF04321.16	RmlD_sub_bind	RmlD substrate binding domain	auto_discard
+PF04321.16	RmlD_sub_bind	RmlD substrate binding domain	included
 PF04322.11	DUF473	Protein of unknown function (DUF473)	not_in_edm
 PF04324.14	Fer2_BFD	BFD-like [2Fe-2S] binding domain	included
 PF04325.12	DUF465	Protein of unknown function (DUF465)	not_in_edm
@@ -6994,7 +6994,7 @@ PF07589.10	VPEP	PEP-CTERM motif	not_in_edm
 PF07590.10	DUF1556	Protein of unknown function (DUF1556)	not_in_edm
 PF07591.10	PT-HINT	Pretoxin HINT domain	not_in_edm
 PF07592.10	DDE_Tnp_ISAZ013	Rhodopirellula transposase DDE domain	not_in_edm
-PF07593.11	UnbV_ASPIC	ASPIC and UnbV	not_in_edm
+PF07593.11	UnbV_ASPIC	ASPIC and UnbV	included
 PF07595.11	Planc_extracel	Planctomycete extracellular	not_in_edm
 PF07596.10	SBP_bac_10	Protein of unknown function (DUF1559)	not_in_edm
 PF07597.10	DUF1560	Protein of unknown function (DUF1560)	not_in_edm
@@ -7388,7 +7388,7 @@ PF08008.11	Viral_cys_rich	Viral cysteine rich	not_in_edm
 PF08009.10	CDP-OH_P_tran_2	CDP-alcohol phosphatidyltransferase 2	not_in_edm
 PF08010.10	Phage_30_3	Bacteriophage protein GP30.3	not_in_edm
 PF08011.10	PDDEXK_9	PD-(D/E)XK nuclease superfamily	not_in_edm
-PF08012.10	DUF1702	Protein of unknown function (DUF1702)	not_in_edm
+PF08012.10	DUF1702	Protein of unknown function (DUF1702)	included
 PF08013.10	Tagatose_6_P_K	Tagatose 6 phosphate kinase	included
 PF08014.10	DUF1704	Domain of unknown function (DUF1704)	not_in_edm
 PF08015.10	Pheromone	Fungal mating-type pheromone	not_in_edm
@@ -9746,7 +9746,7 @@ PF10498.8	IFT57	Intra-flagellar transport protein 57	not_in_edm
 PF10500.8	SR-25	Nuclear RNA-splicing-associated protein	not_in_edm
 PF10501.8	Ribosomal_L50	Ribosomal subunit 39S	not_in_edm
 PF10502.8	Peptidase_S26	Signal peptidase, peptidase S26	included
-PF10503.8	Esterase_phd	Esterase PHB depolymerase	not_in_edm
+PF10503.8	Esterase_phd	Esterase PHB depolymerase	included
 PF10504.8	DUF2452	Protein of unknown function (DUF2452)	not_in_edm
 PF10505.8	NARG2_C	NMDA receptor-regulated gene protein 2 C-terminus	not_in_edm
 PF10506.8	MCC-bdg_PDZ	PDZ domain of MCC-2 bdg protein for Usher syndrome	not_in_edm
@@ -12439,8 +12439,8 @@ PF13273.5	DUF4064	Protein of unknown function (DUF4064)	not_in_edm
 PF13274.5	DUF4065	Protein of unknown function (DUF4065)	not_in_edm
 PF13275.5	S4_2	S4 domain	not_in_edm
 PF13276.5	HTH_21	HTH-like domain	not_in_edm
-PF13277.5	YmdB	YmdB-like protein	not_in_edm
-PF13279.5	4HBT_2	Thioesterase-like superfamily	not_in_edm
+PF13277.5	YmdB	YmdB-like protein	included
+PF13279.5	4HBT_2	Thioesterase-like superfamily	included
 PF13280.5	WYL	WYL domain	not_in_edm
 PF13281.5	DUF4071	Domain of unknown function (DUF4071)	not_in_bgc
 PF13282.5	DUF4070	Domain of unknown function (DUF4070)	not_in_edm
@@ -12627,7 +12627,7 @@ PF13467.5	RHH_4	Ribbon-helix-helix domain	not_in_edm
 PF13468.5	Glyoxalase_3	Glyoxalase-like domain	not_in_edm
 PF13469.5	Sulfotransfer_3	Sulfotransferase family	included
 PF13470.5	PIN_3	PIN domain	not_in_edm
-PF13471.5	Transglut_core3	Transglutaminase-like superfamily	not_in_edm
+PF13471.5	Transglut_core3	Transglutaminase-like superfamily	included
 PF13472.5	Lipase_GDSL_2	GDSL-like Lipase/Acylhydrolase family	not_in_edm
 PF13473.5	Cupredoxin_1	Cupredoxin-like domain	not_in_edm
 PF13474.5	SnoaL_3	SnoaL-like domain	not_in_edm
@@ -12639,7 +12639,7 @@ PF13479.5	AAA_24	AAA domain	not_in_edm
 PF13480.6	Acetyltransf_6	Acetyltransferase (GNAT) domain	included
 PF13481.5	AAA_25	AAA domain	not_in_edm
 PF13482.5	RNase_H_2	RNase_H superfamily	not_in_edm
-PF13483.5	Lactamase_B_3	Beta-lactamase superfamily domain	not_in_edm
+PF13483.5	Lactamase_B_3	Beta-lactamase superfamily domain	included
 PF13484.5	Fer4_16	4Fe-4S double cluster binding domain	not_in_edm
 PF13485.5	Peptidase_MA_2	Peptidase MA superfamily	not_in_edm
 PF13486.5	Dehalogenase	Reductive dehalogenase subunit	not_in_bgc
@@ -12672,7 +12672,7 @@ PF13513.5	HEAT_EZ	HEAT-like repeat	not_in_edm
 PF13514.5	AAA_27	AAA domain	not_in_edm
 PF13515.5	FUSC_2	Fusaric acid resistance protein-like	not_in_edm
 PF13516.5	LRR_6	Leucine Rich repeat	not_in_edm
-PF13517.5	VCBS	Repeat domain in Vibrio, Colwellia, Bradyrhizobium and Shewanella	not_in_edm
+PF13517.5	VCBS	Repeat domain in Vibrio, Colwellia, Bradyrhizobium and Shewanella	included
 PF13518.5	HTH_28	Helix-turn-helix domain	not_in_edm
 PF13519.5	VWA_2	von Willebrand factor type A domain	not_in_edm
 PF13520.5	AA_permease_2	Amino acid permease	not_in_edm
@@ -12731,7 +12731,7 @@ PF13573.5	SprB	SprB repeat	not_in_edm
 PF13574.5	Reprolysin_2	Metallo-peptidase family M12B Reprolysin-like	not_in_edm
 PF13575.5	DUF4135	Domain of unknown function (DUF4135)	not_in_edm
 PF13576.5	Pentapeptide_3	Pentapeptide repeats (9 copies)	not_in_edm
-PF13577.5	SnoaL_4	SnoaL-like domain	not_in_edm
+PF13577.5	SnoaL_4	SnoaL-like domain	included
 PF13578.5	Methyltransf_24	Methyltransferase domain	included
 PF13579.5	Glyco_trans_4_4	Glycosyl transferase 4-like domain	included
 PF13580.5	SIS_2	SIS domain	included
@@ -12854,7 +12854,7 @@ PF13708.5	DUF4942	Domain of unknown function (DUF4942)	not_in_edm
 PF13709.5	DUF4159	Domain of unknown function (DUF4159)	not_in_edm
 PF13710.5	ACT_5	ACT domain	not_in_edm
 PF13711.5	DUF4160	Domain of unknown function (DUF4160)	not_in_edm
-PF13712.5	Glyco_tranf_2_5	Glycosyltransferase like family	not_in_edm
+PF13712.5	Glyco_tranf_2_5	Glycosyltransferase like family	included
 PF13713.5	BRX_N	Transcription factor BRX N-terminal domain	not_in_edm
 PF13714.5	PEP_mutase	Phosphoenolpyruvate phosphomutase	not_in_edm
 PF13715.5	CarbopepD_reg_2	CarboxypepD_reg-like domain	not_in_edm
@@ -13652,7 +13652,7 @@ PF14530.5	DUF4439	Domain of unknown function (DUF4439)	not_in_edm
 PF14531.5	Kinase-like	Kinase-like	not_in_edm
 PF14532.5	Sigma54_activ_2	Sigma-54 interaction domain	not_in_edm
 PF14533.5	USP7_C2	Ubiquitin-specific protease C-terminal	included
-PF14534.5	DUF4440	Domain of unknown function (DUF4440)	not_in_edm
+PF14534.5	DUF4440	Domain of unknown function (DUF4440)	included
 PF14535.5	AMP-binding_C_2	AMP-binding enzyme C-terminal domain	included
 PF14536.5	DUF4441	Domain of unknown function (DUF4441)	not_in_edm
 PF14537.5	Cytochrom_c3_2	Cytochrome c3	not_in_edm
@@ -13718,7 +13718,7 @@ PF14598.5	PAS_11	PAS domain	not_in_edm
 PF14599.5	zinc_ribbon_6	Zinc-ribbon	not_in_edm
 PF14600.5	CBM_5_12_2	Cellulose-binding domain	not_in_edm
 PF14601.5	TFX_C	DNA_binding protein, TFX, C-term	not_in_edm
-PF14602.5	Hexapep_2	Hexapeptide repeat of succinyl-transferase	not_in_edm
+PF14602.5	Hexapep_2	Hexapeptide repeat of succinyl-transferase	included
 PF14603.5	hSH3	Helically-extended SH3 domain	not_in_edm
 PF14604.5	SH3_9	Variant SH3 domain	included
 PF14605.5	Nup35_RRM_2	Nup53/35/40-type RNA recognition motif	not_in_edm
@@ -15444,7 +15444,7 @@ PF16359.4	RcsD_ABL	RcsD-ABL domain	not_in_edm
 PF16360.4	GTP-bdg_M	GTP-binding GTPase Middle Region	not_in_edm
 PF16361.4	Peptidase_S8_N	N-terminal of Subtilase family	not_in_edm
 PF16362.4	YaiA	YaiA protein	not_in_edm
-PF16363.4	GDP_Man_Dehyd	GDP-mannose 4,6 dehydratase	not_in_edm
+PF16363.4	GDP_Man_Dehyd	GDP-mannose 4,6 dehydratase	included
 PF16364.4	Antigen_C	Cell surface antigen C-terminus	not_in_edm
 PF16365.4	EutK_C	Ethanolamine utilization protein EutK C-terminus	not_in_edm
 PF16366.4	CEBP_ZZ	Cytoplasmic polyadenylation element-binding protein ZZ domain	not_in_edm
