@@ -6,10 +6,12 @@ feature extractions
 
 """
 
-from os import path, makedirs
+from os import path, makedirs, remove
 import urllib.request
 import gzip
 import csv
+import subprocess
+from Bio import AlignIO
 
 
 # default parameters
@@ -65,6 +67,42 @@ def main():
 
 		assert len(biosynthetic_pfams) == 0
 		
+	else:
+		print("Pfam-A.biosynthetic.hmm exists!")
+	
+	# build subpfams
+	with open(path.join(dir_path, "sub_pfams", "corepfam.tsv"), "r") as corepfam:
+		corepfam.readline()
+		for line in corepfam:
+			[pfam_accession, pfam_name, pfam_desc] = line.rstrip().split("\t")
+			subpfam_hmm_path = path.join(dir_path, "sub_pfams", "{}.subpfam.hmm".format(pfam_accession))
+			if not path.exists(subpfam_hmm_path):
+				aligned_multifasta_path = fetch_alignment_file(pfam_accession, tmp_dir_path)
+				tree_path = path.splitext(aligned_multifasta_path)[0] + ".newick"
+				if path.exists(tree_path):
+					remove(tree_path)
+				if subprocess.call(["build_subpfam", "-o", tmp_dir_path, aligned_multifasta_path]) > 0:
+					raise
+			else:
+				print("Found {}".format(subpfam_hmm_path))
+
+
+def fetch_alignment_file(pfam_accession, folder_path):
+	file_name = path.join(folder_path, "{}-alignment".format(pfam_accession.split(".")[0]))
+	stockholm_path = "{}.stockholm".format(file_name)
+	multifasta_path = "{}.fa".format(file_name)
+	# get rp15 stockholm file
+	if not path.exists(stockholm_path):
+		url_download = "http://pfam.xfam.org/family/{}/alignment/rp15".format(pfam_accession.split(".")[0])
+		print("Downloading from {}...".format(url_download))
+		urllib.request.urlretrieve(url_download, stockholm_path)
+	else:
+		print("Found {}".format(stockholm_path))
+	# convert to multifasta
+	if not path.exists(multifasta_path):
+		AlignIO.convert(stockholm_path, "stockholm", multifasta_path, "fasta")
+	return multifasta_path
+
 
 if __name__ == "__main__":
     main()
