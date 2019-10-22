@@ -7,6 +7,7 @@ feature extractions
 """
 
 from os import path, makedirs, remove
+from shutil import copy
 import urllib.request
 import gzip
 import csv
@@ -66,23 +67,27 @@ def main():
 							skipping = True
 
 		assert len(biosynthetic_pfams) == 0
-		
+
 	else:
 		print("Pfam-A.biosynthetic.hmm exists!")
-	
+
 	# build subpfams
 	with open(path.join(dir_path, "sub_pfams", "corepfam.tsv"), "r") as corepfam:
 		corepfam.readline()
 		for line in corepfam:
 			[pfam_accession, pfam_name, pfam_desc] = line.rstrip().split("\t")
-			subpfam_hmm_path = path.join(dir_path, "sub_pfams", "{}.subpfam.hmm".format(pfam_accession))
+			subpfam_hmm_path = path.join(dir_path, "sub_pfams", "{}.subpfams.hmm".format(pfam_accession))
 			if not path.exists(subpfam_hmm_path):
+				print("Building {}...".format(subpfam_hmm_path))
 				aligned_multifasta_path = fetch_alignment_file(pfam_accession, tmp_dir_path)
-				tree_path = path.splitext(aligned_multifasta_path)[0] + ".newick"
-				if path.exists(tree_path):
-					remove(tree_path)
-				if subprocess.call(["build_subpfam", "-o", tmp_dir_path, aligned_multifasta_path]) > 0:
-					raise
+				temp_hmm_path = path.splitext(aligned_multifasta_path)[0] + ".subpfams.hmm"
+				if not path.exists(temp_hmm_path):
+					tree_path = path.splitext(aligned_multifasta_path)[0] + ".newick"
+					if path.exists(tree_path):
+						remove(tree_path)
+					if subprocess.call(["build_subpfam", "-o", tmp_dir_path, aligned_multifasta_path]) > 0:
+						raise
+				copy(temp_hmm_path, subpfam_hmm_path)
 			else:
 				print("Found {}".format(subpfam_hmm_path))
 
