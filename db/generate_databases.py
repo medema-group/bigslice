@@ -36,6 +36,10 @@ def main():
 	if not path.exists(tmp_dir_path):
 	    makedirs(tmp_dir_path)
 
+	# create subpfam directory
+	if not path.exists(sub_pfams_hmms):
+	    makedirs(sub_pfams_hmms)
+
 	# check if Pfam-A.biosynthetic.hmm exists
 	if not path.exists(biosyn_pfam_hmm):
 
