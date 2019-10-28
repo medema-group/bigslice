@@ -1,3 +1,6 @@
 db/tmp/
 *.hmm
 *.md5sum
+__pycache__/
+*.py[cod]
+*$py.class

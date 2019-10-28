@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+# vim: set fileencoding=utf-8 :
+#
+# Copyright (C) 2019 Satria A. Kautsar
+# Wageningen University & Research
+# Bioinformatics Group
+"""the main script of bigsscuit"""
+
+import argparse
+from os import path, makedirs
+import sqlite3
+import glob
+import multiprocessing
+from modules.data.utils import Database
+from modules.data.bgc import BGC
+
+
+def parse_input_gbk(arguments: tuple):
+    file_path, output_db = arguments
+    return [bgc.id for bgc
+            in BGC.parse_gbk(file_path, output_db, True)]
+
+
+def main():
+
+    # TODO: check requirements
+
+    # program parameters
+    parser = argparse.ArgumentParser(description="tbd")
+    parser.add_argument("input_folder", type=str)
+    parser.add_argument("output_folder", type=str)
+    parser.add_argument("-t", "--num_threads",
+                        default=multiprocessing.cpu_count(), type=int)
+    args = parser.parse_args()
+
+    # define variables
+    pool = multiprocessing.Pool(processes=args.num_threads)
+    input_folder = args.input_folder
+    output_folder = args.output_folder
+    data_db_path = path.join(output_folder, "data.db")
+
+    # create output folder if not exists
+    if not path.exists(output_folder):
+        makedirs(output_folder)
+
+    # load/create SQLite3 database
+    output_db = Database(data_db_path)
+
+    # load and parse input gbks
+    file_paths = glob.glob(path.join(input_folder, "*.gbk"))
+    arguments = [(file_path, output_db) for file_path in file_paths]
+    all_bgc_ids = set()
+    for result in pool.map(parse_input_gbk, arguments):
+        all_bgc_ids.update(result)
+    print(all_bgc_ids)
+
+
+if __name__ == "__main__":
+    main()
