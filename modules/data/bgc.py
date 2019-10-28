@@ -11,7 +11,7 @@ Handle manipulation and storing of 'bgc' table
 
 from os import path
 from Bio import SeqIO, SeqFeature
-from .utils import Database
+from .database import Database
 
 
 class BGC:
@@ -25,6 +25,9 @@ class BGC:
         self.on_contig_edge = properties["on_contig_edge"]
         self.length_nt = properties["length_nt"]
         self.orig_filename = properties["orig_filename"]
+        self.chem_subclasses = [BGC.ChemSubclass.search(
+            self.database, cc, self.type)
+            for cc in properties["chem_subclasses"]]
         self.taxons = properties["taxons"]
         self.cds = [BGC.CDS.from_feature(f)
                     for f in properties["cds_features"]]
@@ -58,6 +61,10 @@ class BGC:
                     "orig_filename": self.orig_filename
                 }
             )
+            # insert classes
+            for chem_subclass in self.chem_subclasses:
+                chem_subclass.bgc_id = self.id
+                chem_subclass.__save__(self.database)
             # insert taxons
             for taxon in self.taxons:
                 existing = self.database.select(
@@ -139,7 +146,7 @@ class BGC:
                             on_edge = qual["contig_edge"][0] == "True"
                             loc = cc.location
                             len_nt = loc.end - loc.start
-                            chem_subclass = qual["product"]
+                            chem_subclasses = qual["product"]
                             cds_features = [f for f in
                                             gbk[loc.start:loc.end].features if
                                             f.type == "CDS"]
@@ -149,7 +156,7 @@ class BGC:
                                 "on_contig_edge": on_edge,
                                 "length_nt": len_nt,
                                 "orig_filename": orig_filename,
-                                "chem_subclass": chem_subclass,
+                                "chem_subclasses": chem_subclasses,
                                 "taxons": taxons,
                                 "cds_features": cds_features
                             }, database))
@@ -169,6 +176,54 @@ class BGC:
                 bgc.save()
 
         return results
+
+    class ChemSubclass:
+        """Chemical subclass mapping"""
+
+        def __init__(self, properties: dict):
+            self.subclass_id = properties["subclass_id"]
+            self.subclass_name = properties["subclass_name"]
+            self.class_id = properties["class_id"]
+            self.class_name = properties["class_name"]
+            self.orig_class = properties["class_source"]
+
+        def __save__(self, database: Database):
+            """commit bgc_class
+            this only meant to be called from BGC.save()"""
+            existing = database.select(
+                "bgc_class",
+                "WHERE bgc_id=? AND chem_subclass_id=?",
+                parameters=(self.bgc_id, self.subclass_id)
+            ).fetchall()
+            if existing:
+                # current behavior: skip if exist
+                assert len(existing) == 1
+                pass
+            else:
+                # insert new map
+                database.insert(
+                    "bgc_class",
+                    {
+                        "bgc_id": self.bgc_id,
+                        "chem_subclass_id": self.subclass_id
+                    }
+                )
+
+        @staticmethod
+        def search(database: Database, name: str, source_type: str):
+            rows = database.select(
+                "chem_class,chem_subclass,chem_subclass_map",
+                "WHERE chem_subclass_map.subclass_id=chem_subclass.id AND " +
+                "chem_class.id=chem_subclass.class_id " +
+                "AND chem_subclass_map.type_source=? AND class_source=?",
+                parameters=(source_type, name),
+                props=["subclass_id", "class_id", "class_source",
+                       "chem_class.name as class_name",
+                       "chem_subclass.name as subclass_name"]
+            ).fetchall()
+            assert len(rows) == 1
+            row = rows[0]
+            return BGC.ChemSubclass(row)
 
     class CDS:
         """Represents a CDS in the database

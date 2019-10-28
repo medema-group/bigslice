@@ -1,0 +1,60 @@
+chem_code	from	bigsscape_class	bigsscape_subclass
+T1PKS	as5	Polyketide	T1PKS
+T2PKS	as5	Polyketide	T2PKS
+T3PKS	as5	Polyketide	T3PKS
+transAT-PKS	as5	Polyketide	transAT-PKS
+hglE-KS	as5		hglE-KS
+arylpolyene	as5		arylpolyene
+resorcinol	as5		resorcinol
+ladderane	as5		ladderane
+PUFA	as5		PUFA
+NRPS	as5	NRP	NRPS
+CDPS	as5		CDPS
+thioamide-NRP	as5	NRP	thioamide-NRP
+terpene	as5	Terpene	terpene
+lanthipeptide	as5		lanthipeptide
+lipolanthine	as5		lipolanthine
+bacteriocin	as5		bacteriocin
+thiopeptide	as5		thiopeptide
+TfuA-related	as5		TfuA-related
+linaridin	as5		linaridin
+cyanobactin	as5		cyanobactin
+glycocin	as5		glycocin
+LAP	as5		LAP
+lassopeptide	as5	NRP	lassopeptide
+sactipeptide	as5		sactipeptide
+bottromycin	as5		bottromycin
+head_to_tail	as5		head_to_tail
+microviridin	as5		microviridin
+proteusin	as5		proteusin
+blactam	as5		blactam
+amglyccycl	as5		amglyccycl
+aminocoumarin	as5		aminocoumarin
+siderophore	as5		siderophore
+ectoine	as5		ectoine
+NAGGN	as5		NAGGN
+butyrolactone	as5		butyrolactone
+indole	as5		indole
+nucleoside	as5		nucleoside
+phosphoglycolipid	as5		phosphoglycolipid
+melanin	as5		melanin
+oligosaccharide	as5	Saccharide	oligosaccharide
+furan	as5		furan
+hserlactone	as5		hserlactone
+phenazine	as5		phenazine
+phosphonate	as5		phosphonate
+fused	as5		fused
+other	as5	Other	other
+acyl_amino_acids	as5		acyl_amino_acids
+PBDE	as5		PBDE
+PpyS-KS	as5		PpyS-KS
+betalactone	as5		betalactone
+RaS-RiPP	as5	RiPP	RaS-RiPP
+fungal-RiPP	as5	RiPP	fungal-RiPP
+tropodithietic-acid	as5		tropodithietic-acid
+NRPS-like	as5	NRP	NRPS-like
+PKS-like	as5	Polyketide	PKS-like
+transAT-PKS-like	as5	Polyketide	transAT-PKS-like
+saccharide	as5	Saccharide	saccharide
+fatty_acid	as5	Other	fatty_acid
+halogenated	as5		halogenated

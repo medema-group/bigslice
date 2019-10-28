@@ -105,9 +105,17 @@ INSERT OR IGNORE INTO chem_class VALUES (NULL, 'Terpene');
 CREATE TABLE IF NOT EXISTS chem_subclass (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     class_id INTEGER NOT NULL,
-    name VARCHAR(100) NOT NULL UNIQUE,
-    description VARCHAR(250),
+    name VARCHAR(100) NOT NULL,
     FOREIGN KEY(class_id) REFERENCES chem_class(id)
+);
+
+-- chem_subclass_map
+CREATE TABLE IF NOT EXISTS chem_subclass_map (
+    class_source VARCHAR(100) NOT NULL,
+    type_source VARCHAR(10) NOT NULL,    
+    subclass_id INTEGER NOT NULL,
+    FOREIGN KEY(type_source) REFERENCES enum_bgc_type(code),
+    FOREIGN KEY(subclass_id) REFERENCES chem_subclass(id)
 );
 
 -- bgc_class

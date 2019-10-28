@@ -4,7 +4,7 @@
 # Copyright (C) 2019 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.data.utils
+"""bigsscuit.modules.data.database
 
 Common classes and functions to work with the SQLite3 database
 """
@@ -62,6 +62,48 @@ class Database:
             with sqlite3.connect(self.db_path) as db_con:
                 db_cur = db_con.cursor()
                 db_cur.executescript(sql_schema)
+                # load bs_class rows into a dictionary for quick searching
+                bs_classes_id = {}
+                for row in self.select(
+                    "chem_class",
+                    "WHERE 1"
+                ):
+                    bs_classes_id[row["name"]] = row["id"]
+                # load chem_class_map.tsv
+                with open(path.join(path.dirname(path.abspath(__file__)),
+                                    "chem_class_map.tsv"), "r") as tsv:
+                    tsv.readline()  # skip header
+                    for line in tsv:
+                        src_class, src, bs_class, bs_subclass = \
+                            line.rstrip().split("\t")
+                        if bs_subclass == "":  # TODO: enforce strict
+                            bs_subclass = "other"
+                        if bs_class == "":  # TODO: enforce strict
+                            bs_class = "Other"
+                        bs_class_id = bs_classes_id[bs_class]
+
+                        existing = self.select(
+                            "chem_subclass",
+                            "WHERE name=? AND class_id=?",
+                            parameters=(bs_subclass, bs_class_id)
+                        ).fetchall()
+                        if existing:
+                            assert len(existing) == 1
+                            bs_subclass_id = existing[0]["id"]
+                        else:
+                            bs_subclass_id = self.insert(
+                                "chem_subclass",
+                                {
+                                    "name": bs_subclass,
+                                    "class_id": bs_class_id
+                                }
+                            )
+
+                        self.insert("chem_subclass_map", {
+                            "class_source": src_class,
+                            "type_source": src,
+                            "subclass_id": bs_subclass_id
+                        })
 
     def query(self, sql: str, parameters: tuple = None):
         """query an SQL statement, return (dict-modified) results"""

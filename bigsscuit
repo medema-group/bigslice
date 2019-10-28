@@ -11,7 +11,7 @@ from os import path, makedirs
 import sqlite3
 import glob
 import multiprocessing
-from modules.data.utils import Database
+from modules.data.database import Database
 from modules.data.bgc import BGC
 
 
