@@ -1,3 +1,4 @@
-biopython
+biopython >= 1.69
+pysqlite3
 build_subpfam
 
