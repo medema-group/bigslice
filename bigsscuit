@@ -50,9 +50,12 @@ def main():
     file_paths = glob.glob(path.join(input_folder, "*.gbk"))
     arguments = [(file_path, output_db) for file_path in file_paths]
     all_bgc_ids = set()
-    for result in pool.map(parse_input_gbk, arguments):
+    print("Parsing {} genbank files...".format(len(file_paths)))
+    for i, result in enumerate(pool.map(parse_input_gbk, arguments)):
+        if len(result) < 1:
+            print("Can't parse any BGC from " + file_paths[i])
         all_bgc_ids.update(result)
-    print(all_bgc_ids)
+    print("Found {} BGCs.".format(len(all_bgc_ids)))
 
 
 if __name__ == "__main__":

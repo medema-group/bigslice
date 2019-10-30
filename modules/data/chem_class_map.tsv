@@ -1,4 +1,4 @@
-chem_code	from	bigsscape_class	bigsscape_subclass
+chem_code	from	bigsscuit_class	bigsscuit_subclass
 T1PKS	as5	Polyketide	T1PKS
 T2PKS	as5	Polyketide	T2PKS
 T3PKS	as5	Polyketide	T3PKS
@@ -8,7 +8,7 @@ arylpolyene	as5		arylpolyene
 resorcinol	as5		resorcinol
 ladderane	as5		ladderane
 PUFA	as5		PUFA
-NRPS	as5	NRP	NRPS
+NRPS	as5	NRP	generic
 CDPS	as5		CDPS
 thioamide-NRP	as5	NRP	thioamide-NRP
 terpene	as5	Terpene	terpene
@@ -55,7 +55,7 @@ tropodithietic-acid	as5		tropodithietic-acid
 NRPS-like	as5	NRP	NRPS-like
 PKS-like	as5	Polyketide	PKS-like
 transAT-PKS-like	as5	Polyketide	transAT-PKS-like
-saccharide	as5	Saccharide	saccharide
+saccharide	as5	Saccharide	generic
 fatty_acid	as5	Other	fatty_acid
 halogenated	as5		halogenated
 Polyketide	mibig	Polyketide	unknown
@@ -65,3 +65,57 @@ Terpene	mibig	Terpene	unknown
 Saccharide	mibig	Saccharide	unknown
 RiPP	mibig	RiPP	unknown
 Other	mibig	Other	unknown
+t1pks	as4	Polyketide	T1PKS
+transatpks	as4	Polyketide	transAT-PKS
+t2pks	as4	Polyketide	T2PKS
+t3pks	as4	Polyketide	T3PKS
+otherks	as4	Polyketide	other
+ppysks	as4	Polyketide	PpyS-KS
+arylpolyene	as4		arylpolyene
+resorcinol	as4		resorcinol
+ladderane	as4		ladderane
+PUFA	as4		PUFA
+nrps	as4	NRP	generic
+terpene	as4	Terpene	generic
+lantipeptide	as4		lanthipeptide
+bacteriocin	as4		bacteriocin
+thiopeptide	as4		thiopeptide
+linaridin	as4		linaridin
+cyanobactin	as4		cyanobactin
+glycocin	as4		glycocin
+LAP	as4		LAP
+lassopeptide	as4	NRP	lassopeptide
+sactipeptide	as4		sactipeptide
+bottromycin	as4		bottromycin
+head_to_tail	as4		head_to_tail
+microcin	as4		microcin
+microviridin	as4		microviridin
+proteusin	as4		proteusin
+blactam	as4		blactam
+amglyccycl	as4		amglyccycl
+aminocoumarin	as4		aminocoumarin
+siderophore	as4		siderophore
+ectoine	as4		ectoine
+butyrolactone	as4		butyrolactone
+indole	as4		indole
+nucleoside	as4		nucleoside
+phosphoglycolipid	as4		phosphoglycolipid
+melanin	as4		melanin
+oligosaccharide	as4	Saccharide	oligosaccharide
+furan	as4		furan
+hserlactone	as4		hserlactone
+phenazine	as4		phenazine
+phosphonate	as4		phosphonate
+fused	as4		fused
+pbde	as4		PBDE
+other	as4	Other	other
+cf_saccharide	as4	Saccharide	generic
+cf_fatty_acid	as4	Other	fatty_acid
+acyl_amino_acids	as4	Other	acyl_amino_acids
+plant	plant	Other	other
+terpene	plant	Terpene	generic
+saccharide	plant	Saccharide	generic
+lignan	plant	Other	lignan
+alkaloid	plant	Alkaloid	generic
+polyketide	plant	Polyketide	unknown
+sesterterpene	plant	Terpene	sesterterpene

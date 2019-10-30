@@ -25,7 +25,6 @@ CREATE TABLE IF NOT EXISTS enum_bgc_type (
 INSERT OR IGNORE INTO enum_bgc_type VALUES ('as4', 'antiSMASH4 clusterXXX.gbk');
 INSERT OR IGNORE INTO enum_bgc_type VALUES ('as5', 'antiSMASH5 regionXXX.gbk');
 INSERT OR IGNORE INTO enum_bgc_type VALUES ('mibig', 'MIBiG >= 2.0 gbk');
-INSERT OR IGNORE INTO enum_bgc_type VALUES ('mibig_old', 'e.g. MIBiG 1.4 gbk');
 
 -- cds
 CREATE TABLE IF NOT EXISTS cds (

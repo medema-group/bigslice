@@ -155,6 +155,7 @@ class BGC:
                                 "taxons": taxons,
                                 "cds_features": cds_features
                             }, database))
+                            break
 
                 elif gbk_type == "as5":
                     # get all candidate clusters that are
@@ -187,12 +188,34 @@ class BGC:
                             }, database))
 
             elif gbk.features[0].type == "cluster":
-                # is antiSMASH4 clustergbk
-                gbk_type = "as4"
-                # TODO: implements antiSMASH4 parsing
+                cluster = gbk.features[0]
+                qual = cluster.qualifiers
+                for note in qual["note"]:
+                    if note.startswith("Detection rule(s) for this " +
+                                       "cluster type: plants/"):
+                        gbk_type = "plant"
+                        break
+                if not gbk_type:
+                    gbk_type = "as4"
+                name = gbk.id
+                on_edge = None
+                loc = cluster.location
+                len_nt = loc.end - loc.start
+                chem_subclasses = qual["product"]
+                cds_features = [f for f in
+                                gbk[loc.start:loc.end].features if
+                                f.type == "CDS"]
+                results.append(BGC({
+                    "name": name,
+                    "type": gbk_type,
+                    "on_contig_edge": on_edge,
+                    "length_nt": len_nt,
+                    "orig_filename": orig_filename,
+                    "chem_subclasses": chem_subclasses,
+                    "taxons": taxons,
+                    "cds_features": cds_features
+                }, database))
 
-            # for now, we only accepts as4, as5, mibig
-            # (no multi records i.e. from mibig_old allowed)
             break
 
         if immediately_commits:
