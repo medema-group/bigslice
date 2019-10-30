@@ -50,11 +50,19 @@ CREATE TABLE IF NOT EXISTS hmm_db (
 -- hmm
 CREATE TABLE IF NOT EXISTS hmm (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    accession VARCHAR(10) NOT NULL,
+    accession VARCHAR(10),
     name VARCHAR(25) NOT NULL,
     db_id INTEGER NOT NULL,
     model_length INTEGER NOT NULL,
     FOREIGN KEY(db_id) REFERENCES hmm_db(id)
+);
+
+-- subpfam
+CREATE TABLE IF NOT EXISTS subpfam (
+    hmm_id INTEGER NOT NULL,
+    parent_hmm_id INTEGER NOT NULL,
+    FOREIGN KEY(hmm_id) REFERENCES hmm(id),
+    FOREIGN KEY(parent_hmm_id) REFERENCES hmm(id)
 );
 
 -- hsp

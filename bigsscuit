@@ -8,11 +8,11 @@
 
 import argparse
 from os import path, makedirs
-import sqlite3
 import glob
 import multiprocessing
 from modules.data.database import Database
 from modules.data.bgc import BGC
+from modules.data.hmm import HMMDatabase
 
 
 def parse_input_gbk(arguments: tuple):
@@ -31,6 +31,9 @@ def main():
     parser.add_argument("output_folder", type=str)
     parser.add_argument("-t", "--num_threads",
                         default=multiprocessing.cpu_count(), type=int)
+    parser.add_argument("--hmm_db_folder",
+                        default=path.join(path.dirname(
+                            path.realpath(__file__)), "db"), type=str)
     args = parser.parse_args()
 
     # define variables
@@ -38,6 +41,7 @@ def main():
     input_folder = args.input_folder
     output_folder = args.output_folder
     data_db_path = path.join(output_folder, "data.db")
+    hmm_db_folder = args.hmm_db_folder
 
     # create output folder if not exists
     if not path.exists(output_folder):
@@ -45,6 +49,10 @@ def main():
 
     # load/create SQLite3 database
     output_db = Database(data_db_path)
+
+    # load HMM databases
+    print("Loading HMM databases...")
+    hmm_db = HMMDatabase.load_folder(hmm_db_folder, output_db, True)
 
     # load and parse input gbks
     file_paths = glob.glob(path.join(input_folder, "*.gbk"))

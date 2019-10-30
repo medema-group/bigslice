@@ -49,6 +49,7 @@ class BGC:
                                 self.name)
             else:
                 self.id = existing["id"]
+                # TODO: load exisiting data into the object
         else:
             # insert new BGC
             self.id = self.database.insert(
