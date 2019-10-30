@@ -133,12 +133,12 @@ class BGC:
 
                 elif gbk_type == "as5":
                     # get all candidate clusters that are
-                    # single, interleaved, or hybrid
+                    # single, interleaved, or chemical_hybrid
                     for feature in gbk.features:
                         qual = feature.qualifiers
                         if feature.type == "cand_cluster" and \
                                 qual.get("kind", [""])[0] in \
-                                ("single", "interleaved", "hybrid"):
+                                ("single", "interleaved", "chemical_hybrid"):
                             cc = feature
                             name = path.splitext(orig_filename)[0] + \
                                 ".cc" + \
