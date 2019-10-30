@@ -58,3 +58,10 @@ transAT-PKS-like	as5	Polyketide	transAT-PKS-like
 saccharide	as5	Saccharide	saccharide
 fatty_acid	as5	Other	fatty_acid
 halogenated	as5		halogenated
+Polyketide	mibig	Polyketide	unknown
+Alkaloid	mibig	Alkaloid	unknown
+NRP	mibig	NRP	unknown
+Terpene	mibig	Terpene	unknown
+Saccharide	mibig	Saccharide	unknown
+RiPP	mibig	RiPP	unknown
+Other	mibig	Other	unknown

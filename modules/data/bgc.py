@@ -118,18 +118,43 @@ class BGC:
                         # is antiSMASH5 clustergbk
                         gbk_type = "as5"
                         break
+                    elif feature.type == "subregion":
+                        if "aStool" in feature.qualifiers and \
+                                feature.qualifiers["aStool"][0] == "mibig":
+                            gbk_type = "mibig"
+                            break
                 if not gbk_type:
+                    print(orig_filename +
+                          " is not a recognized antiSMASH clustergbk")
+                    # not recognized, skip for now
+                    pass
 
-                    if gbk.id.startswith("BGC"):
-                        # is MIBiG 2.0 clustergbk
-                        gbk_type = "mibig"
-                        # TODO: implements mibig 2.0 parsing
-
-                    else:
-                        print(orig_filename +
-                              " is not a recognized antiSMASH clustergbk")
-                        # not recognized, skip for now
-                        pass
+                elif gbk_type == "mibig":
+                    for feature in gbk.features:
+                        qual = feature.qualifiers
+                        if feature.type == "subregion" and \
+                            "aStool" in qual and \
+                                qual["aStool"][0] == "mibig":
+                            subreg = feature
+                            name = gbk.id
+                            on_edge = False
+                            loc = subreg.location
+                            len_nt = loc.end - loc.start
+                            chem_subclasses = [label.strip() for label in
+                                               qual["label"][0].split(",")]
+                            cds_features = [f for f in
+                                            gbk[loc.start:loc.end].features if
+                                            f.type == "CDS"]
+                            results.append(BGC({
+                                "name": name,
+                                "type": gbk_type,
+                                "on_contig_edge": on_edge,
+                                "length_nt": len_nt,
+                                "orig_filename": orig_filename,
+                                "chem_subclasses": chem_subclasses,
+                                "taxons": taxons,
+                                "cds_features": cds_features
+                            }, database))
 
                 elif gbk_type == "as5":
                     # get all candidate clusters that are
