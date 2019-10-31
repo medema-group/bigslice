@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS cds (
     nt_start INTEGER NOT NULL,
     nt_end INTEGER NOT NULL,
     strand INTEGER CHECK(strand IN (-1,0,1)),
-    locus_tag VARCHAR(100) NOT NULL,
+    locus_tag VARCHAR(100),
     protein_id VARCHAR(100),
     product VARCHAR(100),
     aa_seq TEXT NOT NULL,

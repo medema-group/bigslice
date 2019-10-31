@@ -293,19 +293,17 @@ class BGC:
             this only meant to be called from BGC.save()"""
             existing = database.select(
                 "cds",
-                "WHERE bgc_id=? AND locus_tag=?",
-                parameters=(self.bgc_id, self.locus_tag)
+                "WHERE bgc_id=?" +
+                " AND nt_start=? AND nt_end=?",
+                parameters=(self.bgc_id, self.nt_start, self.nt_end),
+                props=["id"]
             ).fetchall()
             if existing:
                 # current behavior: check if there is conflict
                 # don't do anything if the same cds exists
                 assert len(existing) == 1
                 existing = existing[0]
-                if self.aa_seq != existing["aa_seq"]:
-                    raise Exception("conflicting CDS entry for " +
-                                    self.locus_tag)
-                else:
-                    self.id = existing["id"]
+                self.id = existing["id"]
             else:
                 # insert new CDS
                 self.id = database.insert(
