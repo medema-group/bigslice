@@ -35,6 +35,29 @@ def get_elapsed():
         return elapsed
 
 
+def check_run_bgc(arguments: tuple):
+    bgc_id, status, run_status = arguments
+    if status > run_status:
+        return -1  # should not happen
+    else:
+        return 1
+
+
+def biosyn_scan(arguments: tuple):
+    # TODO: implement this
+    return -1
+
+
+def subpfam_scan(arguments: tuple):
+    # TODO: implement this
+    return -1
+
+
+def feature_extraction(arguments: tuple):
+    # TODO: implement this
+    return -1
+
+
 def parse_input_gbk(arguments: tuple):
     file_path, output_db = arguments
     return (file_path,
@@ -141,6 +164,83 @@ def main():
         # insert new run data
         run = Run.create(all_bgc_ids, hmm_db_id, prog_params,
                          run_start, output_db, True)
+
+    # first, check if there is any run_bgc_status ahead
+    # of run status (this means an error somewhere in the run process)
+    get_elapsed()
+    arguments = [(bgc_run[0], bgc_run[1], run.status) for bgc_run
+                 in run.bgcs]
+    print("Checking run status of {} BGCs...".format(len(arguments)))
+    reports = pool.map(check_run_bgc, arguments)
+    count_errors = reports.count(-1)
+    if count_errors > 0:
+        print("{} BGCs run_status is ahead. Run data is corrupted?".format(
+            count_errors))
+        exit(1)
+    print("[{}s] checking run status".format(get_elapsed()))
+
+    # phase 2: HMM scanning (BIOSYNC_SCANNED)
+    arguments = [bgc_run[0] for bgc_run
+                 in run.bgcs if bgc_run[1] < 2]
+    if len(arguments) > 0:
+        get_elapsed()
+        print("Doing biosyn_pfam scan on {} BGCs...".format(len(arguments)))
+        reports = pool.map(biosyn_scan, arguments)
+        count_errors = reports.count(-1)
+        if count_errors > 0:
+            print("Failed to do biosyn_pfam scan on {} BGCs.".format(
+                count_errors))
+            exit(1)
+        print("[{}s] biosyn_pfam scan".format(get_elapsed()))
+    if run.status < 2:
+        run.status == 2
+        run.save()
+
+    # phase 3: Subpfam scanning
+    arguments = [bgc_run[0] for bgc_run
+                 in run.bgcs if bgc_run[1] < 3]
+    if len(arguments) > 0:
+        get_elapsed()
+        print("Doing sub_pfam scan on {} BGCs...".format(len(arguments)))
+        reports = pool.map(subpfam_scan, arguments)
+        count_errors = reports.count(-1)
+        if count_errors > 0:
+            print("Failed to do sub_pfam scan on {} BGCs.".format(
+                count_errors))
+            exit(1)
+        print("[{}s] sub_pfam scan".format(get_elapsed()))
+    if run.status < 3:
+        run.status == 3
+        run.save()
+
+    # phase 4: Features extraction
+    arguments = [bgc_run[0] for bgc_run
+                 in run.bgcs if bgc_run[1] < 4]
+    if len(arguments) > 0:
+        get_elapsed()
+        print("Extracting features from {} BGCs...".format(len(arguments)))
+        reports = pool.map(feature_extraction, arguments)
+        count_errors = reports.count(-1)
+        if count_errors > 0:
+            print("Failed to extract features from BGCs.".format(
+                count_errors))
+            exit(1)
+        print("[{}s] features extraction".format(get_elapsed()))
+    if run.status < 4:
+        run.status == 4
+        run.save()
+
+    # phase 5: Clustering
+    exit(1)  # TODO: implements
+    if run.status < 5:
+        run.status == 5
+        run.save()
+
+    # phase 6: finishing, preparing outputs
+    exit(1)  # TODO: implements
+    if run.status < 6:
+        run.status == 6
+        run.save()
 
 
 if __name__ == "__main__":
