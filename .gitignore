@@ -1,4 +1,5 @@
 db/tmp/
+db/mibig_gbks/
 *.hmm
 *.md5sum
 __pycache__/
