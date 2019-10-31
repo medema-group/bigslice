@@ -153,7 +153,7 @@ CREATE TABLE IF NOT EXISTS run (
     prog_params VARCHAR(250) NOT NULL,
     time_start DATETIME NOT NULL,
     time_end DATETIME,
-    is_disrupted BOOLEAN,
+    num_resumes INTEGER DEFAULT 0,
     hmm_db_id INTEGER,
     FOREIGN KEY(status) REFERENCES enum_run_status(id),
     FOREIGN KEY(hmm_db_id) REFERENCES hmm_db(id)

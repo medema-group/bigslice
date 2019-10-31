@@ -131,14 +131,8 @@ class Database:
         keys = []
         values = []
         for key, value in data.items():
-            if type(value) == bool:
-                value = int(value)
-            elif type(value) == str:
-                value = "{}".format(value)
-            elif value is None:
-                value = "NULL"
             keys.append(str(key))
-            values.append(str(value))
+            values.append(value)
 
         sql = "INSERT INTO {}({}) VALUES ({})".format(
             table,
@@ -147,3 +141,19 @@ class Database:
         )
         query = self.query(sql, tuple(values))
         return query.lastrowid
+
+    def get_last_id(self, table: str):
+        """get the last id for incremental-type
+        keys. in SQLite3 this can be queried from the
+        sqlite_sequence table.
+        """
+
+        try:
+            return int(self.database.select(
+                "sqlite_sequence",
+                "WHERE name=?",
+                parameters=(table),
+                props=["seq"]
+            ).fetchall()[0]["seq"])
+        except ValueError:
+            return -1
