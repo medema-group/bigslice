@@ -30,6 +30,7 @@ class HMMDatabase:
 
     def save(self):
         """commits hmm_db data"""
+
         existing = self.database.select(
             "hmm_db",
             "WHERE md5_biosyn_pfam=? AND md5_sub_pfam=?",

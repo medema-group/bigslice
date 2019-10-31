@@ -8,17 +8,37 @@
 
 import argparse
 from os import path, makedirs
+from sys import exit, argv
 import glob
 import multiprocessing
 from modules.data.database import Database
 from modules.data.bgc import BGC
 from modules.data.hmm import HMMDatabase
+from modules.data.run import Run
+from time import time
+from datetime import datetime
+
+
+_last_timestamp = None
+
+
+def get_elapsed():
+    # not so fancy, just for a quickie
+    global _last_timestamp
+    if not _last_timestamp:
+        _last_timestamp = time()
+        return 0
+    else:
+        now = time()
+        elapsed = now - _last_timestamp
+        _last_timestamp = now
+        return elapsed
 
 
 def parse_input_gbk(arguments: tuple):
     file_path, output_db = arguments
-    return [bgc.id for bgc
-            in BGC.parse_gbk(file_path, output_db, True)]
+    return (file_path,
+            [bgc.id for bgc in BGC.parse_gbk(file_path, output_db, True)])
 
 
 def main():
@@ -27,43 +47,100 @@ def main():
 
     # program parameters
     parser = argparse.ArgumentParser(description="tbd")
-    parser.add_argument("input_folder", type=str)
     parser.add_argument("output_folder", type=str)
     parser.add_argument("-t", "--num_threads",
                         default=multiprocessing.cpu_count(), type=int)
-    parser.add_argument("--hmm_db_folder",
+    parser.add_argument("-i", "--input_folder", type=str)
+    parser.add_argument("--resume", action='store_true')
+    parser.add_argument("--program_db_folder",
                         default=path.join(path.dirname(
                             path.realpath(__file__)), "db"), type=str)
     args = parser.parse_args()
 
     # define variables
+    run_start = datetime.now()
+    prog_params = " ".join(argv[1:])
     pool = multiprocessing.Pool(processes=args.num_threads)
-    input_folder = args.input_folder
-    output_folder = args.output_folder
+    output_folder = path.abspath(args.output_folder)
     data_db_path = path.join(output_folder, "data.db")
-    hmm_db_folder = args.hmm_db_folder
+    program_db_folder = path.abspath(args.program_db_folder)
+    mibig_gbks_folder = path.join(program_db_folder, "mibig_gbks")
+    resume = args.resume
+
+    # first gate keeping
+    if resume and args.input_folder:
+        print("--resume is selected but --input_folder is specified, " +
+              "please select either!")
+        exit(1)
+    if args.input_folder:
+        input_folder = path.abspath(args.input_folder)
+        if not path.exists(input_folder):
+            print("Can't find {}!".format(input_folder))
+            exit(1)
 
     # create output folder if not exists
     if not path.exists(output_folder):
         makedirs(output_folder)
+    else:
+        if not resume:
+            print("Folder " + output_folder +
+                  " exists! continue running program? (Y/[N])")
+            user_input = input()
+            if user_input not in ["Y", "y"]:
+                print("Cancelled.")
+                exit(0)
 
     # load/create SQLite3 database
+    get_elapsed()
     output_db = Database(data_db_path)
+    print("[{}s] loading sqlite3 database".format(get_elapsed()))
 
     # load HMM databases
     print("Loading HMM databases...")
-    hmm_db = HMMDatabase.load_folder(hmm_db_folder, output_db, True)
+    get_elapsed()
+    hmm_db_id = HMMDatabase.load_folder(program_db_folder, output_db, True).id
+    print("[{}s] loading hmm databases".format(get_elapsed()))
 
-    # load and parse input gbks
-    file_paths = glob.glob(path.join(input_folder, "*.gbk"))
-    arguments = [(file_path, output_db) for file_path in file_paths]
-    all_bgc_ids = set()
-    print("Parsing {} genbank files...".format(len(file_paths)))
-    for i, result in enumerate(pool.map(parse_input_gbk, arguments)):
-        if len(result) < 1:
-            print("Can't parse any BGC from " + file_paths[i])
-        all_bgc_ids.update(result)
-    print("Found {} BGCs.".format(len(all_bgc_ids)))
+    if resume:
+        # fetch latest run data
+        run = Run.get_latest(hmm_db_id, output_db)
+        if not run:
+            print("No run data to resume, exiting..")
+            exit(1)
+        else:
+            print("Resuming run #{} (started {})".format(
+                run.id,
+                run.time_start
+            ))
+    else:
+        all_bgc_ids = set()
+
+        # load and parse input gbks
+        get_elapsed()
+        arguments = [(file_path, output_db) for file_path
+                     in glob.iglob(path.join(input_folder, "*.gbk"))]
+        print("Parsing {} genbank files...".format(len(arguments)))
+        for file_path, bgc_ids in pool.map(parse_input_gbk, arguments):
+            if len(bgc_ids) < 1:
+                print("Can't parse any BGC from " + file_path)
+            all_bgc_ids.update(bgc_ids)
+        print("Found {} BGCs.".format(len(all_bgc_ids)))
+        print("[{}s] processing input folder GBKs".format(get_elapsed()))
+
+        # append mibig gbks
+        get_elapsed()
+        arguments = [(file_path, output_db) for file_path
+                     in glob.iglob(path.join(mibig_gbks_folder, "*.gbk"))]
+        print("Registering {} MIBiG entries...".format(len(arguments)))
+        for file_path, bgc_ids in pool.map(parse_input_gbk, arguments):
+            if len(bgc_ids) < 1:
+                print("Can't parse any BGC from " + file_path)
+            all_bgc_ids.update(bgc_ids)
+        print("[{}s] processing MIBiG GBKs".format(get_elapsed()))
+
+        # insert new run data
+        run = Run.create(all_bgc_ids, hmm_db_id, prog_params,
+                         run_start, output_db, True)
 
 
 if __name__ == "__main__":

@@ -34,6 +34,7 @@ class BGC:
 
     def save(self):
         """commits bgc data"""
+
         existing = self.database.select(
             "bgc",
             "WHERE name=?",
