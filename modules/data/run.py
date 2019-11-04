@@ -36,11 +36,20 @@ class Run:
             parameters=(self.prog_params, self.time_start)
         )
         if existing:
-            # for now, this should not get called
-            raise Exception("not_implemented")
             assert len(existing) == 1
             existing = existing[0]
             self.id = existing["id"]
+            self.database.update(
+                "run",
+                self.id,
+                {
+                    "prog_params": self.prog_params,
+                    "status": self.status,
+                    "time_start": self.time_start,
+                    "num_resumes": self.num_resumes,
+                    "hmm_db_id": self.hmm_db_id
+                }
+            )
         else:
             # insert new run
             assert self.status == 1

@@ -84,6 +84,8 @@ class HMMDatabase:
             for biosyn_pfam in self.biosyn_pfams:
                 biosyn_pfam.db_id = self.id
                 biosyn_pfam.__save__(self.database)
+            # commit so that parents can be tracked
+            self.database.commit_insert()
             # insert sub_pfam hmms
             for parent_acc in self.sub_pfams:
                 parent_id = int(self.database.select(
@@ -96,6 +98,8 @@ class HMMDatabase:
                     sub_pfam.db_id = self.id
                     sub_pfam.parent_id = parent_id
                     sub_pfam.__save__(self.database)
+            # final commit
+            self.database.commit_insert()
 
     @staticmethod
     def load_folder(db_folder_path: str, database: Database,

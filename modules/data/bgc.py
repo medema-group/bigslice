@@ -17,25 +17,21 @@ from .database import Database
 class BGC:
     """Represents a BGC in the database"""
 
-    def __init__(self, properties: dict, database: Database):
-        self.database = database
+    def __init__(self, properties: dict):
         self.id = properties.get("id", -1)
         self.name = properties["name"]
         self.type = properties["type"]
         self.on_contig_edge = properties["on_contig_edge"]
         self.length_nt = properties["length_nt"]
         self.orig_filename = properties["orig_filename"]
-        self.chem_subclasses = [BGC.ChemSubclass.search(
-            self.database, cc, self.type)
-            for cc in properties["chem_subclasses"]]
+        self.chem_subclasses = properties["chem_subclasses"]
         self.taxons = properties["taxons"]
-        self.cds = [BGC.CDS.from_feature(f)
-                    for f in properties["cds_features"]]
+        self.cds = properties["cds"]
 
-    def save(self):
+    def save(self, database: Database):
         """commits bgc data"""
 
-        existing = self.database.select(
+        existing = database.select(
             "bgc",
             "WHERE name=?",
             parameters=(self.name,)
@@ -55,7 +51,7 @@ class BGC:
                 # TODO: load exisiting data into the object
         else:
             # insert new BGC
-            self.id = self.database.insert(
+            self.id = database.insert(
                 "bgc",
                 {
                     "name": self.name,
@@ -66,12 +62,15 @@ class BGC:
                 }
             )
             # insert classes
-            for chem_subclass in self.chem_subclasses:
-                chem_subclass.bgc_id = self.id
-                chem_subclass.__save__(self.database)
+            for cc in self.chem_subclasses:
+                chem_subclass_object = BGC.ChemSubclass.search(
+                    database, cc, self.type)
+                chem_subclass_object.bgc_id = self.id
+                chem_subclass_object.__save__(database)
             # insert taxons
-            for taxon in self.taxons:
-                existing = self.database.select(
+            for taxon in []:  # self.taxons:
+                # TODO: store taxons
+                existing = database.select(
                     "taxon",
                     "WHERE name=?",
                     parameters=(taxon,)
@@ -80,10 +79,10 @@ class BGC:
                     assert len(existing) == 1
                     taxon_id = existing[0]["id"]
                 else:
-                    taxon_id = self.database.insert(
+                    taxon_id = database.insert(
                         "taxon", {"name": taxon}
                     )
-                self.database.insert(
+                database.insert(
                     "bgc_taxonomy",
                     {
                         "bgc_id": self.id,
@@ -93,11 +92,10 @@ class BGC:
             # insert cds
             for cds in self.cds:
                 cds.bgc_id = self.id
-                cds.__save__(self.database)
+                cds.__save__(database)
 
     @staticmethod
-    def parse_gbk(gbk_path: str, database: Database,
-                  immediately_commits: bool=False):
+    def parse_gbk(gbk_path: str):
         """Load BGCs from a gbk file, return a list of BGC
         objects (one gbk file can contain multiple BGCs e.g.
         in the case of antiSMASH5 GBKs"""
@@ -157,8 +155,9 @@ class BGC:
                                 "orig_filename": orig_filename,
                                 "chem_subclasses": chem_subclasses,
                                 "taxons": taxons,
-                                "cds_features": cds_features
-                            }, database))
+                                "cds": [BGC.CDS.from_feature(f)
+                                        for f in cds_features]
+                            }))
                             break
 
                 elif gbk_type == "as5":
@@ -188,8 +187,9 @@ class BGC:
                                 "orig_filename": orig_filename,
                                 "chem_subclasses": chem_subclasses,
                                 "taxons": taxons,
-                                "cds_features": cds_features
-                            }, database))
+                                "cds": [BGC.CDS.from_feature(f)
+                                        for f in cds_features]
+                            }))
 
             elif gbk.features[0].type == "cluster":
                 cluster = gbk.features[0]
@@ -217,15 +217,11 @@ class BGC:
                     "orig_filename": orig_filename,
                     "chem_subclasses": chem_subclasses,
                     "taxons": taxons,
-                    "cds_features": cds_features
-                }, database))
+                    "cds": [BGC.CDS.from_feature(f)
+                            for f in cds_features]
+                }))
 
             break
-
-        if immediately_commits:
-            # commit all new BGCs
-            for bgc in results:
-                bgc.save()
 
         return results
 

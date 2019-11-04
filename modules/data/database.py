@@ -19,7 +19,10 @@ class Database:
     """Wrapper class to do manipulation on an SQLite3 database file"""
 
     def __init__(self, db_path: str):
-        """db_path: path to sqlite3 database file"""
+        """db_path: path to sqlite3 database file
+        CAUTION: this should not be subjected to
+        multiple processes (at least for the insert
+        function"""
 
         self._db_path = db_path
         self._insert_queues = []
@@ -122,10 +125,14 @@ class Database:
             else:
                 return db_cur.execute(sql).fetchall()
 
+    def update(self, table: str, id: int, data: dict):
+        raise Exception("not_implemented_yet")
+
     def insert(self, table: str, data: dict):
         """execute an INSERT INTO ... VALUES ...
         !!don't use the returned IDs unless you are sure
-        that the INSERTs all will be successful!!"""
+        that the INSERTs all will be successful and there
+        is no other sources tinkering with the database"""
 
         keys = []
         values = []
@@ -141,7 +148,17 @@ class Database:
             ",".join(["?" for i in range(len(values))])
         )
 
-        with Lock() as lock:  # this needs to be thread-safe
-            with sqlite3.connect(self._db_path) as db_con:
-                db_cur = db_con.cursor()
-                return db_cur.execute(sql, tuple(values)).lastrowid
+        new_id = self._last_indexes.get(table, 0) + 1
+        self._insert_queues.append((sql, tuple(values)))
+        self._last_indexes[table] = new_id
+        return new_id
+
+    def commit_insert(self):
+        """perform actual commit for the insert queue"""
+
+        with sqlite3.connect(self._db_path) as db_con:
+            db_cur = db_con.cursor()
+            print("Commiting " + str(len(self._insert_queues)) + " inserts..")
+            for sql, parameters in self._insert_queues:
+                db_cur.execute(sql, parameters)
+            self._insert_queues = []

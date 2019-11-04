@@ -58,7 +58,7 @@ def feature_extraction(arguments: tuple):
     return -1
 
 
-def parse_input_gbk(arguments: tuple):
+def check_gbk_exists(arguments: tuple):
     file_path, output_db = arguments
     existing = output_db.select("bgc",
                                 "WHERE orig_filename=?",
@@ -67,8 +67,11 @@ def parse_input_gbk(arguments: tuple):
     if len(existing) > 0:
         return (file_path, [row["id"] for row in existing])
     else:
-        return (file_path,
-                [bgc.id for bgc in BGC.parse_gbk(file_path, output_db, True)])
+        return (file_path, [])
+
+
+def parse_input_gbk(file_path: str):
+    return (file_path, BGC.parse_gbk(file_path))
 
 
 def get_hmm_db_id(db_folder_path, output_db):
@@ -88,7 +91,8 @@ def get_hmm_db_id(db_folder_path, output_db):
         assert len(existing) == 1
         return existing[0]["id"]
     else:
-        return HMMDatabase.load_folder(program_db_folder, output_db, True).id
+        return HMMDatabase.load_folder(
+            db_folder_path, output_db, True).id
 
 
 def main():
@@ -165,32 +169,42 @@ def main():
     else:
         all_bgc_ids = set()
 
-        # load and parse input gbks
+        # check if input gbks exist
         get_elapsed()
         arguments = [(file_path, output_db) for file_path
                      in glob.iglob(path.join(input_folder, "*.gbk"))]
-        print("Parsing {} genbank files...".format(len(arguments)))
-        for file_path, bgc_ids in pool.map(parse_input_gbk, arguments):
+        arguments.extend([(file_path, output_db) for file_path
+                          in glob.iglob(path.join(
+                              mibig_gbks_folder, "*.gbk"))])
+        print("Checking {} genbank files...".format(len(arguments)))
+        files_to_process = []
+        for file_path, bgc_ids in pool.map(check_gbk_exists, arguments):
             if len(bgc_ids) < 1:
-                print("Can't parse any BGC from " + file_path)
-            all_bgc_ids.update(bgc_ids)
+                files_to_process.append(file_path)
+            else:
+                all_bgc_ids.update(bgc_ids)
+        del arguments
         print("Found {} BGCs.".format(len(all_bgc_ids)))
-        print("[{}s] processing input folder GBKs".format(get_elapsed()))
+        print("[{}s] querying GBKs".format(get_elapsed()))
 
-        # append mibig gbks
+        # parse new GBKs
         get_elapsed()
-        arguments = [(file_path, output_db) for file_path
-                     in glob.iglob(path.join(mibig_gbks_folder, "*.gbk"))]
-        print("Registering {} MIBiG entries...".format(len(arguments)))
-        for file_path, bgc_ids in pool.map(parse_input_gbk, arguments):
-            if len(bgc_ids) < 1:
-                print("Can't parse any BGC from " + file_path)
-            all_bgc_ids.update(bgc_ids)
-        print("[{}s] processing MIBiG GBKs".format(get_elapsed()))
+        print("Parsing {} genbank files...".format(len(files_to_process)))
+        pool_results = pool.map(parse_input_gbk, files_to_process)
+        new_bgc_ids = []
+        for file_path, bgcs in pool_results:
+            for bgc in bgcs:
+                bgc.save(output_db)
+                new_bgc_ids.append(bgc.id)
+        all_bgc_ids.update(new_bgc_ids)
+        output_db.commit_insert()
+        print("Inserted {} new BGCs.".format(len(new_bgc_ids)))
+        print("[{}s] inserting BGCs".format(get_elapsed()))
 
         # insert new run data
         run = Run.create(all_bgc_ids, hmm_db_id, prog_params,
                          run_start, output_db, True)
+        output_db.commit_insert()
 
     # first, check if there is any run_bgc_status ahead
     # of run status (this means an error somewhere in the run process)
