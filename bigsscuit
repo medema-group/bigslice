@@ -60,8 +60,35 @@ def feature_extraction(arguments: tuple):
 
 def parse_input_gbk(arguments: tuple):
     file_path, output_db = arguments
-    return (file_path,
-            [bgc.id for bgc in BGC.parse_gbk(file_path, output_db, True)])
+    existing = output_db.select("bgc",
+                                "WHERE orig_filename=?",
+                                parameters=(path.basename(file_path),),
+                                props=["id"])
+    if len(existing) > 0:
+        return (file_path, [row["id"] for row in existing])
+    else:
+        return (file_path,
+                [bgc.id for bgc in BGC.parse_gbk(file_path, output_db, True)])
+
+
+def get_hmm_db_id(db_folder_path, output_db):
+    md5_biosyn_pfam = open(path.join(
+        db_folder_path, "biosynthetic_pfams",
+        "biopfam.md5sum"), "r").readline().rstrip()
+    md5_sub_pfam = open(path.join(
+        db_folder_path, "sub_pfams",
+        "corepfam.md5sum"), "r").readline().rstrip()
+    existing = output_db.select(
+        "hmm_db",
+        "WHERE md5_biosyn_pfam=? AND md5_sub_pfam=?",
+        parameters=(md5_biosyn_pfam, md5_sub_pfam),
+        props=["id"]
+    )
+    if len(existing) > 0:
+        assert len(existing) == 1
+        return existing[0]["id"]
+    else:
+        return HMMDatabase.load_folder(program_db_folder, output_db, True).id
 
 
 def main():
@@ -121,7 +148,7 @@ def main():
     # load HMM databases
     print("Loading HMM databases...")
     get_elapsed()
-    hmm_db_id = HMMDatabase.load_folder(program_db_folder, output_db, True).id
+    hmm_db_id = get_hmm_db_id(program_db_folder, output_db)
     print("[{}s] loading hmm databases".format(get_elapsed()))
 
     if resume:

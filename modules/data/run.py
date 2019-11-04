@@ -34,7 +34,7 @@ class Run:
             "run",
             "WHERE prog_params=? AND time_start=?",
             parameters=(self.prog_params, self.time_start)
-        ).fetchall()
+        )
         if existing:
             assert len(existing) == 1
             existing = existing[0]
@@ -95,13 +95,13 @@ class Run:
                 "run",
                 "WHERE hmm_db_id=? ORDER BY id DESC",
                 parameters=(hmm_db_id,)
-            ).fetchall()[0]
+            )[0]
             bgcs = [(bgc_row["bgc_id"], bgc_row["status"])
                     for bgc_row in database.select(
                 "run_bgc_status",
                 "WHERE run_id=? ORDER BY bgc_id ASC",
                 parameters=(run_row["id"],)
-            ).fetchall()]
+            )]
             properties = {
                 "id": run_row["id"],
                 "prog_params": run_row["prog_params"],

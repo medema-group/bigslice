@@ -35,7 +35,7 @@ class HMMDatabase:
             "hmm_db",
             "WHERE md5_biosyn_pfam=? AND md5_sub_pfam=?",
             parameters=(self.md5_biosyn_pfam, self.md5_sub_pfam)
-        ).fetchall()
+        )
         if existing:
             # current behavior: check if there is conflict
             # don't do anything if the same hmm_db exists
@@ -51,14 +51,14 @@ class HMMDatabase:
                         "WHERE name=? AND db_id=?",
                         parameters=(biosyn_pfam.name, self.id),
                         props=["id"]
-                    ).fetchall()[0]["id"])
+                    )[0]["id"])
                 for parent_acc in self.sub_pfams:
                     parent_id = int(self.database.select(
                         "hmm",
                         "WHERE accession=? AND db_id=?",
                         parameters=(parent_acc, self.id),
                         props=["id"]
-                    ).fetchall()[0]["id"])
+                    )[0]["id"])
                     for sub_pfam in self.sub_pfams[parent_acc]:
                         sub_pfam.parent_id = parent_id
                         sub_pfam.id = int(self.database.select(
@@ -67,7 +67,7 @@ class HMMDatabase:
                             "parent_hmm_id=? AND " +
                             "hmm.name=? AND hmm.db_id=?",
                             parameters=(parent_id, sub_pfam.name, self.id)
-                        ).fetchall()[0]["id"])
+                        )[0]["id"])
 
         else:
             # insert new hmm_db
@@ -89,7 +89,7 @@ class HMMDatabase:
                     "WHERE accession=? AND db_id=?",
                     parameters=(parent_acc, self.id),
                     props=["id"]
-                ).fetchall()[0]["id"])
+                )[0]["id"])
                 for sub_pfam in self.sub_pfams[parent_acc]:
                     sub_pfam.db_id = self.id
                     sub_pfam.parent_id = parent_id
@@ -155,7 +155,7 @@ class HMMDatabase:
                 "hmm",
                 "WHERE name=? AND db_id=?",
                 parameters=(self.name, self.db_id)
-            ).fetchall()
+            )
             if existing:
                 # current behavior: check if there is conflict
                 # don't do anything if the same entry exists

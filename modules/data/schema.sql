@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS bgc (
     type VARCHAR(10) NOT NULL,
     on_contig_edge BOOLEAN,
     length_nt INTEGER NOT NULL,
-    orig_filename VARCHAR(250),
+    orig_filename VARCHAR(250) NOT NULL,
     FOREIGN KEY(type) REFERENCES enum_bgc_type(code)
 );
 

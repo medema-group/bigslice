@@ -39,7 +39,7 @@ class BGC:
             "bgc",
             "WHERE name=?",
             parameters=(self.name,)
-        ).fetchall()
+        )
         if existing:
             # current behavior: check if there is conflict
             # don't do anything if the same bgc exists
@@ -73,7 +73,7 @@ class BGC:
                     "taxon",
                     "WHERE name=?",
                     parameters=(taxon,)
-                ).fetchall()
+                )
                 if existing:
                     assert len(existing) == 1
                     taxon_id = existing[0]["id"]
@@ -244,7 +244,7 @@ class BGC:
                 "bgc_class",
                 "WHERE bgc_id=? AND chem_subclass_id=?",
                 parameters=(self.bgc_id, self.subclass_id)
-            ).fetchall()
+            )
             if existing:
                 # current behavior: skip if exist
                 assert len(existing) == 1
@@ -270,7 +270,7 @@ class BGC:
                 props=["subclass_id", "class_id", "class_source",
                        "chem_class.name as class_name",
                        "chem_subclass.name as subclass_name"]
-            ).fetchall()
+            )
             assert len(rows) == 1
             row = rows[0]
             return BGC.ChemSubclass(row)
@@ -298,7 +298,7 @@ class BGC:
                 " AND nt_start=? AND nt_end=?",
                 parameters=(self.bgc_id, self.nt_start, self.nt_end),
                 props=["id"]
-            ).fetchall()
+            )
             if existing:
                 # current behavior: check if there is conflict
                 # don't do anything if the same cds exists
