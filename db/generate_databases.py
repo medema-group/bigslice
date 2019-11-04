@@ -111,7 +111,7 @@ def main():
                         pfam_acc = line.split(" ")[-1].rstrip()
                         try:
                             biosynthetic_pfams.remove(pfam_acc)
-                        except Exception():
+                        except ValueError:
                             skipping = True
 
         assert len(biosynthetic_pfams) == 0
@@ -119,18 +119,16 @@ def main():
     else:
         # check md5sum
         if not path.exists(biosyn_pfam_md5sum_path):
-            print("{} exists but no md5sum file found, " +
-                  "please check or remove the old hmm file!".format(
-                      biosyn_pfam_hmm))
-            raise
+            raise Exception(biosyn_pfam_hmm + " exists " +
+                            "but no md5sum file found, " +
+                            "please check or remove the old hmm file!")
         else:
             with open(biosyn_pfam_md5sum_path, "r") as f:
                 old_md5sum = f.readline().rstrip()
                 if old_md5sum != biosyn_pfam_md5sum:
-                    print("{} exists but the md5sum is not the same, " +
-                          "please check or remove the old hmm file!".format(
-                              biosyn_pfam_hmm))
-                    raise
+                    raise Exception(biosyn_pfam_hmm + " exists " +
+                                    "but the md5sum is not the same, " +
+                                    "please check or remove the old hmm file!")
         print("Pfam-A.biosynthetic.hmm exists!")
 
     # update md5sum
