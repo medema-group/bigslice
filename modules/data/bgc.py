@@ -41,6 +41,8 @@ class BGC:
             parameters=(self.name,)
         )
         if existing:
+            # for now, this should not get called
+            raise Exception("not_implemented")
             # current behavior: check if there is conflict
             # don't do anything if the same bgc exists
             assert len(existing) == 1
@@ -246,6 +248,8 @@ class BGC:
                 parameters=(self.bgc_id, self.subclass_id)
             )
             if existing:
+                # for now, this should not get called
+                raise Exception("not_implemented")
                 # current behavior: skip if exist
                 assert len(existing) == 1
                 pass
@@ -300,6 +304,8 @@ class BGC:
                 props=["id"]
             )
             if existing:
+                # for now, this should not get called
+                raise Exception("not_implemented")
                 # current behavior: check if there is conflict
                 # don't do anything if the same cds exists
                 assert len(existing) == 1

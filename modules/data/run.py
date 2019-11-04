@@ -36,6 +36,8 @@ class Run:
             parameters=(self.prog_params, self.time_start)
         )
         if existing:
+            # for now, this should not get called
+            raise Exception("not_implemented")
             assert len(existing) == 1
             existing = existing[0]
             self.id = existing["id"]

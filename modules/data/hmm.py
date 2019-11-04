@@ -37,6 +37,8 @@ class HMMDatabase:
             parameters=(self.md5_biosyn_pfam, self.md5_sub_pfam)
         )
         if existing:
+            # for now, this should not get called
+            raise Exception("not_implemented")
             # current behavior: check if there is conflict
             # don't do anything if the same hmm_db exists
             assert len(existing) == 1
@@ -157,6 +159,8 @@ class HMMDatabase:
                 parameters=(self.name, self.db_id)
             )
             if existing:
+                # for now, this should not get called
+                raise Exception("not_implemented")
                 # current behavior: check if there is conflict
                 # don't do anything if the same entry exists
                 assert len(existing) == 1
