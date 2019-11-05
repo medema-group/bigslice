@@ -78,9 +78,10 @@ class Run:
 
     @staticmethod
     def create(bgc_ids: Set[int], hmm_db_id: int, prog_params: str,
-               run_start: datetime, database: Database,
-               immediately_commits: bool=False):
-        """Creates a new run object"""
+               run_start: datetime, database: Database):
+        """Creates a new run object
+        and immediately save it in the
+        database"""
 
         properties = {
             "status": 1,  # RUN_STARTED
@@ -91,9 +92,7 @@ class Run:
         }
 
         run = Run(properties, database)
-
-        if immediately_commits:
-            run.save()
+        run.save()
 
         return run
 

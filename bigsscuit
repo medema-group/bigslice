@@ -201,7 +201,7 @@ def main():
 
             # insert new run data
             run = Run.create(all_bgc_ids, hmm_db_id, prog_params,
-                             run_start, output_db, True)
+                             run_start, output_db)
             output_db.commit_inserts()
 
         # first, check if there is any run_bgc_status ahead
