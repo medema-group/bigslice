@@ -9,7 +9,7 @@
 Common classes and functions to work with the SQLite3 database
 """
 
-from os import path
+from os import path, remove
 import re
 import sqlite3
 from threading import Lock
@@ -17,6 +17,12 @@ from threading import Lock
 
 class Database:
     """Wrapper class to do manipulation on an SQLite3 database file"""
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
 
     def __init__(self, db_path: str, use_memory: bool=False):
         """db_path: path to sqlite3 database file
@@ -28,14 +34,7 @@ class Database:
         self._insert_queues = []
         self._last_indexes = {}
         self._connection = None
-
-        def dict_factory(cursor, row):
-            """see https://docs.python.org/2/library/
-            sqlite3.html#sqlite3.Connection.row_factory"""
-            d = {}
-            for idx, col in enumerate(cursor.description):
-                d[col[0]] = row[idx]
-            return d
+        self._use_memory = use_memory
 
         # get schema information
         sql_schema = open(path.join(path.dirname(
@@ -44,8 +43,13 @@ class Database:
             r"\n-- schema ver\.: (?P<ver>1\.0\.0)", sql_schema).group("ver")
 
         if path.exists(self._db_path):
-            self._connection = sqlite3.connect(self._db_path)
-            self._connection.row_factory = dict_factory
+            if (self._use_memory):
+                with sqlite3.connect(self._db_path) as db_con:
+                    query = "".join(line for line in db_con.iterdump())
+                    self._connection = sqlite3.connect(":memory:")
+                    self._connection.executescript(query)
+            else:
+                self._connection = sqlite3.connect(self._db_path)
             # check if existing one have the same schema version
             db_schema_ver = self.select("schema", "WHERE 1")[0]["ver"]
             if db_schema_ver != self.schema_ver:
@@ -59,8 +63,10 @@ class Database:
                     self._last_indexes[row["name"]] = row["seq"]
         else:
             # create new database
-            self._connection = sqlite3.connect(self._db_path)
-            self._connection.row_factory = dict_factory
+            if (self._use_memory):
+                self._connection = sqlite3.connect(":memory:")
+            else:
+                self._connection = sqlite3.connect(self._db_path)
             db_cur = self._connection.cursor()
             db_cur.executescript(sql_schema)
             # load bs_class rows into a dictionary for quick searching
@@ -106,7 +112,13 @@ class Database:
                         "subclass_id": bs_subclass_id
                     })
 
-    def close():
+    def close(self):
+        if self._use_memory:
+            if path.exists(self._db_path):
+                remove(self._db_path)
+            with sqlite3.connect(self._db_path) as out_db:
+                query = "".join([line for line in self._connection.iterdump()])
+                out_db.executescript(query)
         self._connection.close()
 
     def select(self, table: str, clause: str,
@@ -124,11 +136,24 @@ class Database:
             clause
         )
 
+        def dict_factory(cursor, row):
+            """see https://docs.python.org/2/library/
+            sqlite3.html#sqlite3.Connection.row_factory"""
+            d = {}
+            for idx, col in enumerate(cursor.description):
+                d[col[0]] = row[idx]
+            return d
+        orig_row_factory = self._connection.row_factory
+        self._connection.row_factory = dict_factory
         db_cur = self._connection.cursor()
+
         if parameters:
-            return db_cur.execute(sql, parameters).fetchall()
+            results = db_cur.execute(sql, parameters).fetchall()
         else:
-            return db_cur.execute(sql).fetchall()
+            results = db_cur.execute(sql).fetchall()
+
+        self._connection.row_factory = orig_row_factory
+        return results
 
     def update(self, table: str, id: int, data: dict):
         raise Exception("not_implemented_yet")

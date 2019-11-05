@@ -147,137 +147,139 @@ def main():
 
     # load/create SQLite3 database
     get_elapsed()
-    output_db = Database(data_db_path, use_memory)
-    print("[{}s] loading sqlite3 database".format(get_elapsed()))
+    with Database(data_db_path, use_memory) as output_db:
+        print("[{}s] loading sqlite3 database".format(get_elapsed()))
 
-    # load HMM databases
-    print("Loading HMM databases...")
-    get_elapsed()
-    hmm_db_id = get_hmm_db_id(program_db_folder, output_db)
-    print("[{}s] loading hmm databases".format(get_elapsed()))
-
-    if resume:
-        # fetch latest run data
-        run = Run.get_latest(hmm_db_id, output_db)
-        if not run:
-            print("No run data to resume, exiting..")
-            exit(1)
-        else:
-            print("Resuming run #{} (started {})".format(
-                run.id,
-                run.time_start
-            ))
-    else:
-        all_bgc_ids = set()
-
-        # check if input gbks exist
+        # load HMM databases
+        print("Loading HMM databases...")
         get_elapsed()
-        files_to_process = []
-        for file_path in glob.iglob(path.join(mibig_gbks_folder, "*.gbk")):
-            bgc_ids = check_gbk_exists(file_path, output_db)
-            if len(bgc_ids) < 1:
-                files_to_process.append(file_path)
+        hmm_db_id = get_hmm_db_id(program_db_folder, output_db)
+        print("[{}s] loading hmm databases".format(get_elapsed()))
+
+        if resume:
+            # fetch latest run data
+            run = Run.get_latest(hmm_db_id, output_db)
+            if not run:
+                print("No run data to resume, exiting..")
+                exit(1)
             else:
-                all_bgc_ids.update(bgc_ids)
-        print("Found {} BGCs.".format(len(all_bgc_ids)))
-        print("[{}s] querying GBKs".format(get_elapsed()))
+                print("Resuming run #{} (started {})".format(
+                    run.id,
+                    run.time_start
+                ))
+        else:
+            all_bgc_ids = set()
 
-        # parse new GBKs
+            # check if input gbks exist
+            get_elapsed()
+            files_to_process = []
+            for file_path in glob.iglob(path.join(mibig_gbks_folder, "*.gbk")):
+                bgc_ids = check_gbk_exists(file_path, output_db)
+                if len(bgc_ids) < 1:
+                    files_to_process.append(file_path)
+                else:
+                    all_bgc_ids.update(bgc_ids)
+            print("Found {} BGCs.".format(len(all_bgc_ids)))
+            print("[{}s] querying GBKs".format(get_elapsed()))
+
+            # parse new GBKs
+            get_elapsed()
+            print("Parsing {} genbank files...".format(len(files_to_process)))
+            pool_results = pool.map(parse_input_gbk, files_to_process)
+            new_bgc_ids = []
+            for file_path, bgcs in pool_results:
+                for bgc in bgcs:
+                    bgc.save(output_db)
+                    new_bgc_ids.append(bgc.id)
+            all_bgc_ids.update(new_bgc_ids)
+            output_db.commit_insert()
+            print("Inserted {} new BGCs.".format(len(new_bgc_ids)))
+            print("[{}s] inserting BGCs".format(get_elapsed()))
+
+            # insert new run data
+            run = Run.create(all_bgc_ids, hmm_db_id, prog_params,
+                             run_start, output_db, True)
+            output_db.commit_insert()
+
+        # first, check if there is any run_bgc_status ahead
+        # of run status (this means an error somewhere in the run process)
         get_elapsed()
-        print("Parsing {} genbank files...".format(len(files_to_process)))
-        pool_results = pool.map(parse_input_gbk, files_to_process)
-        new_bgc_ids = []
-        for file_path, bgcs in pool_results:
-            for bgc in bgcs:
-                bgc.save(output_db)
-                new_bgc_ids.append(bgc.id)
-        all_bgc_ids.update(new_bgc_ids)
-        output_db.commit_insert()
-        print("Inserted {} new BGCs.".format(len(new_bgc_ids)))
-        print("[{}s] inserting BGCs".format(get_elapsed()))
-
-        # insert new run data
-        run = Run.create(all_bgc_ids, hmm_db_id, prog_params,
-                         run_start, output_db, True)
-        output_db.commit_insert()
-
-    # first, check if there is any run_bgc_status ahead
-    # of run status (this means an error somewhere in the run process)
-    get_elapsed()
-    arguments = [(bgc_run[0], bgc_run[1], run.status) for bgc_run
-                 in run.bgcs]
-    print("Checking run status of {} BGCs...".format(len(arguments)))
-    reports = pool.map(check_run_bgc, arguments)
-    count_errors = reports.count(-1)
-    if count_errors > 0:
-        print("{} BGCs run_status is ahead. Run data is corrupted?".format(
-            count_errors))
-        exit(1)
-    print("[{}s] checking run status".format(get_elapsed()))
-
-    # phase 2: HMM scanning (BIOSYNC_SCANNED)
-    arguments = [bgc_run[0] for bgc_run
-                 in run.bgcs if bgc_run[1] < 2]
-    if len(arguments) > 0:
-        get_elapsed()
-        print("Doing biosyn_pfam scan on {} BGCs...".format(len(arguments)))
-        reports = pool.map(biosyn_scan, arguments)
+        arguments = [(bgc_run[0], bgc_run[1], run.status) for bgc_run
+                     in run.bgcs]
+        print("Checking run status of {} BGCs...".format(len(arguments)))
+        reports = pool.map(check_run_bgc, arguments)
         count_errors = reports.count(-1)
         if count_errors > 0:
-            print("Failed to do biosyn_pfam scan on {} BGCs.".format(
+            print("{} BGCs run_status is ahead. Run data is corrupted?".format(
                 count_errors))
             exit(1)
-        print("[{}s] biosyn_pfam scan".format(get_elapsed()))
-    if run.status < 2:
-        run.status == 2
-        run.save()
+        print("[{}s] checking run status".format(get_elapsed()))
 
-    # phase 3: Subpfam scanning
-    arguments = [bgc_run[0] for bgc_run
-                 in run.bgcs if bgc_run[1] < 3]
-    if len(arguments) > 0:
-        get_elapsed()
-        print("Doing sub_pfam scan on {} BGCs...".format(len(arguments)))
-        reports = pool.map(subpfam_scan, arguments)
-        count_errors = reports.count(-1)
-        if count_errors > 0:
-            print("Failed to do sub_pfam scan on {} BGCs.".format(
-                count_errors))
-            exit(1)
-        print("[{}s] sub_pfam scan".format(get_elapsed()))
-    if run.status < 3:
-        run.status == 3
-        run.save()
+        # phase 2: HMM scanning (BIOSYNC_SCANNED)
+        arguments = [bgc_run[0] for bgc_run
+                     in run.bgcs if bgc_run[1] < 2]
+        if len(arguments) > 0:
+            get_elapsed()
+            print("Doing biosyn_pfam scan on {} BGCs...".format(len(arguments)))
+            reports = pool.map(biosyn_scan, arguments)
+            count_errors = reports.count(-1)
+            if count_errors > 0:
+                print("Failed to do biosyn_pfam scan on {} BGCs.".format(
+                    count_errors))
+                exit(1)
+            print("[{}s] biosyn_pfam scan".format(get_elapsed()))
+        if run.status < 2:
+            run.status == 2
+            run.save()
 
-    # phase 4: Features extraction
-    arguments = [bgc_run[0] for bgc_run
-                 in run.bgcs if bgc_run[1] < 4]
-    if len(arguments) > 0:
-        get_elapsed()
-        print("Extracting features from {} BGCs...".format(len(arguments)))
-        reports = pool.map(feature_extraction, arguments)
-        count_errors = reports.count(-1)
-        if count_errors > 0:
-            print("Failed to extract features from BGCs.".format(
-                count_errors))
-            exit(1)
-        print("[{}s] features extraction".format(get_elapsed()))
-    if run.status < 4:
-        run.status == 4
-        run.save()
+        # phase 3: Subpfam scanning
+        arguments = [bgc_run[0] for bgc_run
+                     in run.bgcs if bgc_run[1] < 3]
+        if len(arguments) > 0:
+            get_elapsed()
+            print("Doing sub_pfam scan on {} BGCs...".format(len(arguments)))
+            reports = pool.map(subpfam_scan, arguments)
+            count_errors = reports.count(-1)
+            if count_errors > 0:
+                print("Failed to do sub_pfam scan on {} BGCs.".format(
+                    count_errors))
+                exit(1)
+            print("[{}s] sub_pfam scan".format(get_elapsed()))
+        if run.status < 3:
+            run.status == 3
+            run.save()
 
-    # phase 5: Clustering
-    exit(1)  # TODO: implements
-    if run.status < 5:
-        run.status == 5
-        run.save()
+        # phase 4: Features extraction
+        arguments = [bgc_run[0] for bgc_run
+                     in run.bgcs if bgc_run[1] < 4]
+        if len(arguments) > 0:
+            get_elapsed()
+            print("Extracting features from {} BGCs...".format(len(arguments)))
+            reports = pool.map(feature_extraction, arguments)
+            count_errors = reports.count(-1)
+            if count_errors > 0:
+                print("Failed to extract features from BGCs.".format(
+                    count_errors))
+                exit(1)
+            print("[{}s] features extraction".format(get_elapsed()))
+        if run.status < 4:
+            run.status == 4
+            run.save()
 
-    # phase 6: finishing, preparing outputs
-    exit(1)  # TODO: implements
-    if run.status < 6:
-        run.status == 6
-        run.save()
+        # phase 5: Clustering
+        exit(1)  # TODO: implements
+        if run.status < 5:
+            run.status == 5
+            run.save()
 
+        # phase 6: finishing, preparing outputs
+        exit(1)  # TODO: implements
+        if run.status < 6:
+            run.status == 6
+            run.save()
+
+    # close db, in case of use_memory,
+    # dump the content of the db into file
     output_db.close()
 
 
