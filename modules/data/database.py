@@ -58,10 +58,6 @@ class Database:
                     "SQLite3 database exists but contains different schema " +
                     "version ({} rather than {}), exiting!".format(
                         db_schema_ver, self.schema_ver))
-            else:
-                # fetch last_indexes from db
-                for row in self.select("sqlite_sequence", "WHERE 1"):
-                    self._last_indexes[row["name"]] = row["seq"]
         else:
             # create new database
             if (self._use_memory):
@@ -112,6 +108,9 @@ class Database:
                         "type_source": src,
                         "subclass_id": bs_subclass_id
                     })
+        # fetch last_indexes from db
+        for row in self.select("sqlite_sequence", "WHERE 1"):
+            self._last_indexes[row["name"]] = row["seq"]
 
     def close(self):
         if self._use_memory:
@@ -216,3 +215,10 @@ class Database:
         self._connection.commit()
         self._insert_queues = []
         self._insert_queues_index = {}
+
+        # sanity check
+        for row in self.select("sqlite_sequence", "WHERE 1"):
+            if self._last_indexes[row["name"]] != row["seq"]:
+                raise Exception("buffered indexes no longer " +
+                                "in sync with sqlite_sequence, database " +
+                                "might be corrupted!!!")
