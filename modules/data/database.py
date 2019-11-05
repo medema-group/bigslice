@@ -18,7 +18,7 @@ from threading import Lock
 class Database:
     """Wrapper class to do manipulation on an SQLite3 database file"""
 
-    def __init__(self, db_path: str):
+    def __init__(self, db_path: str, use_memory: bool=False):
         """db_path: path to sqlite3 database file
         CAUTION: this should not be subjected to
         multiple processes (at least for the insert
@@ -27,6 +27,15 @@ class Database:
         self._db_path = db_path
         self._insert_queues = []
         self._last_indexes = {}
+        self._connection = None
+
+        def dict_factory(cursor, row):
+            """see https://docs.python.org/2/library/
+            sqlite3.html#sqlite3.Connection.row_factory"""
+            d = {}
+            for idx, col in enumerate(cursor.description):
+                d[col[0]] = row[idx]
+            return d
 
         # get schema information
         sql_schema = open(path.join(path.dirname(
@@ -35,6 +44,8 @@ class Database:
             r"\n-- schema ver\.: (?P<ver>1\.0\.0)", sql_schema).group("ver")
 
         if path.exists(self._db_path):
+            self._connection = sqlite3.connect(self._db_path)
+            self._connection.row_factory = dict_factory
             # check if existing one have the same schema version
             db_schema_ver = self.select("schema", "WHERE 1")[0]["ver"]
             if db_schema_ver != self.schema_ver:
@@ -48,63 +59,59 @@ class Database:
                     self._last_indexes[row["name"]] = row["seq"]
         else:
             # create new database
-            with sqlite3.connect(self._db_path) as db_con:
-                db_cur = db_con.cursor()
-                db_cur.executescript(sql_schema)
-                # load bs_class rows into a dictionary for quick searching
-                bs_classes_id = {}
-                for row in self.select(
-                    "chem_class",
-                    "WHERE 1"
-                ):
-                    bs_classes_id[row["name"]] = row["id"]
-                # load chem_class_map.tsv
-                with open(path.join(path.dirname(path.abspath(__file__)),
-                                    "chem_class_map.tsv"), "r") as tsv:
-                    tsv.readline()  # skip header
-                    for line in tsv:
-                        src_class, src, bs_class, bs_subclass = \
-                            line.rstrip().split("\t")
-                        if bs_subclass == "":  # TODO: enforce strict
-                            bs_subclass = "other"
-                        if bs_class == "":  # TODO: enforce strict
-                            bs_class = "Other"
-                        bs_class_id = bs_classes_id[bs_class]
+            self._connection = sqlite3.connect(self._db_path)
+            self._connection.row_factory = dict_factory
+            db_cur = self._connection.cursor()
+            db_cur.executescript(sql_schema)
+            # load bs_class rows into a dictionary for quick searching
+            bs_classes_id = {}
+            for row in self.select(
+                "chem_class",
+                "WHERE 1"
+            ):
+                bs_classes_id[row["name"]] = row["id"]
+            # load chem_class_map.tsv
+            with open(path.join(path.dirname(path.abspath(__file__)),
+                                "chem_class_map.tsv"), "r") as tsv:
+                tsv.readline()  # skip header
+                for line in tsv:
+                    src_class, src, bs_class, bs_subclass = \
+                        line.rstrip().split("\t")
+                    if bs_subclass == "":  # TODO: enforce strict
+                        bs_subclass = "other"
+                    if bs_class == "":  # TODO: enforce strict
+                        bs_class = "Other"
+                    bs_class_id = bs_classes_id[bs_class]
 
-                        existing = self.select(
+                    existing = self.select(
+                        "chem_subclass",
+                        "WHERE name=? AND class_id=?",
+                        parameters=(bs_subclass, bs_class_id)
+                    )
+                    if existing:
+                        assert len(existing) == 1
+                        bs_subclass_id = existing[0]["id"]
+                    else:
+                        bs_subclass_id = self.insert(
                             "chem_subclass",
-                            "WHERE name=? AND class_id=?",
-                            parameters=(bs_subclass, bs_class_id)
+                            {
+                                "name": bs_subclass,
+                                "class_id": bs_class_id
+                            }
                         )
-                        if existing:
-                            assert len(existing) == 1
-                            bs_subclass_id = existing[0]["id"]
-                        else:
-                            bs_subclass_id = self.insert(
-                                "chem_subclass",
-                                {
-                                    "name": bs_subclass,
-                                    "class_id": bs_class_id
-                                }
-                            )
 
-                        self.insert("chem_subclass_map", {
-                            "class_source": src_class,
-                            "type_source": src,
-                            "subclass_id": bs_subclass_id
-                        })
+                    self.insert("chem_subclass_map", {
+                        "class_source": src_class,
+                        "type_source": src,
+                        "subclass_id": bs_subclass_id
+                    })
+
+    def close():
+        self._connection.close()
 
     def select(self, table: str, clause: str,
                parameters: tuple = None, props: list = []):
         """execute a SELECT ... FROM ... WHERE"""
-
-        def dict_factory(cursor, row):
-            """see https://docs.python.org/2/library/
-            sqlite3.html#sqlite3.Connection.row_factory"""
-            d = {}
-            for idx, col in enumerate(cursor.description):
-                d[col[0]] = row[idx]
-            return d
 
         if len(props) < 1:
             props_string = "*"
@@ -117,13 +124,11 @@ class Database:
             clause
         )
 
-        with sqlite3.connect(self._db_path) as db_con:
-            db_con.row_factory = dict_factory
-            db_cur = db_con.cursor()
-            if parameters:
-                return db_cur.execute(sql, parameters).fetchall()
-            else:
-                return db_cur.execute(sql).fetchall()
+        db_cur = self._connection.cursor()
+        if parameters:
+            return db_cur.execute(sql, parameters).fetchall()
+        else:
+            return db_cur.execute(sql).fetchall()
 
     def update(self, table: str, id: int, data: dict):
         raise Exception("not_implemented_yet")
@@ -156,9 +161,9 @@ class Database:
     def commit_insert(self):
         """perform actual commit for the insert queue"""
 
-        with sqlite3.connect(self._db_path) as db_con:
-            db_cur = db_con.cursor()
-            print("Commiting " + str(len(self._insert_queues)) + " inserts..")
-            for sql, parameters in self._insert_queues:
-                db_cur.execute(sql, parameters)
-            self._insert_queues = []
+        db_cur = self._connection.cursor()
+        print("Commiting " + str(len(self._insert_queues)) + " inserts..")
+        for sql, parameters in self._insert_queues:
+            db_cur.execute(sql, parameters)
+        self._connection.commit()
+        self._insert_queues = []

@@ -58,16 +58,15 @@ def feature_extraction(arguments: tuple):
     return -1
 
 
-def check_gbk_exists(arguments: tuple):
-    file_path, output_db = arguments
+def check_gbk_exists(file_path: str, output_db: Database):
     existing = output_db.select("bgc",
                                 "WHERE orig_filename=?",
                                 parameters=(path.basename(file_path),),
                                 props=["id"])
     if len(existing) > 0:
-        return (file_path, [row["id"] for row in existing])
+        return [row["id"] for row in existing]
     else:
-        return (file_path, [])
+        return []
 
 
 def parse_input_gbk(file_path: str):
@@ -105,6 +104,7 @@ def main():
     parser.add_argument("-t", "--num_threads",
                         default=multiprocessing.cpu_count(), type=int)
     parser.add_argument("-i", "--input_folder", type=str)
+    parser.add_argument("--mem", action="store_true")
     parser.add_argument("--resume", action='store_true')
     parser.add_argument("--program_db_folder",
                         default=path.join(path.dirname(
@@ -120,6 +120,7 @@ def main():
     program_db_folder = path.abspath(args.program_db_folder)
     mibig_gbks_folder = path.join(program_db_folder, "mibig_gbks")
     resume = args.resume
+    use_memory = args.mem
 
     # first gate keeping
     if resume and args.input_folder:
@@ -146,7 +147,7 @@ def main():
 
     # load/create SQLite3 database
     get_elapsed()
-    output_db = Database(data_db_path)
+    output_db = Database(data_db_path, use_memory)
     print("[{}s] loading sqlite3 database".format(get_elapsed()))
 
     # load HMM databases
@@ -171,19 +172,13 @@ def main():
 
         # check if input gbks exist
         get_elapsed()
-        arguments = [(file_path, output_db) for file_path
-                     in glob.iglob(path.join(input_folder, "*.gbk"))]
-        arguments.extend([(file_path, output_db) for file_path
-                          in glob.iglob(path.join(
-                              mibig_gbks_folder, "*.gbk"))])
-        print("Checking {} genbank files...".format(len(arguments)))
         files_to_process = []
-        for file_path, bgc_ids in pool.map(check_gbk_exists, arguments):
+        for file_path in glob.iglob(path.join(mibig_gbks_folder, "*.gbk")):
+            bgc_ids = check_gbk_exists(file_path, output_db)
             if len(bgc_ids) < 1:
                 files_to_process.append(file_path)
             else:
                 all_bgc_ids.update(bgc_ids)
-        del arguments
         print("Found {} BGCs.".format(len(all_bgc_ids)))
         print("[{}s] querying GBKs".format(get_elapsed()))
 
@@ -282,6 +277,8 @@ def main():
     if run.status < 6:
         run.status == 6
         run.save()
+
+    output_db.close()
 
 
 if __name__ == "__main__":
