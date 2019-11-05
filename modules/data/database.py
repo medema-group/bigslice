@@ -183,7 +183,7 @@ class Database:
         self._last_indexes[table] = new_id
         return new_id
 
-    def commit_insert(self):
+    def commit_inserts(self):
         """perform actual commit for the insert queue"""
 
         db_cur = self._connection.cursor()

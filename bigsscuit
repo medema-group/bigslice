@@ -90,8 +90,7 @@ def get_hmm_db_id(db_folder_path, output_db):
         assert len(existing) == 1
         return existing[0]["id"]
     else:
-        return HMMDatabase.load_folder(
-            db_folder_path, output_db, True).id
+        return -1
 
 
 def main():
@@ -154,6 +153,10 @@ def main():
         print("Loading HMM databases...")
         get_elapsed()
         hmm_db_id = get_hmm_db_id(program_db_folder, output_db)
+        if hmm_db_id < 1:
+            hmm_db = HMMDatabase.load_folder(program_db_folder)
+            hmm_db.save(output_db)
+            output_db.commit_inserts()
         print("[{}s] loading hmm databases".format(get_elapsed()))
 
         if resume:
@@ -192,14 +195,14 @@ def main():
                     bgc.save(output_db)
                     new_bgc_ids.append(bgc.id)
             all_bgc_ids.update(new_bgc_ids)
-            output_db.commit_insert()
+            output_db.commit_inserts()
             print("Inserted {} new BGCs.".format(len(new_bgc_ids)))
             print("[{}s] inserting BGCs".format(get_elapsed()))
 
             # insert new run data
             run = Run.create(all_bgc_ids, hmm_db_id, prog_params,
                              run_start, output_db, True)
-            output_db.commit_insert()
+            output_db.commit_inserts()
 
         # first, check if there is any run_bgc_status ahead
         # of run status (this means an error somewhere in the run process)
