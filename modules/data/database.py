@@ -32,6 +32,7 @@ class Database:
 
         self._db_path = db_path
         self._insert_queues = []
+        self._insert_queues_index = {}
         self._last_indexes = {}
         self._connection = None
         self._use_memory = use_memory
@@ -164,31 +165,54 @@ class Database:
         that the INSERTs all will be successful and there
         is no other sources tinkering with the database"""
 
-        keys = []
-        values = []
-        for key, value in data.items():
-            if key == "id":  # can't have this around!
-                raise Exception("Don't specify id for INSERTs!")
-            keys.append(key)
-            values.append(value)
-
-        sql = "INSERT INTO {}({}) VALUES ({})".format(
-            table,
-            ",".join(keys),
-            ",".join(["?" for i in range(len(values))])
-        )
-
         new_id = self._last_indexes.get(table, 0) + 1
-        self._insert_queues.append((sql, tuple(values)))
         self._last_indexes[table] = new_id
+
+        self._insert_queues.append((table, data, new_id))
+        if table not in self._insert_queues_index:
+            self._insert_queues_index[table] = []
+        self._insert_queues_index[table].append(len(self._insert_queues) - 1)
         return new_id
+
+    def get_pending_id(self, table: str, query: dict):
+        """try to look for a match in the insert buffer,
+        and returns the pending id
+        !!don't use this unless you are sure
+        that the INSERTs all will be successful and there
+        is no other sources tinkering with the database"""
+
+        ids = []
+        for buffer_idx in self._insert_queues_index.get(table, []):
+            _, buffer_data, pending_id = self._insert_queues[buffer_idx]
+            match = True
+            for key in query:
+                if key not in buffer_data or \
+                        buffer_data[key] != query[key]:
+                    match = False
+                    break
+            if match:
+                ids.append(pending_id)
+        return ids
 
     def commit_inserts(self):
         """perform actual commit for the insert queue"""
 
         db_cur = self._connection.cursor()
         print("Commiting " + str(len(self._insert_queues)) + " inserts..")
-        for sql, parameters in self._insert_queues:
-            db_cur.execute(sql, parameters)
+        for table, data, _ in self._insert_queues:
+            keys = []
+            values = []
+            for key, value in data.items():
+                if key == "id":  # can't have this around!
+                    raise Exception("Don't specify id for INSERTs!")
+                keys.append(key)
+                values.append(value)
+            sql = "INSERT INTO {}({}) VALUES ({})".format(
+                table,
+                ",".join(keys),
+                ",".join(["?" for i in range(len(values))])
+            )
+            db_cur.execute(sql, tuple(values))
         self._connection.commit()
         self._insert_queues = []
+        self._insert_queues_index = {}

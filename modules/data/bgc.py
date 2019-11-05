@@ -68,7 +68,7 @@ class BGC:
                 chem_subclass_object.bgc_id = self.id
                 chem_subclass_object.__save__(database)
             # insert taxons
-            for taxon in []:  # self.taxons:
+            for taxon in self.taxons:
                 # TODO: store taxons
                 existing = database.select(
                     "taxon",
@@ -79,9 +79,17 @@ class BGC:
                     assert len(existing) == 1
                     taxon_id = existing[0]["id"]
                 else:
-                    taxon_id = database.insert(
+                    # check inserts buffer
+                    pending_ids = database.get_pending_id(
                         "taxon", {"name": taxon}
                     )
+                    if len(pending_ids) > 0:
+                        assert len(pending_ids) == 1
+                        taxon_id = pending_ids[0]
+                    else:
+                        taxon_id = database.insert(
+                            "taxon", {"name": taxon}
+                        )
                 database.insert(
                     "bgc_taxonomy",
                     {
