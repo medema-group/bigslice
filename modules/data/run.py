@@ -30,26 +30,8 @@ class Run:
 
     def save(self):
         """commits run data"""
-        existing = self.database.select(
-            "run",
-            "WHERE prog_params=? AND time_start=?",
-            parameters=(self.prog_params, self.time_start)
-        )
-        if existing:
-            assert len(existing) == 1
-            existing = existing[0]
-            self.id = existing["id"]
-            self.database.update(
-                "run",
-                self.id,
-                {
-                    "prog_params": self.prog_params,
-                    "status": self.status,
-                    "time_start": self.time_start,
-                    "num_resumes": self.num_resumes,
-                    "hmm_db_id": self.hmm_db_id
-                }
-            )
+        if self.id > -1:
+            raise Exception("not_implemented")
         else:
             # insert new run
             assert self.status == 1
@@ -65,7 +47,7 @@ class Run:
                 }
             )
             # insert run_bgcs
-            for bgc_id, status in self.bgcs:
+            for bgc_id, status in self.bgcs.items():
                 assert status == 1
                 self.database.insert(
                     "run_bgc_status",
@@ -88,7 +70,7 @@ class Run:
             "time_start": run_start,
             "prog_params": prog_params,
             "hmm_db_id": hmm_db_id,
-            "bgcs": [(bgc_id, 1) for bgc_id in bgc_ids]
+            "bgcs": {bgc_id: 1 for bgc_id in bgc_ids}
         }
 
         run = Run(properties, database)

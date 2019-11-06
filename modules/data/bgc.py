@@ -233,6 +233,24 @@ class BGC:
 
         return results
 
+    def get_all_cds_fasta(bgc_id: int, database: Database):
+        """query database, get all aa sequences
+        of the CDS into a multifasta string
+        e.g. for the purpose of doing hmmscan"""
+
+        rows = database.select(
+            "cds",
+            "where bgc_id=?",
+            parameters=(bgc_id,),
+            props=["id", "aa_seq"]
+        )
+
+        multifasta = ""
+        for row in rows:
+            multifasta += ">bgc:{}|cds:{}\n".format(bgc_id, row["id"])
+            multifasta += "{}\n".format(row["aa_seq"])
+        return multifasta
+
     class ChemSubclass:
         """Chemical subclass mapping"""
 

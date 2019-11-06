@@ -7,7 +7,7 @@
 """the main script of bigsscuit"""
 
 import argparse
-from os import path, makedirs
+from os import path, makedirs, remove
 from sys import exit, argv
 import glob
 import multiprocessing
@@ -15,8 +15,11 @@ from modules.data.database import Database
 from modules.data.bgc import BGC
 from modules.data.hmm import HMMDatabase
 from modules.data.run import Run
+from modules.utils import reversed_fp_iter
 from time import time
 from datetime import datetime
+from tempfile import TemporaryDirectory
+import subprocess
 
 
 _last_timestamp = None
@@ -35,17 +38,35 @@ def get_elapsed():
         return elapsed
 
 
-def check_run_bgc(arguments: tuple):
-    bgc_id, status, run_status = arguments
-    if status > run_status:
-        return -1  # should not happen
-    else:
-        return 1
+def run_hmmscan(arguments: tuple):
+    fasta_path, hmm_path, result_path = arguments
+    if path.exists(result_path):
+        with open(result_path, "r") as fp:
+            if next(reversed_fp_iter(fp)).rstrip() == "[ok]":
+                # already hmmscanned
+                return 1
+            else:
+                # file is broken, remove
+                remove(result_path)
 
+    command = [
+        "hmmscan",
+        "--acc",
+        "--cpu", "1",
+        "-o", result_path,
+        hmm_path,
+        fasta_path
+    ]
+    try:
+        ret = subprocess.run(command, check=True)
+        if ret.returncode != 0 and path.exists(result_path):
+            remove(result_path)
+        return ret.returncode == 0
+    except subprocess.CalledProcessError as e:
+        print("hmmscan error: {}".format(e.stderr))
+        pass
 
-def biosyn_scan(arguments: tuple):
-    # TODO: implement this
-    return -1
+    return False  # TODO: implement this
 
 
 def subpfam_scan(arguments: tuple):
@@ -56,6 +77,26 @@ def subpfam_scan(arguments: tuple):
 def feature_extraction(arguments: tuple):
     # TODO: implement this
     return -1
+
+
+def check_hmmscanned_in_db(bgc_id, md5_biosyn_pfam, output_db):
+    for row in output_db.select(
+        "run_bgc_status,run,hmm_db",
+        "WHERE run_bgc_status.run_id=run.id AND " +
+        "run.hmm_db_id=hmm_db.id AND " +
+        "hmm_db.md5_biosyn_pfam=? AND " +
+        "bgc_id=?",
+        parameters=(md5_biosyn_pfam, bgc_id),
+            props=["run_bgc_status.status as status"]):
+        if row["status"] >= 2:
+            return True
+    return False
+
+
+def save_biosynpfam_result(run_id, bgc_id,
+                           hmm_result_path,
+                           output_db):
+    return False  # TODO: implement this
 
 
 def check_gbk_exists(file_path: str, output_db: Database):
@@ -73,13 +114,7 @@ def parse_input_gbk(file_path: str):
     return (file_path, BGC.parse_gbk(file_path))
 
 
-def get_hmm_db_id(db_folder_path, output_db):
-    md5_biosyn_pfam = open(path.join(
-        db_folder_path, "biosynthetic_pfams",
-        "biopfam.md5sum"), "r").readline().rstrip()
-    md5_sub_pfam = open(path.join(
-        db_folder_path, "sub_pfams",
-        "corepfam.md5sum"), "r").readline().rstrip()
+def get_hmm_db_id(md5_biosyn_pfam, md5_sub_pfam, output_db):
     existing = output_db.select(
         "hmm_db",
         "WHERE md5_biosyn_pfam=? AND md5_sub_pfam=?",
@@ -115,6 +150,7 @@ def main():
     prog_params = " ".join(argv[1:])
     pool = multiprocessing.Pool(processes=args.num_threads)
     output_folder = path.abspath(args.output_folder)
+    tmp_folder = path.join(output_folder, "tmp")
     data_db_path = path.join(output_folder, "data.db")
     program_db_folder = path.abspath(args.program_db_folder)
     mibig_gbks_folder = path.join(program_db_folder, "mibig_gbks")
@@ -125,24 +161,23 @@ def main():
     if resume and args.input_folder:
         print("--resume is selected but --input_folder is specified, " +
               "please select either!")
-        exit(1)
+        return 1
     if args.input_folder:
         input_folder = path.abspath(args.input_folder)
         if not path.exists(input_folder):
             print("Can't find {}!".format(input_folder))
-            exit(1)
+            return 1
 
     # create output folder if not exists
     if not path.exists(output_folder):
         makedirs(output_folder)
     else:
         if not resume:
-            print("Folder " + output_folder +
-                  " exists! continue running program? (Y/[N])")
-            user_input = input()
+            user_input = input("Folder " + output_folder +
+                               " exists! continue running program (Y/[N])? ")
             if user_input not in ["Y", "y"]:
                 print("Cancelled.")
-                exit(0)
+                return 1
 
     # load/create SQLite3 database
     get_elapsed()
@@ -152,7 +187,13 @@ def main():
         # load HMM databases
         print("Loading HMM databases...")
         get_elapsed()
-        hmm_db_id = get_hmm_db_id(program_db_folder, output_db)
+        md5_biosyn_pfam = open(path.join(
+            program_db_folder, "biosynthetic_pfams",
+            "biopfam.md5sum"), "r").readline().rstrip()
+        md5_sub_pfam = open(path.join(
+            program_db_folder, "sub_pfams",
+            "corepfam.md5sum"), "r").readline().rstrip()
+        hmm_db_id = get_hmm_db_id(md5_biosyn_pfam, md5_sub_pfam, output_db)
         if hmm_db_id < 1:
             hmm_db = HMMDatabase.load_folder(program_db_folder)
             hmm_db.save(output_db)
@@ -164,7 +205,7 @@ def main():
             run = Run.get_latest(hmm_db_id, output_db)
             if not run:
                 print("No run data to resume, exiting..")
-                exit(1)
+                return 1
             else:
                 print("Resuming run #{} (started {})".format(
                     run.id,
@@ -173,7 +214,7 @@ def main():
         else:
             all_bgc_ids = set()
 
-            # check if input gbks exist
+            # check if input gbks exist in database
             get_elapsed()
             files_to_process = []
             for file_path in glob.iglob(path.join(mibig_gbks_folder, "*.gbk")):
@@ -199,41 +240,107 @@ def main():
             print("Inserted {} new BGCs.".format(len(new_bgc_ids)))
             print("[{}s] inserting BGCs".format(get_elapsed()))
 
-            # insert new run data
+            # create new run data
             run = Run.create(all_bgc_ids, hmm_db_id, prog_params,
                              run_start, output_db)
             output_db.commit_inserts()
 
-        # first, check if there is any run_bgc_status ahead
-        # of run status (this means an error somewhere in the run process)
+        # check run_bgc status, bin into a list of statuses
         get_elapsed()
-        arguments = [(bgc_run[0], bgc_run[1], run.status) for bgc_run
-                     in run.bgcs]
-        print("Checking run status of {} BGCs...".format(len(arguments)))
-        reports = pool.map(check_run_bgc, arguments)
-        count_errors = reports.count(-1)
-        if count_errors > 0:
-            print("{} BGCs run_status is ahead. Run data is corrupted?".format(
-                count_errors))
-            exit(1)
+        bgc_status_bin = {
+            1: set(),  # RUN_STARTED
+            2: set(),  # BIOSYN_SCANNED
+            3: set(),  # SUBPFAM_SCANNED
+            4: set(),  # FEATURES_EXTRACTED
+            5: set(),  # CLUSTERING_FINISHED
+            6: set()   # RUN_FINISHED
+        }
+        print("Checking run status of {} BGCs...".format(len(run.bgcs)))
+        for bgc_id, bgc_status in run.bgcs.items():
+            if bgc_status > run.status:
+                print("bgc_id {} run_status is {} while the whole run is \
+                    {}. the run data might be corrupted!".format(
+                    bgc_id, bgc_status, run.status))
+                return 1
+            bgc_status_bin[bgc_status].add(bgc_id)
         print("[{}s] checking run status".format(get_elapsed()))
 
         # phase 2: HMM scanning (BIOSYNC_SCANNED)
-        arguments = [bgc_run[0] for bgc_run
-                     in run.bgcs if bgc_run[1] < 2]
-        if len(arguments) > 0:
+        if len(bgc_status_bin[1]) > 0:
+            print("Doing biosyn_pfam scan on {} BGCs...".format(
+                len(bgc_status_bin[1])))
             get_elapsed()
-            print("Doing biosyn_pfam scan on {} BGCs...".format(len(arguments)))
-            reports = pool.map(biosyn_scan, arguments)
-            count_errors = reports.count(-1)
-            if count_errors > 0:
-                print("Failed to do biosyn_pfam scan on {} BGCs.".format(
-                    count_errors))
-                exit(1)
+            hmm_scanned = set()
+
+            # check if already hmmscanned in previous run
+            for bgc_id in bgc_status_bin[1]:  # hmm_scanned should be empty
+                if check_hmmscanned_in_db(bgc_id, md5_biosyn_pfam, output_db):
+                    hmm_scanned.add(bgc_id)
+            print("{} BGCs are already scanned in previous run".format(
+                len(hmm_scanned)))
+
+            # prepare for hmmscan
+            biosyn_tmp_folder = path.join(tmp_folder, md5_biosyn_pfam)
+            if not path.exists(biosyn_tmp_folder):
+                makedirs(biosyn_tmp_folder)
+
+            def fasta_path(bgc_id):
+                return path.join(
+                    biosyn_tmp_folder, "bgc_{}.fa".format(bgc_id))
+
+            def hmm_result_path(bgc_id):
+                return path.join(
+                    biosyn_tmp_folder, "bgc_{}.hmmtxt".format(bgc_id))
+
+            # write down all CDSes multifasta to be hmmscanned
+            to_be_hmmscanned = list(bgc_status_bin[1] - hmm_scanned)
+            for bgc_id in to_be_hmmscanned:
+                if not path.exists(fasta_path(bgc_id)):
+                    with open(fasta_path(bgc_id), "w") as fa:
+                        fa.write(BGC.get_all_cds_fasta(bgc_id, output_db))
+
+            # do hmmscans in parallel
+            hmm_path = path.join(program_db_folder,
+                                 "biosynthetic_pfams",
+                                 "Pfam-A.biosynthetic.hmm")
+            hmmscan_results = pool.map(run_hmmscan,
+                                       [(fasta_path(bgc_id),
+                                         hmm_path,
+                                         hmm_result_path(bgc_id))
+                                           for bgc_id in to_be_hmmscanned])
+
+            # parse hmmscan txts and create database
+            # entries for them, then update bgc_status
+            for i, bgc_id in enumerate(to_be_hmmscanned):
+                if hmmscan_results[i]:
+                    if save_biosynpfam_result(
+                            run.id, bgc_id,
+                            hmm_result_path(bgc_id),
+                            output_db):
+                        hmm_scanned.add(bgc_id)
+                        # clean up
+                        remove(fasta_path(bgc_id))
+                        remove(hmm_result_path(bgc_id))
+
+            del to_be_hmmscanned
+
+            # update statuses
+            for bgc_id in hmm_scanned:
+                assert run.bgcs[bgc_id] == 1
+                run.bgcs[bgc_id] = 2
+            bgc_status_bin[1] = bgc_status_bin[1] - hmm_scanned
+            bgc_status_bin[2].update(hmm_scanned)
+
             print("[{}s] biosyn_pfam scan".format(get_elapsed()))
-        if run.status < 2:
-            run.status == 2
-            run.save()
+        if len(bgc_status_bin[1]) == 0:
+            if run.status < 2:
+                run.update_status(2)
+                print("run_status is now BIOSYN_SCANNED")
+        else:
+            print("Encountered errors in hmmscans, " +
+                  str(len(bgc_status_bin[1])) +
+                  " BGCs are not yet scanned.")
+            return 1
 
         # phase 3: Subpfam scanning
         arguments = [bgc_run[0] for bgc_run
@@ -281,10 +388,9 @@ def main():
             run.status == 6
             run.save()
 
-    # close db, in case of use_memory,
-    # dump the content of the db into file
-    output_db.close()
+    # exit program cleanly
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    exit(main())
