@@ -70,6 +70,15 @@ def main():
     sub_pfams_md5sum = md5sum(sub_pfams_tsv)
     sub_pfams_md5sum_path = path.splitext(sub_pfams_tsv)[0] + ".md5sum"
 
+    def get_pressed_hmm_filepaths(hmm_file_path):
+        base_name = hmm_file_path
+        return (
+            base_name + ".h3i",
+            base_name + ".h3f",
+            base_name + ".h3m",
+            base_name + ".h3p",
+        )
+
     # create subpfam directory
     if not path.exists(sub_pfams_hmms):
         makedirs(sub_pfams_hmms)
@@ -131,6 +140,23 @@ def main():
                                     "please check or remove the old hmm file!")
         print("Pfam-A.biosynthetic.hmm exists!")
 
+        hmm_presses = get_pressed_hmm_filepaths(biosyn_pfam_hmm)
+        hmm_pressed = True
+        for hmm_press_file in hmm_presses:
+            if not path.exists(hmm_press_file):
+                hmm_pressed = False
+                break
+        if not hmm_pressed:
+            print("Running hmmpress on Pfam-A.biosynthetic.hmm")
+            for hmm_press_file in hmm_presses:
+                if path.exists(hmm_press_file):
+                    remove(hmm_press_file)
+            if subprocess.call([
+                "hmmpress",
+                biosyn_pfam_hmm
+            ]) > 0:
+                raise
+
     # update md5sum
     with open(biosyn_pfam_md5sum_path, "w") as f:
         f.write(biosyn_pfam_md5sum)
@@ -161,8 +187,23 @@ def main():
                         raise
                 copy(temp_hmm_path, subpfam_hmm_path)
             else:
-                pass
-                # print("Found {}".format(subpfam_hmm_path))
+                # check hmmpress
+                hmm_presses = get_pressed_hmm_filepaths(subpfam_hmm_path)
+                hmm_pressed = True
+                for hmm_press_file in hmm_presses:
+                    if not path.exists(hmm_press_file):
+                        hmm_pressed = False
+                        break
+                if not hmm_pressed:
+                    print("Running hmmpress on {}".format(subpfam_hmm_path))
+                    for hmm_press_file in hmm_presses:
+                        if path.exists(hmm_press_file):
+                            remove(hmm_press_file)
+                    if subprocess.call([
+                        "hmmpress",
+                        subpfam_hmm_path
+                    ]) > 0:
+                        raise
 
     # update md5sum
     print("Writing md5sums...")

@@ -1,6 +1,10 @@
 db/tmp/
 db/mibig_gbks/
 *.hmm
+*.h3i
+*.h3f
+*.h3m
+*.h3p
 *.md5sum
 __pycache__/
 *.py[cod]
