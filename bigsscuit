@@ -168,6 +168,19 @@ def main():
             print("Can't find {}!".format(input_folder))
             return 1
 
+    # check if database backup exists
+    if use_memory:
+        db_backup_path = data_db_path + ".bak"
+        if path.exists(db_backup_path):
+            user_input = input("File " + db_backup_path +
+                               " exists! it will get overwritten," +
+                               " continue (Y/[N])?")
+            if user_input not in ["Y", "y"]:
+                print("Cancelled.")
+                return 1
+            del user_input
+        del db_backup_path
+
     # create output folder if not exists
     if not path.exists(output_folder):
         makedirs(output_folder)
