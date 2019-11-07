@@ -9,10 +9,9 @@
 Common classes and functions to work with the SQLite3 database
 """
 
-from os import path, remove
+from os import path, move
 import re
 import sqlite3
-from threading import Lock
 
 
 class Database:
@@ -115,7 +114,7 @@ class Database:
     def close(self):
         if self._use_memory:
             if path.exists(self._db_path):
-                remove(self._db_path)
+                move(self._db_path, self._db_path + ".bak")
             with sqlite3.connect(self._db_path) as out_db:
                 query = "".join([line for line in self._connection.iterdump()])
                 out_db.executescript(query)
