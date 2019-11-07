@@ -9,7 +9,8 @@
 Common classes and functions to work with the SQLite3 database
 """
 
-from os import path, move
+from os import path
+from shutil import move
 import re
 import sqlite3
 
@@ -142,6 +143,7 @@ class Database:
             for idx, col in enumerate(cursor.description):
                 d[col[0]] = row[idx]
             return d
+
         orig_row_factory = self._connection.row_factory
         self._connection.row_factory = dict_factory
         db_cur = self._connection.cursor()
@@ -154,8 +156,30 @@ class Database:
         self._connection.row_factory = orig_row_factory
         return results
 
-    def update(self, table: str, id: int, data: dict):
-        raise Exception("not_implemented_yet")
+    def update(self, table: str, data: dict, clause: str,
+               parameters: tuple = ()):
+        """execute an UPDATE ... SET ... WHERE ..."""
+
+        set_clause = ""
+        set_params = []
+        for k, v in data.items():
+            if set_clause:
+                set_clause += ","
+            set_clause += k + "=?"
+            set_params.append(v)
+        set_params.extend(parameters)
+
+        sql = "UPDATE {} SET {} {}".format(
+            table,
+            set_clause,
+            clause
+        )
+
+        db_cur = self._connection.cursor()
+        db_cur.execute(sql, tuple(set_params))
+        self._connection.commit()
+
+        return db_cur.rowcount
 
     def insert(self, table: str, data: dict):
         """execute an INSERT INTO ... VALUES ...

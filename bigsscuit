@@ -15,10 +15,10 @@ from modules.data.database import Database
 from modules.data.bgc import BGC
 from modules.data.hmm import HMMDatabase
 from modules.data.run import Run
+from modules.data.hsp import HSP
 from modules.utils import reversed_fp_iter
 from time import time
 from datetime import datetime
-from tempfile import TemporaryDirectory
 import subprocess
 
 
@@ -69,6 +69,13 @@ def run_hmmscan(arguments: tuple):
     return False  # TODO: implement this
 
 
+def update_bgc_status(bgc_id, run_id, status, database):
+    return database.update("run_bgc_status",
+                           {"status": status},
+                           "WHERE run_id=? AND bgc_id=?",
+                           (run_id, bgc_id))
+
+
 def subpfam_scan(arguments: tuple):
     # TODO: implement this
     return -1
@@ -93,12 +100,6 @@ def check_hmmscanned_in_db(bgc_id, md5_biosyn_pfam, output_db):
     return False
 
 
-def save_biosynpfam_result(run_id, bgc_id,
-                           hmm_result_path,
-                           output_db):
-    return False  # TODO: implement this
-
-
 def check_gbk_exists(file_path: str, output_db: Database):
     existing = output_db.select("bgc",
                                 "WHERE orig_filename=?",
@@ -112,20 +113,6 @@ def check_gbk_exists(file_path: str, output_db: Database):
 
 def parse_input_gbk(file_path: str):
     return (file_path, BGC.parse_gbk(file_path))
-
-
-def get_hmm_db_id(md5_biosyn_pfam, md5_sub_pfam, output_db):
-    existing = output_db.select(
-        "hmm_db",
-        "WHERE md5_biosyn_pfam=? AND md5_sub_pfam=?",
-        parameters=(md5_biosyn_pfam, md5_sub_pfam),
-        props=["id"]
-    )
-    if len(existing) > 0:
-        assert len(existing) == 1
-        return existing[0]["id"]
-    else:
-        return -1
 
 
 def main():
@@ -191,6 +178,7 @@ def main():
             if user_input not in ["Y", "y"]:
                 print("Cancelled.")
                 return 1
+            del user_input
 
     # load/create SQLite3 database
     get_elapsed()
@@ -200,22 +188,17 @@ def main():
         # load HMM databases
         print("Loading HMM databases...")
         get_elapsed()
-        md5_biosyn_pfam = open(path.join(
-            program_db_folder, "biosynthetic_pfams",
-            "biopfam.md5sum"), "r").readline().rstrip()
-        md5_sub_pfam = open(path.join(
-            program_db_folder, "sub_pfams",
-            "corepfam.md5sum"), "r").readline().rstrip()
-        hmm_db_id = get_hmm_db_id(md5_biosyn_pfam, md5_sub_pfam, output_db)
-        if hmm_db_id < 1:
-            hmm_db = HMMDatabase.load_folder(program_db_folder)
+        hmm_db = HMMDatabase.load_folder(program_db_folder, output_db)
+        md5_biosyn_pfam = hmm_db.md5_biosyn_pfam
+        md5_sub_pfam = hmm_db.md5_sub_pfam
+        if hmm_db.id < 1:
             hmm_db.save(output_db)
             output_db.commit_inserts()
         print("[{}s] loading hmm databases".format(get_elapsed()))
 
         if resume:
             # fetch latest run data
-            run = Run.get_latest(hmm_db_id, output_db)
+            run = Run.get_latest(hmm_db.id, output_db)
             if not run:
                 print("No run data to resume, exiting..")
                 return 1
@@ -254,7 +237,7 @@ def main():
             print("[{}s] inserting BGCs".format(get_elapsed()))
 
             # create new run data
-            run = Run.create(all_bgc_ids, hmm_db_id, prog_params,
+            run = Run.create(all_bgc_ids, hmm_db.id, prog_params,
                              run_start, output_db)
             output_db.commit_inserts()
 
@@ -288,7 +271,13 @@ def main():
             # check if already hmmscanned in previous run
             for bgc_id in bgc_status_bin[1]:  # hmm_scanned should be empty
                 if check_hmmscanned_in_db(bgc_id, md5_biosyn_pfam, output_db):
-                    hmm_scanned.add(bgc_id)
+                    if update_bgc_status(bgc_id, run.id, 2, output_db) == 1:
+                        hmm_scanned.add(bgc_id)
+                    else:
+                        print("Failed to update bgc status " +
+                              "(bgc_id: " + str(bgc_id) + ") " +
+                              "(run_id: " + str(run.id) + ")")
+                        return 1
             print("{} BGCs are already scanned in previous run".format(
                 len(hmm_scanned)))
 
@@ -307,37 +296,49 @@ def main():
 
             # write down all CDSes multifasta to be hmmscanned
             to_be_hmmscanned = list(bgc_status_bin[1] - hmm_scanned)
-            for bgc_id in to_be_hmmscanned:
-                if not path.exists(fasta_path(bgc_id)):
-                    with open(fasta_path(bgc_id), "w") as fa:
-                        fa.write(BGC.get_all_cds_fasta(bgc_id, output_db))
+            if len(to_be_hmmscanned) > 0:
+                print("Running hmmscans in parallel...")
+                for bgc_id in to_be_hmmscanned:
+                    if not path.exists(fasta_path(bgc_id)):
+                        with open(fasta_path(bgc_id), "w") as fa:
+                            fa.write(BGC.get_all_cds_fasta(bgc_id, output_db))
 
-            # do hmmscans in parallel
-            hmm_path = path.join(program_db_folder,
-                                 "biosynthetic_pfams",
-                                 "Pfam-A.biosynthetic.hmm")
-            hmmscan_results = pool.map(run_hmmscan,
-                                       [(fasta_path(bgc_id),
-                                         hmm_path,
-                                         hmm_result_path(bgc_id))
-                                           for bgc_id in to_be_hmmscanned])
+                # do hmmscans in parallel
+                hmm_path = path.join(program_db_folder,
+                                     "biosynthetic_pfams",
+                                     "Pfam-A.biosynthetic.hmm")
+                hmmscan_results = pool.map(run_hmmscan,
+                                           [(fasta_path(bgc_id),
+                                             hmm_path,
+                                             hmm_result_path(bgc_id))
+                                               for bgc_id in to_be_hmmscanned])
 
-            # parse hmmscan txts and create database
-            # entries for them, then update bgc_status
-            for i, bgc_id in enumerate(to_be_hmmscanned):
-                if hmmscan_results[i]:
-                    if save_biosynpfam_result(
-                            run.id, bgc_id,
-                            hmm_result_path(bgc_id),
-                            output_db):
-                        hmm_scanned.add(bgc_id)
-                        # clean up
-                        remove(fasta_path(bgc_id))
-                        remove(hmm_result_path(bgc_id))
+                # parse hmmscan txts and create database
+                # entries for them, then update bgc_status
+                hmm_ids = {
+                    hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
+                for i, bgc_id in enumerate(to_be_hmmscanned):
+                    if hmmscan_results[i]:
+                        for hsp_object in HSP.parse_hmmtext(
+                                hmm_result_path(bgc_id), hmm_ids):
+                            hsp_object.save(output_db)
+                        if update_bgc_status(
+                                bgc_id, run.id, 2, output_db) == 1:
+                            output_db.commit_inserts()
+                            hmm_scanned.add(bgc_id)
+                            # clean up
+                            remove(fasta_path(bgc_id))
+                            remove(hmm_result_path(bgc_id))
+                        else:
+                            print("Failed to update bgc status " +
+                                  "(bgc_id: " + str(bgc_id) + ") " +
+                                  "(run_id: " + str(run.id) + ")")
+                            return 1
 
+                del hmm_ids
             del to_be_hmmscanned
 
-            # update statuses
+            # update status bin
             for bgc_id in hmm_scanned:
                 assert run.bgcs[bgc_id] == 1
                 run.bgcs[bgc_id] = 2
@@ -347,8 +348,10 @@ def main():
             print("[{}s] biosyn_pfam scan".format(get_elapsed()))
         if len(bgc_status_bin[1]) == 0:
             if run.status < 2:
-                run.update_status(2)
-                print("run_status is now BIOSYN_SCANNED")
+                if run.update_status(2) > 0:
+                    print("run_status is now BIOSYN_SCANNED")
+                else:
+                    print("failed to update run_status")
         else:
             print("Encountered errors in hmmscans, " +
                   str(len(bgc_status_bin[1])) +
@@ -356,8 +359,8 @@ def main():
             return 1
 
         # phase 3: Subpfam scanning
-        arguments = [bgc_run[0] for bgc_run
-                     in run.bgcs if bgc_run[1] < 3]
+        arguments = [(bgc_id,) for bgc_id
+                     in bgc_status_bin[2]]
         if len(arguments) > 0:
             get_elapsed()
             print("Doing sub_pfam scan on {} BGCs...".format(len(arguments)))

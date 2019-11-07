@@ -58,6 +58,29 @@ class Run:
                     }
                 )
 
+    def update_status(self, status: int):
+        """update run status
+        first check if all bgc_run_status
+        has reached this point"""
+
+        if self.id < 0:
+            raise Exception("not_found")
+
+        bgcs_not_processed = len(self.database.select(
+            "run_bgc_status",
+            "WHERE run_id=? AND status<?",
+            parameters=(self.id, status)
+        ))
+        if bgcs_not_processed > 0:
+            raise Exception("failed to update run status, " +
+                            str(bgcs_not_processed) +
+                            " BGCs are still unprocessed.")
+        else:
+            return self.database.update("run",
+                                        {"status": status},
+                                        "WHERE id=?",
+                                        (self.id,))
+
     @staticmethod
     def create(bgc_ids: Set[int], hmm_db_id: int, prog_params: str,
                run_start: datetime, database: Database):
