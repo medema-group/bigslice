@@ -155,6 +155,18 @@ def main():
             print("Can't find {}!".format(input_folder))
             return 1
 
+    # create output folder if not exists
+    if not path.exists(output_folder):
+        makedirs(output_folder)
+    else:
+        if not resume:
+            user_input = input("Folder " + output_folder +
+                               " exists! continue running program (Y/[N])? ")
+            if user_input not in ["Y", "y"]:
+                print("Cancelled.")
+                return 1
+            del user_input
+
     # check if database backup exists
     if use_memory:
         db_backup_path = data_db_path + ".bak"
@@ -167,18 +179,6 @@ def main():
                 return 1
             del user_input
         del db_backup_path
-
-    # create output folder if not exists
-    if not path.exists(output_folder):
-        makedirs(output_folder)
-    else:
-        if not resume:
-            user_input = input("Folder " + output_folder +
-                               " exists! continue running program (Y/[N])? ")
-            if user_input not in ["Y", "y"]:
-                print("Cancelled.")
-                return 1
-            del user_input
 
     # load/create SQLite3 database
     get_elapsed()
