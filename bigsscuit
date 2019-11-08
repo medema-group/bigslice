@@ -10,7 +10,7 @@ import argparse
 from os import path, makedirs, remove
 from sys import exit, argv
 import glob
-import multiprocessing
+from multiprocessing import Pool, cpu_count
 from modules.data.database import Database
 from modules.data.bgc import BGC
 from modules.data.hmm import HMMDatabase
@@ -111,6 +111,43 @@ def check_gbk_exists(file_path: str, output_db: Database):
         return []
 
 
+def process_input_folder(folder_path: str, database: Database,
+                         mp_pool: Pool):
+
+    # check if input gbks exist in database
+    print("processing {}...".format(folder_path))
+    get_elapsed()
+    all_bgc_ids = set()
+    files_to_process = []
+    count_gbk_exists = 0
+    for file_path in glob.iglob(path.join(folder_path, "*.gbk")):
+        bgc_ids = check_gbk_exists(file_path, database)
+        if len(bgc_ids) < 1:
+            files_to_process.append(file_path)
+        else:
+            count_gbk_exists += 1
+            all_bgc_ids.update(bgc_ids)
+    print("Found {} BGCs from {} GBKs ({} is/are to be parsed).".format(
+        len(all_bgc_ids), count_gbk_exists, len(files_to_process)))
+    print("[{}s] querying GBKs".format(get_elapsed()))
+
+    # parse new GBKs
+    get_elapsed()
+    print("Parsing and inserting {} GBKs...".format(len(files_to_process)))
+    pool_results = mp_pool.map(parse_input_gbk, files_to_process)
+    new_bgc_ids = []
+    for file_path, bgcs in pool_results:
+        for bgc in bgcs:
+            bgc.save(database)
+            new_bgc_ids.append(bgc.id)
+    all_bgc_ids.update(new_bgc_ids)
+    database.commit_inserts()
+    print("Inserted {} new BGCs.".format(len(new_bgc_ids)))
+    print("[{}s] inserting BGCs".format(get_elapsed()))
+
+    return all_bgc_ids
+
+
 def parse_input_gbk(file_path: str):
     return (file_path, BGC.parse_gbk(file_path))
 
@@ -123,7 +160,7 @@ def main():
     parser = argparse.ArgumentParser(description="tbd")
     parser.add_argument("output_folder", type=str)
     parser.add_argument("-t", "--num_threads",
-                        default=multiprocessing.cpu_count(), type=int)
+                        default=cpu_count(), type=int)
     parser.add_argument("-i", "--input_folder", type=str)
     parser.add_argument("--mem", action="store_true")
     parser.add_argument("--resume", action='store_true')
@@ -135,7 +172,7 @@ def main():
     # define variables
     run_start = datetime.now()
     prog_params = " ".join(argv[1:])
-    pool = multiprocessing.Pool(processes=args.num_threads)
+    pool = Pool(processes=args.num_threads)
     output_folder = path.abspath(args.output_folder)
     tmp_folder = path.join(output_folder, "tmp")
     data_db_path = path.join(output_folder, "data.db")
@@ -208,33 +245,17 @@ def main():
                     run.time_start
                 ))
         else:
+            # read input folder
             all_bgc_ids = set()
 
-            # check if input gbks exist in database
-            get_elapsed()
-            files_to_process = []
-            for file_path in glob.iglob(path.join(mibig_gbks_folder, "*.gbk")):
-                bgc_ids = check_gbk_exists(file_path, output_db)
-                if len(bgc_ids) < 1:
-                    files_to_process.append(file_path)
-                else:
-                    all_bgc_ids.update(bgc_ids)
-            print("Found {} BGCs.".format(len(all_bgc_ids)))
-            print("[{}s] querying GBKs".format(get_elapsed()))
+            # first, parse and read MIBiGs
+            # TODO: can this be pre-cached?
+            all_bgc_ids.update(process_input_folder(
+                mibig_gbks_folder, output_db, pool))
 
-            # parse new GBKs
-            get_elapsed()
-            print("Parsing {} genbank files...".format(len(files_to_process)))
-            pool_results = pool.map(parse_input_gbk, files_to_process)
-            new_bgc_ids = []
-            for file_path, bgcs in pool_results:
-                for bgc in bgcs:
-                    bgc.save(output_db)
-                    new_bgc_ids.append(bgc.id)
-            all_bgc_ids.update(new_bgc_ids)
-            output_db.commit_inserts()
-            print("Inserted {} new BGCs.".format(len(new_bgc_ids)))
-            print("[{}s] inserting BGCs".format(get_elapsed()))
+            # then the input folder
+            all_bgc_ids.update(process_input_folder(
+                input_folder, output_db, pool))
 
             # create new run data
             run = Run.create(all_bgc_ids, hmm_db.id, prog_params,
