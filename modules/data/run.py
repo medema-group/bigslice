@@ -111,12 +111,12 @@ class Run:
                 "WHERE hmm_db_id=? ORDER BY id DESC",
                 parameters=(hmm_db_id,)
             )[0]
-            bgcs = [(bgc_row["bgc_id"], bgc_row["status"])
+            bgcs = {bgc_row["bgc_id"]: bgc_row["status"]
                     for bgc_row in database.select(
                 "run_bgc_status",
                 "WHERE run_id=? ORDER BY bgc_id ASC",
                 parameters=(run_row["id"],)
-            )]
+            )}
             properties = {
                 "id": run_row["id"],
                 "prog_params": run_row["prog_params"],
