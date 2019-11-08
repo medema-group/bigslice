@@ -17,7 +17,7 @@ terpene	as4	Terpene	generic
 amglyccycl	as4	Saccharide	amglyccycl
 aminocoumarin	as4	Other	aminocoumarin
 bacteriocin	as4	RiPP	bacteriocin
-blactam	as4	NRP	blactam
+blactam	as4	Other	blactam
 bottromycin	as4	RiPP	bottromycin
 butyrolactone	as4	Other	butyrolactone
 cyanobactin	as4	RiPP	cyanobactin
@@ -71,7 +71,7 @@ amglyccycl	as5	Saccharide	amglyccycl
 aminocoumarin	as5	Other	aminocoumarin
 bacteriocin	as5	RiPP	bacteriocin
 betalactone	as5	Other	betalactone
-blactam	as5	NRP	blactam
+blactam	as5	Other	blactam
 bottromycin	as5	RiPP	bottromycin
 butyrolactone	as5	Other	butyrolactone
 CDPS	as5	NRP	CDPS
