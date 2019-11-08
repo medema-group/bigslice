@@ -240,9 +240,32 @@ class BGC:
 
         rows = database.select(
             "cds",
-            "where bgc_id=?",
+            "WHERE bgc_id=?",
             parameters=(bgc_id,),
             props=["id", "aa_seq"]
+        )
+
+        multifasta = ""
+        for row in rows:
+            multifasta += ">bgc:{}|cds:{}\n".format(bgc_id, row["id"])
+            multifasta += "{}\n".format(row["aa_seq"])
+        return multifasta
+
+    def get_all_cds_fasta_with_hits(bgc_id: int, hmm_id: int,
+                                    database: Database):
+        """query database, get all aa sequences
+        of CDS in BGC with HSP hit to a specific
+        hmm into a multifasta string e.g. for
+        the purpose of doing subpfam_scan"""
+
+        rows = database.select(
+            "cds,hsp",
+            "WHERE cds.id=hsp.cds_id" +
+            " AND cds.bgc_id=?" +
+            " AND hsp.hmm_id=?",
+            parameters=(bgc_id, hmm_id),
+            props=["cds.id", "aa_seq"],
+            distinct=True
         )
 
         multifasta = ""

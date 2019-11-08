@@ -138,13 +138,17 @@ class Database:
         self._connection.close()
 
     def select(self, table: str, clause: str,
-               parameters: tuple = None, props: list = []):
+               parameters: tuple = None, props: list = [],
+               distinct: bool = False):
         """execute a SELECT ... FROM ... WHERE"""
 
         if len(props) < 1:
             props_string = "*"
         else:
             props_string = ",".join(props)
+
+        if distinct:
+            props_string = "DISTINCT " + props_string
 
         sql = "SELECT {} FROM {} {}".format(
             props_string,

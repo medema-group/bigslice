@@ -86,8 +86,25 @@ def feature_extraction(arguments: tuple):
     return -1
 
 
-def check_hmmscanned_in_db(bgc_id, md5_biosyn_pfam, output_db):
-    for row in output_db.select(
+def check_pfams_exist(bgc_id: int, pfam_ids: list, database: Database):
+    # TODO: SQLite can't handle more than 1000 parameters
+    # break down pfam_ids to manageable chunks
+    params = [bgc_id]
+    params.extend(pfam_ids)
+    return [row["hmm_id"] for row in database.select(
+        "hsp,cds",
+        "WHERE hsp.cds_id=cds.id" +
+        " AND cds.bgc_id=?" +
+        " AND hsp.hmm_id IN (" + ",".join(["?" for i in pfam_ids]) + ")",
+        parameters=tuple(params),
+        props=["hsp.hmm_id"],
+        distinct=True
+    )]
+
+
+def check_hmmscanned_in_db(bgc_id: int,
+                           md5_biosyn_pfam: str, database: Database):
+    for row in database.select(
         "run_bgc_status,run,hmm_db",
         "WHERE run_bgc_status.run_id=run.id AND " +
         "run.hmm_db_id=hmm_db.id AND " +
@@ -100,11 +117,26 @@ def check_hmmscanned_in_db(bgc_id, md5_biosyn_pfam, output_db):
     return False
 
 
-def check_gbk_exists(file_path: str, output_db: Database):
-    existing = output_db.select("bgc",
-                                "WHERE orig_filename=?",
-                                parameters=(path.basename(file_path),),
-                                props=["id"])
+def check_subpfam_scanned_in_db(bgc_id: int,
+                                md5_sub_pfam: str, database: Database):
+    for row in database.select(
+        "run_bgc_status,run,hmm_db",
+        "WHERE run_bgc_status.run_id=run.id AND " +
+        "run.hmm_db_id=hmm_db.id AND " +
+        "hmm_db.md5_sub_pfam=? AND " +
+        "bgc_id=?",
+        parameters=(md5_sub_pfam, bgc_id),
+            props=["run_bgc_status.status as status"]):
+        if row["status"] >= 3:
+            return True
+    return False
+
+
+def check_gbk_exists(file_path: str, database: Database):
+    existing = database.select("bgc",
+                               "WHERE orig_filename=?",
+                               parameters=(path.basename(file_path),),
+                               props=["id"])
     if len(existing) > 0:
         return [row["id"] for row in existing]
     else:
@@ -315,15 +347,17 @@ def main():
                 return path.join(
                     biosyn_tmp_folder, "bgc_{}.hmmtxt".format(bgc_id))
 
-            # write down all CDSes multifasta to be hmmscanned
             to_be_hmmscanned = list(bgc_status_bin[1] - hmm_scanned)
             if len(to_be_hmmscanned) > 0:
-                print("Running hmmscans in parallel...")
+
+                print("Preparing fasta files for hmmscans...")
+                # write down all CDSes multifasta to be hmmscanned
                 for bgc_id in to_be_hmmscanned:
                     if not path.exists(fasta_path(bgc_id)):
                         with open(fasta_path(bgc_id), "w") as fa:
                             fa.write(BGC.get_all_cds_fasta(bgc_id, output_db))
 
+                print("Running hmmscans in parallel...")
                 # do hmmscans in parallel
                 hmm_path = path.join(program_db_folder,
                                      "biosynthetic_pfams",
@@ -334,6 +368,7 @@ def main():
                                              hmm_result_path(bgc_id))
                                                for bgc_id in to_be_hmmscanned])
 
+                print("Parsing hmmscans results...")
                 # parse hmmscan txts and create database
                 # entries for them, then update bgc_status
                 hmm_ids = {
@@ -358,6 +393,9 @@ def main():
 
                 del hmm_ids
             del to_be_hmmscanned
+            del biosyn_tmp_folder
+            del fasta_path
+            del hmm_result_path
 
             # update status bin
             for bgc_id in hmm_scanned:
@@ -380,18 +418,95 @@ def main():
             return 1
 
         # phase 3: Subpfam scanning
-        arguments = [(bgc_id,) for bgc_id
-                     in bgc_status_bin[2]]
-        if len(arguments) > 0:
+        if len(bgc_status_bin[2]) > 0:
             get_elapsed()
-            print("Doing sub_pfam scan on {} BGCs...".format(len(arguments)))
-            reports = pool.map(subpfam_scan, arguments)
-            count_errors = reports.count(-1)
-            if count_errors > 0:
-                print("Failed to do sub_pfam scan on {} BGCs.".format(
-                    count_errors))
-                exit(1)
+            print("Doing sub_pfam scan on {} BGCs...".format(
+                len(bgc_status_bin[2])))
+
+            subpfam_scanned = set()
+
+            # check if already subpfam_scanned in previous run
+            for bgc_id in bgc_status_bin[2]:
+                if check_subpfam_scanned_in_db(
+                        bgc_id, md5_sub_pfam, output_db):
+                    if update_bgc_status(bgc_id, run.id, 3, output_db) == 1:
+                        subpfam_scanned.add(bgc_id)
+                    else:
+                        print("Failed to update bgc status " +
+                              "(bgc_id: " + str(bgc_id) + ") " +
+                              "(run_id: " + str(run.id) + ")")
+                        return 1
+            print("{} BGCs are already scanned in previous run".format(
+                len(subpfam_scanned)))
+
+            # prepare for subpfam_scan
+            subpfam_tmp_folder = path.join(tmp_folder, md5_sub_pfam)
+            if not path.exists(subpfam_tmp_folder):
+                makedirs(subpfam_tmp_folder)
+
+            def fasta_path(bgc_id, hmm_id):
+                return path.join(
+                    subpfam_tmp_folder, "bgc_{}_hmm_{}.fa".format(
+                        bgc_id, hmm_id))
+
+            def hmm_result_path(bgc_id, hmm_id):
+                return path.join(
+                    subpfam_tmp_folder, "bgc_{}_hmm_{}.hmmtxt".format(
+                        bgc_id, hmm_id))
+
+            # fetch core pfam ids
+            core_pfam_ids = {}
+            core_pfam_accs = {}
+            for parent_hmm_acc in hmm_db.sub_pfams:
+                for hmm_obj in hmm_db.biosyn_pfams:
+                    if hmm_obj.accession == parent_hmm_acc:
+                        core_pfam_ids[hmm_obj.accession] = hmm_obj.id
+                        core_pfam_accs[hmm_obj.id] = hmm_obj.accession
+                        break
+
+            to_be_subpfam_scanned = list(bgc_status_bin[2] - subpfam_scanned)
+            if len(to_be_subpfam_scanned) > 0:
+
+                # fetch list of bgcs and core pfam ids
+                print("Querying list of BGCs to be subpfam_scanned...")
+                bgc_core_pfams = {}
+                for bgc_id in to_be_subpfam_scanned:
+                    bgc_core_pfams[bgc_id] = check_pfams_exist(
+                        bgc_id, core_pfam_ids.values(), output_db)
+
+                print("Preparing fasta files for subpfam_scans...")
+                hmmscan_queues = []
+                for bgc_id in to_be_subpfam_scanned:
+                    for parent_hmm_id in bgc_core_pfams[bgc_id]:
+                        in_fasta_path = fasta_path(bgc_id, parent_hmm_id)
+                        hmm_path = path.join(program_db_folder,
+                                             "sub_pfams",
+                                             "hmm",
+                                             core_pfam_accs[parent_hmm_id] +
+                                             ".subpfams.hmm")
+                        out_result_path = hmm_result_path(
+                            bgc_id, parent_hmm_id)
+
+                        # write down all CDSes multifasta to be hmmscanned
+                        if not path.exists(in_fasta_path):
+                            with open(in_fasta_path, "w") as fa:
+                                fa.write(BGC.get_all_cds_fasta_with_hits(
+                                    bgc_id, parent_hmm_id, output_db))
+
+                        # and build queues for hmmscans
+                        hmmscan_queues.append(
+                            (in_fasta_path, hmm_path, out_result_path))
+
+                # do hmmscans in parallel
+                print("Running subpfam_scans in parallel...")
+                hmmscan_results = pool.map(run_hmmscan, hmmscan_queues)
+
+                print("Parsing hmmscans results...")
+                # TODO : implements!
+                pass
+
             print("[{}s] sub_pfam scan".format(get_elapsed()))
+            return 1
         if run.status < 3:
             run.status == 3
             run.save()
