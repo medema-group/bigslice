@@ -297,9 +297,27 @@ class BGC:
                        "chem_class.name as class_name",
                        "chem_subclass.name as subclass_name"]
             )
-            assert len(rows) == 1
-            row = rows[0]
-            return BGC.ChemSubclass(row)
+            if rows:
+                # if >1, something is wrong with chem_class_map.tsv
+                assert len(rows) == 1
+                row = rows[0]
+                return BGC.ChemSubclass(row)
+            else:
+                # assign Unknown-unknown
+                rows_unknown = database.select(
+                    "chem_class,chem_subclass",
+                    "WHERE chem_class.id=chem_subclass.class_id" +
+                    " AND class_name=? AND subclass_name=?",
+                    parameters=("Unknown", "unknown"),
+                    props=["chem_subclass.id as subclass_id", "class_id",
+                           "chem_class.name as class_name",
+                           "chem_subclass.name as subclass_name"]
+                )
+                # if != 1, something is wrong with the database
+                assert len(rows_unknown) == 1
+                row = rows_unknown[0]
+                row["class_source"] = name
+                return BGC.ChemSubclass(row)
 
     class CDS:
         """Represents a CDS in the database

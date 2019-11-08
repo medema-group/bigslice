@@ -66,6 +66,11 @@ class Database:
                 self._connection = sqlite3.connect(self._db_path)
             db_cur = self._connection.cursor()
             db_cur.executescript(sql_schema)
+
+            # fetch last_indexes from db
+            for row in self.select("sqlite_sequence", "WHERE 1"):
+                self._last_indexes[row["name"]] = row["seq"]
+
             # load bs_class rows into a dictionary for quick searching
             bs_classes_id = {}
             for row in self.select(
@@ -73,6 +78,15 @@ class Database:
                 "WHERE 1"
             ):
                 bs_classes_id[row["name"]] = row["id"]
+                if row["name"] == "Unknown":
+                    # insert chem_subclass: Unknown-unknown
+                    self.insert("chem_subclass",
+                                {
+                                    "name": "unknown",
+                                    "class_id": row["id"]
+                                })
+                    self.commit_inserts()
+
             # load chem_class_map.tsv
             with open(path.join(path.dirname(path.abspath(__file__)),
                                 "chem_class_map.tsv"), "r") as tsv:
@@ -81,9 +95,9 @@ class Database:
                     src_class, src, bs_class, bs_subclass = \
                         line.rstrip().split("\t")
                     if bs_subclass == "":  # TODO: enforce strict
-                        bs_subclass = "other"
+                        bs_subclass = "unknown"
                     if bs_class == "":  # TODO: enforce strict
-                        bs_class = "Other"
+                        bs_class = "Unknown"
                     bs_class_id = bs_classes_id[bs_class]
 
                     existing = self.select(
@@ -108,6 +122,8 @@ class Database:
                         "type_source": src,
                         "subclass_id": bs_subclass_id
                     })
+                self.commit_inserts()
+
         # fetch last_indexes from db
         for row in self.select("sqlite_sequence", "WHERE 1"):
             self._last_indexes[row["name"]] = row["seq"]
