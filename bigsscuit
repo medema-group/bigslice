@@ -17,6 +17,7 @@ from modules.data.hmm import HMMDatabase
 from modules.data.run import Run
 from modules.data.hsp import HSP
 from modules.utils import reversed_fp_iter
+from hashlib import md5
 from time import time
 from datetime import datetime
 import subprocess
@@ -444,15 +445,19 @@ def main():
             if not path.exists(subpfam_tmp_folder):
                 makedirs(subpfam_tmp_folder)
 
-            def fasta_path(bgc_id, hmm_id):
+            def fasta_path(bgcs_md5, hmm_id):
                 return path.join(
                     subpfam_tmp_folder, "bgc_{}_hmm_{}.fa".format(
-                        bgc_id, hmm_id))
+                        bgcs_md5, hmm_id))
 
-            def hmm_result_path(bgc_id, hmm_id):
+            def hmm_result_path(bgcs_md5, hmm_id):
                 return path.join(
                     subpfam_tmp_folder, "bgc_{}_hmm_{}.hmmtxt".format(
-                        bgc_id, hmm_id))
+                        bgcs_md5, hmm_id))
+
+            def get_chunk_md5(bgc_ids):
+                return md5(",".join(
+                    map(str, bgc_ids)).encode('utf-8')).hexdigest()
 
             # fetch core pfam ids
             core_pfam_ids = {}
@@ -475,31 +480,55 @@ def main():
                         bgc_id, core_pfam_ids.values(), output_db)
 
                 print("Preparing fasta files for subpfam_scans...")
-                hmmscan_queues = []
-                for bgc_id in to_be_subpfam_scanned:
-                    for parent_hmm_id in bgc_core_pfams[bgc_id]:
-                        in_fasta_path = fasta_path(bgc_id, parent_hmm_id)
-                        hmm_path = path.join(program_db_folder,
-                                             "sub_pfams",
-                                             "hmm",
-                                             core_pfam_accs[parent_hmm_id] +
-                                             ".subpfams.hmm")
-                        out_result_path = hmm_result_path(
-                            bgc_id, parent_hmm_id)
+                i = 0
+                chunk_size = 100
+                while i * chunk_size <= len(to_be_subpfam_scanned):
+                    chunk = to_be_subpfam_scanned[
+                        i:min(i + chunk_size, len(to_be_subpfam_scanned) - 1)]
+                    chunk_name = get_chunk_md5(chunk)
 
-                        # write down all CDSes multifasta to be hmmscanned
-                        if not path.exists(in_fasta_path):
-                            with open(in_fasta_path, "w") as fa:
-                                fa.write(BGC.get_all_cds_fasta_with_hits(
-                                    bgc_id, parent_hmm_id, output_db))
+                    fasta_sequences = {}
+                    for bgc_id in chunk:
+                        for parent_hmm_id in bgc_core_pfams[bgc_id]:
+                            in_fasta_path = fasta_path(
+                                chunk_name, parent_hmm_id)
+                            if not path.exists(in_fasta_path):
+                                if in_fasta_path not in fasta_sequences:
+                                    fasta_sequences[in_fasta_path] = ""
+                                fasta_sequences[in_fasta_path] += \
+                                    BGC.get_all_cds_fasta_with_hits(
+                                    bgc_id, parent_hmm_id, output_db)
 
-                        # and build queues for hmmscans
-                        hmmscan_queues.append(
-                            (in_fasta_path, hmm_path, out_result_path))
+                    # write down all CDSes multifasta to be hmmscanned
+                    for in_fasta_path, multifasta in fasta_sequences.items():
+                        with open(in_fasta_path, "w") as fa:
+                            fa.write(multifasta)
+
+                    hmmscan_queues = {}
+                    for bgc_id in chunk:
+                        for parent_hmm_id in bgc_core_pfams[bgc_id]:
+                            in_fasta_path = fasta_path(
+                                chunk_name, parent_hmm_id)
+                            hmm_path = path.join(program_db_folder,
+                                                 "sub_pfams",
+                                                 "hmm",
+                                                 core_pfam_accs[
+                                                     parent_hmm_id] +
+                                                 ".subpfams.hmm")
+                            out_result_path = hmm_result_path(
+                                chunk_name, parent_hmm_id)
+
+                            if out_result_path not in hmmscan_queues:
+                                hmmscan_queues[out_result_path] = \
+                                    (in_fasta_path, hmm_path, out_result_path)
+
+                    # next chunk
+                    i += 1
 
                 # do hmmscans in parallel
                 print("Running subpfam_scans in parallel...")
-                hmmscan_results = pool.map(run_hmmscan, hmmscan_queues)
+                hmmscan_results = pool.map(
+                    run_hmmscan, hmmscan_queues.values())
 
                 print("Parsing hmmscans results...")
                 # TODO : implements!
