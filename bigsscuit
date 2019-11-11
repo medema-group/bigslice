@@ -67,7 +67,7 @@ def run_hmmscan(arguments: tuple):
         print("hmmscan error: {}".format(e.stderr))
         pass
 
-    return False  # TODO: implement this
+    return False
 
 
 def update_bgc_status(bgc_id, run_id, status, database):
@@ -183,6 +183,17 @@ def process_input_folder(folder_path: str, database: Database,
 
 def parse_input_gbk(file_path: str):
     return (file_path, BGC.parse_gbk(file_path))
+
+
+def get_chunk(list_of_ids: list, chunk_size: int=100):
+    i = 0
+    while i * chunk_size <= len(list_of_ids):
+        chunk = list_of_ids[
+            i:min(i + chunk_size, len(list_of_ids) - 1)]
+        chunk_name = md5(",".join(
+            map(str, chunk)).encode('utf-8')).hexdigest()
+        yield (chunk, chunk_name)
+        i += 1
 
 
 def main():
@@ -455,10 +466,6 @@ def main():
                     subpfam_tmp_folder, "bgc_{}_hmm_{}.hmmtxt".format(
                         bgcs_md5, hmm_id))
 
-            def get_chunk_md5(bgc_ids):
-                return md5(",".join(
-                    map(str, bgc_ids)).encode('utf-8')).hexdigest()
-
             # fetch core pfam ids
             core_pfam_ids = {}
             core_pfam_accs = {}
@@ -480,31 +487,9 @@ def main():
                         bgc_id, core_pfam_ids.values(), output_db)
 
                 print("Preparing fasta files for subpfam_scans...")
-                i = 0
-                chunk_size = 100
-                while i * chunk_size <= len(to_be_subpfam_scanned):
-                    chunk = to_be_subpfam_scanned[
-                        i:min(i + chunk_size, len(to_be_subpfam_scanned) - 1)]
-                    chunk_name = get_chunk_md5(chunk)
-
+                hmmscan_queues = set()
+                for chunk, chunk_name in get_chunk(to_be_subpfam_scanned):
                     fasta_sequences = {}
-                    for bgc_id in chunk:
-                        for parent_hmm_id in bgc_core_pfams[bgc_id]:
-                            in_fasta_path = fasta_path(
-                                chunk_name, parent_hmm_id)
-                            if not path.exists(in_fasta_path):
-                                if in_fasta_path not in fasta_sequences:
-                                    fasta_sequences[in_fasta_path] = ""
-                                fasta_sequences[in_fasta_path] += \
-                                    BGC.get_all_cds_fasta_with_hits(
-                                    bgc_id, parent_hmm_id, output_db)
-
-                    # write down all CDSes multifasta to be hmmscanned
-                    for in_fasta_path, multifasta in fasta_sequences.items():
-                        with open(in_fasta_path, "w") as fa:
-                            fa.write(multifasta)
-
-                    hmmscan_queues = {}
                     for bgc_id in chunk:
                         for parent_hmm_id in bgc_core_pfams[bgc_id]:
                             in_fasta_path = fasta_path(
@@ -518,27 +503,84 @@ def main():
                             out_result_path = hmm_result_path(
                                 chunk_name, parent_hmm_id)
 
-                            if out_result_path not in hmmscan_queues:
-                                hmmscan_queues[out_result_path] = \
-                                    (in_fasta_path, hmm_path, out_result_path)
+                            if not path.exists(in_fasta_path):
+                                if in_fasta_path not in fasta_sequences:
+                                    fasta_sequences[in_fasta_path] = ""
+                                fasta_sequences[in_fasta_path] += \
+                                    BGC.get_all_cds_fasta_with_hits(
+                                    bgc_id, parent_hmm_id, output_db)
 
-                    # next chunk
-                    i += 1
+                            hmmscan_queues.add(
+                                (in_fasta_path, hmm_path, out_result_path))
+
+                    # write down all CDSes multifasta to be hmmscanned
+                    for in_fasta_path, multifasta in fasta_sequences.items():
+                        with open(in_fasta_path, "w") as fa:
+                            fa.write(multifasta)
 
                 # do hmmscans in parallel
                 print("Running subpfam_scans in parallel...")
                 hmmscan_results = pool.map(
-                    run_hmmscan, hmmscan_queues.values())
+                    run_hmmscan, hmmscan_queues)
 
-                print("Parsing hmmscans results...")
-                # TODO : implements!
-                pass
+                print("Parsing subpfam_scans results...")
+                for chunk, chunk_name in get_chunk(to_be_subpfam_scanned):
+                    chunk_parent_pfams = set()
+                    for bgc_id in chunk:
+                        chunk_parent_pfams.update(bgc_core_pfams[bgc_id])
+                    for parent_hmm_id in chunk_parent_pfams:
+                        out_result_path = hmm_result_path(
+                            chunk_name, parent_hmm_id)
+                        sub_pfam_ids = {
+                            hmm_obj.name: hmm_obj.id
+                            for hmm_obj in
+                            hmm_db.sub_pfams[core_pfam_accs[parent_hmm_id]]
+                        }
+
+                        print(out_result_path)
+                        for hsp_object in HSP.parse_hmmtext(
+                                out_result_path, sub_pfam_ids):
+                            hsp_object.save(output_db)
+
+                    output_db.commit_inserts()
+
+                    for bgc_id in chunk:
+                        if update_bgc_status(
+                                bgc_id, run.id, 3, output_db) == 1:
+                            subpfam_scanned.add(bgc_id)
+                        else:
+                            print("Failed to update bgc status " +
+                                  "(bgc_id: " + str(bgc_id) + ") " +
+                                  "(run_id: " + str(run.id) + ")")
+                            return 1
+
+                    # clean up
+                    for parent_hmm_id in chunk_parent_pfams:
+                        remove(fasta_path(
+                            chunk_name, parent_hmm_id))
+                        remove(hmm_result_path(
+                            chunk_name, parent_hmm_id))
+
+            # update status bin
+            for bgc_id in subpfam_scanned:
+                assert run.bgcs[bgc_id] == 2
+                run.bgcs[bgc_id] = 3
+            bgc_status_bin[2] = bgc_status_bin[1] - subpfam_scanned
+            bgc_status_bin[3].update(subpfam_scanned)
 
             print("[{}s] sub_pfam scan".format(get_elapsed()))
             return 1
-        if run.status < 3:
-            run.status == 3
-            run.save()
+        if len(bgc_status_bin[2]) == 0:
+            if run.status < 3:
+                if run.update_status(3) > 0:
+                    print("run_status is now SUBPFAM_SCANNED")
+                else:
+                    print("failed to update run_status")
+        else:
+            print("Encountered errors in hmmscans, " +
+                  str(len(bgc_status_bin[2])) +
+                  " BGCs are not yet scanned.")
+            return 1
 
         # phase 4: Features extraction
         arguments = [bgc_run[0] for bgc_run
