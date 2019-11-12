@@ -70,15 +70,21 @@ CREATE TABLE IF NOT EXISTS hsp (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cds_id INTEGER NOT NULL,
     hmm_id INTEGER NOT NULL,
-    bitscore DECIMAL(38,2) NOT NULL,
+    bitscore DECIMAL(4,2) NOT NULL,
+    FOREIGN KEY(cds_id) REFERENCES cds(id),
+    FOREIGN KEY(hmm_id) REFERENCES hmm(id)    
+);
+
+-- hsp_alignment
+CREATE TABLE IF NOT EXISTS hsp_alignment (
+    hsp_id INTEGER UNIQUE NOT NULL,
     model_start INTEGER NOT NULL,
     model_end INTEGER NOT NULL,
     model_gaps TEXT NOT NULL,
     cds_start INTEGER NOT NULL,
     cds_end INTEGER NOT NULL,
     cds_gaps TEXT NOT NULL,
-    FOREIGN KEY(cds_id) REFERENCES cds(id),
-    FOREIGN KEY(hmm_id) REFERENCES hmm(id)    
+    FOREIGN KEY(hsp_id) REFERENCES hsp(id)
 );
 
 -- taxon

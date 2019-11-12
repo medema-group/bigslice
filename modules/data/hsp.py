@@ -22,12 +22,7 @@ class HSP:
         self.cds_id = properties["cds_id"]
         self.hmm_id = properties["hmm_id"]
         self.bitscore = properties["bitscore"]
-        self.model_start = properties["model_start"]
-        self.model_end = properties["model_end"]
-        self.model_gaps = properties["model_gaps"]
-        self.cds_start = properties["cds_start"]
-        self.cds_end = properties["cds_end"]
-        self.cds_gaps = properties["cds_gaps"]
+        self.alignment = properties.get("alignment", None)
 
     def save(self, database: Database):
         """commits hsp data"""
@@ -39,18 +34,25 @@ class HSP:
                 {
                     "cds_id": self.cds_id,
                     "hmm_id": self.hmm_id,
-                    "bitscore": self.bitscore,
-                    "model_start": self.model_start,
-                    "model_end": self.model_end,
-                    "model_gaps": ",".join(map(str, self.model_gaps)),
-                    "cds_start": self.cds_start,
-                    "cds_end": self.cds_end,
-                    "cds_gaps": ",".join(map(str, self.cds_gaps))
+                    "bitscore": self.bitscore
                 }
             )
+            if self.alignment:
+                database.insert(
+                    "hsp_alignment",
+                    {                
+                        "hsp_id": self.id,
+                        "model_start": self.alignment["model_start"],
+                        "model_end": self.alignment["model_end"],
+                        "model_gaps": ",".join(map(str, self.alignment["model_gaps"])),
+                        "cds_start": self.alignment["cds_start"],
+                        "cds_end": self.alignment["cds_end"],
+                        "cds_gaps": ",".join(map(str, self.alignment["cds_gaps"]))
+                    }
+                )
 
     @staticmethod
-    def parse_hmmtext(hmm_text_path: str, hmm_ids: dict):
+    def parse_hmmtext(hmm_text_path: str, hmm_ids: dict, save_alignment: bool=True):
         """parse hmmtext result, create HSP object
         """
 
@@ -76,20 +78,27 @@ class HSP:
                     raise Exception(
                         "couldn't find hmm_id for {}".format(hsp.hit_id))
 
+                if save_alignment:
+                    hsp_alignment = {
+                        "model_start": hsp.hit_start,
+                        "model_end": hsp.hit_end,
+                        "model_gaps": [i for i, c
+                                       in enumerate(str(hsp.hit.seq))
+                                       if c == '.'],
+                        "cds_start": hsp.query_start,
+                        "cds_end": hsp.query_end,
+                        "cds_gaps": [i for i, c
+                                     in enumerate(str(hsp.query.seq))
+                                     if c == '-']
+                    }
+                else:
+                    hsp_alignment = None
+
                 results.append(HSP({
                     "cds_id": cds_id,
                     "hmm_id": hmm_id,
                     "bitscore": hsp.bitscore,
-                    "model_start": hsp.hit_start,
-                    "model_end": hsp.hit_end,
-                    "model_gaps": [i for i, c
-                                   in enumerate(str(hsp.hit.seq))
-                                   if c == '.'],
-                    "cds_start": hsp.query_start,
-                    "cds_end": hsp.query_end,
-                    "cds_gaps": [i for i, c
-                                 in enumerate(str(hsp.query.seq))
-                                 if c == '-']
+                    "alignment": hsp_alignment                
                 }))
 
         return results

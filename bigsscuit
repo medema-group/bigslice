@@ -61,8 +61,8 @@ def run_hmmscan(arguments: tuple):
 
     if cutoff == "ga":
         command.insert(1, "--cut_ga")
-    elif isinstance(cutoff, float) or isintance(cutoff, int):
-        command = command[0] + [
+    elif isinstance(cutoff, float) or isinstance(cutoff, int):
+        command = [command[0]] + [
             "--domT", str(cutoff),
             "--incdomT", str(cutoff)
         ] + command[1:]
@@ -551,7 +551,7 @@ def main():
                         }
 
                         for hsp_object in HSP.parse_hmmtext(
-                                out_result_path, sub_pfam_ids):
+                                out_result_path, sub_pfam_ids, save_alignment=False):
                             hsp_object.save(output_db)
 
                     output_db.commit_inserts()
