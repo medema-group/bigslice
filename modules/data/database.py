@@ -13,6 +13,7 @@ from os import path
 from shutil import move
 import re
 import sqlite3
+from time import time
 
 
 class Database:
@@ -130,11 +131,15 @@ class Database:
 
     def close(self):
         if self._use_memory:
+            start = time()
+            print("Dumping in-memory database content into " + 
+                self._db_path + "...", end =" ", flush=True)
             if path.exists(self._db_path):
                 move(self._db_path, self._db_path + ".bak")
             with sqlite3.connect(self._db_path) as out_db:
                 query = "".join([line for line in self._connection.iterdump()])
                 out_db.executescript(query)
+            print("{0:.4f}s".format(time() - start))
         self._connection.close()
 
     def select(self, table: str, clause: str,

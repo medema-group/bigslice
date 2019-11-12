@@ -262,6 +262,8 @@ def main():
         del db_backup_path
 
     # load/create SQLite3 database
+    if use_memory:
+        print("Loading database into memory (this can take a while)...")
     get_elapsed()
     with Database(data_db_path, use_memory) as output_db:
         print("[{}s] loading sqlite3 database".format(get_elapsed()))
