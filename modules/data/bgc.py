@@ -209,7 +209,7 @@ class BGC:
                         break
                 if not gbk_type:
                     gbk_type = "as4"
-                name = gbk.id
+                name = path.splitext(orig_filename)[0]
                 on_edge = None
                 loc = cluster.location
                 len_nt = loc.end - loc.start
