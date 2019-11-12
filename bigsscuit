@@ -537,7 +537,6 @@ def main():
                             hmm_db.sub_pfams[core_pfam_accs[parent_hmm_id]]
                         }
 
-                        print(out_result_path)
                         for hsp_object in HSP.parse_hmmtext(
                                 out_result_path, sub_pfam_ids):
                             hsp_object.save(output_db)
