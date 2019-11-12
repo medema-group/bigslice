@@ -40,7 +40,7 @@ def get_elapsed():
 
 
 def run_hmmscan(arguments: tuple):
-    fasta_path, hmm_path, result_path = arguments
+    fasta_path, hmm_path, result_path, cutoff = arguments
     if path.exists(result_path):
         with open(result_path, "r") as fp:
             if next(reversed_fp_iter(fp)).rstrip() == "[ok]":
@@ -58,6 +58,15 @@ def run_hmmscan(arguments: tuple):
         hmm_path,
         fasta_path
     ]
+
+    if cutoff == "ga":
+        command.insert(1, "--cut_ga")
+    elif isinstance(cutoff, float) or isintance(cutoff, int):
+        command = command[0] + [
+            "--domT", str(cutoff),
+            "--incdomT", str(cutoff)
+        ] + command[1:]
+
     try:
         ret = subprocess.run(command, check=True)
         if ret.returncode != 0 and path.exists(result_path):
@@ -379,7 +388,8 @@ def main():
                 hmmscan_results = pool.map(run_hmmscan,
                                            [(fasta_path(bgc_id),
                                              hmm_path,
-                                             hmm_result_path(bgc_id))
+                                             hmm_result_path(bgc_id),
+                                             "ga")
                                                for bgc_id in to_be_hmmscanned])
 
                 print("Parsing hmmscans results...")
@@ -513,7 +523,8 @@ def main():
                                     bgc_id, parent_hmm_id, output_db)
 
                             hmmscan_queues.add(
-                                (in_fasta_path, hmm_path, out_result_path))
+                                # for subpfam_scan: threshold == 20 bitscores
+                                (in_fasta_path, hmm_path, out_result_path, 20))
 
                     # write down all CDSes multifasta to be hmmscanned
                     for in_fasta_path, multifasta in fasta_sequences.items():
