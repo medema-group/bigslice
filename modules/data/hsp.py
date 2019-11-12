@@ -67,12 +67,12 @@ class HSP:
                     bgc_id, cds_id = hsp.query_id.split("|")
                     bgc_id = int(bgc_id.split("bgc:")[-1])
                     cds_id = int(cds_id.split("cds:")[-1])
-                except ValueError:
+                except IndexError:
                     raise Exception("couldn't parse {}".format(hmm_text_path))
 
                 try:
                     hmm_id = hmm_ids[hsp.hit_id]
-                except ValueError:
+                except KeyError:
                     raise Exception(
                         "couldn't find hmm_id for {}".format(hsp.hit_id))
 
