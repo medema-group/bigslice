@@ -96,20 +96,20 @@ def feature_extraction(arguments: tuple):
     return -1
 
 
-def check_pfams_exist(bgc_id: int, pfam_ids: list, database: Database):
-    # TODO: SQLite can't handle more than 1000 parameters
-    # break down pfam_ids to manageable chunks
-    params = [bgc_id]
-    params.extend(pfam_ids)
-    return [row["hmm_id"] for row in database.select(
+def check_pfams_exist(pfam_ids: list, database: Database):
+    result = {}
+    for row in database.select(
         "hsp,cds",
         "WHERE hsp.cds_id=cds.id" +
-        " AND cds.bgc_id=?" +
         " AND hsp.hmm_id IN (" + ",".join(["?" for i in pfam_ids]) + ")",
-        parameters=tuple(params),
-        props=["hsp.hmm_id"],
+        parameters=tuple(pfam_ids),
+        props=["bgc_id", "hmm_id"],
         distinct=True
-    )]
+    ):
+        if row["bgc_id"] not in result:
+            result[row["bgc_id"]] = set()
+        result[row["bgc_id"]].add(row["hmm_id"])
+    return result
 
 
 def check_hmmscanned_in_db(bgc_id: int,
@@ -493,17 +493,15 @@ def main():
 
                 # fetch list of bgcs and core pfam ids
                 print("Querying list of BGCs to be subpfam_scanned...")
-                bgc_core_pfams = {}
-                for bgc_id in to_be_subpfam_scanned:
-                    bgc_core_pfams[bgc_id] = check_pfams_exist(
-                        bgc_id, core_pfam_ids.values(), output_db)
+                bgc_core_pfams = check_pfams_exist(
+                    core_pfam_ids.values(), output_db)
 
                 print("Preparing fasta files for subpfam_scans...")
                 hmmscan_queues = set()
                 for chunk, chunk_name in get_chunk(to_be_subpfam_scanned):
                     fasta_sequences = {}
                     for bgc_id in chunk:
-                        for parent_hmm_id in bgc_core_pfams[bgc_id]:
+                        for parent_hmm_id in bgc_core_pfams.get(bgc_id, set()):
                             in_fasta_path = fasta_path(
                                 chunk_name, parent_hmm_id)
                             hmm_path = path.join(program_db_folder,
@@ -540,7 +538,8 @@ def main():
                 for chunk, chunk_name in get_chunk(to_be_subpfam_scanned):
                     chunk_parent_pfams = set()
                     for bgc_id in chunk:
-                        chunk_parent_pfams.update(bgc_core_pfams[bgc_id])
+                        chunk_parent_pfams.update(
+                            bgc_core_pfams.get(bgc_id, set()))
                     for parent_hmm_id in chunk_parent_pfams:
                         out_result_path = hmm_result_path(
                             chunk_name, parent_hmm_id)
