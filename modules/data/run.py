@@ -128,5 +128,5 @@ class Run:
                 "bgcs": bgcs
             }
             return Run(properties, database)
-        except ValueError:
+        except IndexError:
             return None
