@@ -194,11 +194,11 @@ def parse_input_gbk(file_path: str):
     return (file_path, BGC.parse_gbk(file_path))
 
 
-def get_chunk(list_of_ids: list, chunk_size: int=100):
+def get_chunk(list_of_ids: list, chunk_size: int=2):
     i = 0
-    while i * chunk_size <= len(list_of_ids):
+    while (i * chunk_size) < len(list_of_ids):
         chunk = list_of_ids[
-            i:min(i + chunk_size, len(list_of_ids) - 1)]
+            i * chunk_size:min(((i + 1) * chunk_size), len(list_of_ids))]
         chunk_name = md5(",".join(
             map(str, chunk)).encode('utf-8')).hexdigest()
         yield (chunk, chunk_name)
@@ -551,7 +551,8 @@ def main():
                         }
 
                         for hsp_object in HSP.parse_hmmtext(
-                                out_result_path, sub_pfam_ids, save_alignment=False):
+                                out_result_path, sub_pfam_ids,
+                                save_alignment=False):
                             hsp_object.save(output_db)
 
                     output_db.commit_inserts()
@@ -581,7 +582,6 @@ def main():
             bgc_status_bin[3].update(subpfam_scanned)
 
             print("[{}s] sub_pfam scan".format(get_elapsed()))
-            return 1
         if len(bgc_status_bin[2]) == 0:
             if run.status < 3:
                 if run.update_status(3) > 0:
