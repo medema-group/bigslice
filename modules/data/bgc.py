@@ -199,8 +199,19 @@ class BGC:
                                         for f in cds_features]
                             }))
 
-            elif gbk.features[0].type == "cluster":
-                cluster = gbk.features[0]
+            else:  # assume antiSMASH 4
+                cluster = None
+                for feature in gbk.features:
+                    if feature.type == "cluster":
+                        if cluster:  # contain 2 or more clusters
+                            cluster = None
+                            break
+                        else:
+                            cluster = feature
+                if not cluster:
+                    print(orig_filename +
+                          " is not a recognized antiSMASH clustergbk")
+                    break
                 qual = cluster.qualifiers
                 for note in qual["note"]:
                     if note.startswith("Detection rule(s) for this " +
