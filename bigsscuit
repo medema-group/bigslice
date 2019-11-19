@@ -22,6 +22,10 @@ from time import time
 from datetime import datetime
 import subprocess
 
+# fix multiprocesses run on single core
+# see https://bugs.python.org/issue17038
+from os import system, getpid
+system("taskset -p 0xff %d" % getpid())
 
 _last_timestamp = None
 
