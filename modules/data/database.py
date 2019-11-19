@@ -131,16 +131,22 @@ class Database:
 
     def close(self):
         if self._use_memory:
+            self.dump_db_file()
+        self._connection.close()
+
+    def dump_db_file(self):
+        if self._use_memory:
             start = time()
-            print("Dumping in-memory database content into " + 
-                self._db_path + "...", end =" ", flush=True)
+            print("Dumping in-memory database content into " +
+                  self._db_path + "...", end=" ", flush=True)
             if path.exists(self._db_path):
                 move(self._db_path, self._db_path + ".bak")
             with sqlite3.connect(self._db_path) as out_db:
                 query = "".join([line for line in self._connection.iterdump()])
                 out_db.executescript(query)
             print("{0:.4f}s".format(time() - start))
-        self._connection.close()
+        else:
+            raise(Exception("not an in-memory database"))
 
     def select(self, table: str, clause: str,
                parameters: tuple = None, props: list = [],

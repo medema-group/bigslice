@@ -320,6 +320,9 @@ def main():
                              run_start, output_db)
             output_db.commit_inserts()
 
+            if use_memory:
+                output_db.dump_db_file()
+
         # check run_bgc status, bin into a list of statuses
         get_elapsed()
         bgc_status_bin = {
@@ -419,10 +422,6 @@ def main():
                             return 1
 
                 del hmm_ids
-            del to_be_hmmscanned
-            del biosyn_tmp_folder
-            del fasta_path
-            del hmm_result_path
 
             # update status bin
             for bgc_id in hmm_scanned:
@@ -430,6 +429,15 @@ def main():
                 run.bgcs[bgc_id] = 2
             bgc_status_bin[1] = bgc_status_bin[1] - hmm_scanned
             bgc_status_bin[2].update(hmm_scanned)
+
+            if len(to_be_hmmscanned) > 0 and use_memory:
+                output_db.dump_db_file()
+
+            # garbage collection
+            del to_be_hmmscanned
+            del biosyn_tmp_folder
+            del fasta_path
+            del hmm_result_path
 
             print("[{}s] biosyn_pfam scan".format(get_elapsed()))
         if len(bgc_status_bin[1]) == 0:
@@ -586,6 +594,10 @@ def main():
             bgc_status_bin[3].update(subpfam_scanned)
 
             print("[{}s] sub_pfam scan".format(get_elapsed()))
+
+            if len(to_be_subpfam_scanned) > 0 and use_memory:
+                output_db.dump_db_file()
+
         if len(bgc_status_bin[2]) == 0:
             if run.status < 3:
                 if run.update_status(3) > 0:
@@ -599,6 +611,7 @@ def main():
             return 1
 
         # phase 4: Features extraction
+        return 1
         arguments = [bgc_run[0] for bgc_run
                      in run.bgcs if bgc_run[1] < 4]
         if len(arguments) > 0:
