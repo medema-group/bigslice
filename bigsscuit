@@ -502,44 +502,37 @@ def main():
             to_be_subpfam_scanned = list(bgc_status_bin[2] - subpfam_scanned)
             if len(to_be_subpfam_scanned) > 0:
 
-                # fetch list of bgcs and core pfam ids
-                print("Querying list of BGCs to be subpfam_scanned...")
-                bgc_core_pfams = check_pfams_exist(
-                    core_pfam_ids.values(), output_db)
+                chunks_and_pfam_ids = {}
 
                 print("Preparing fasta files for subpfam_scans...")
                 hmmscan_queues = set()
                 for chunk, chunk_name in get_chunk(
                         to_be_subpfam_scanned, subpfam_chunk_size):
-                    fasta_sequences = {}
-                    for bgc_id in chunk:
-                        for parent_hmm_id in bgc_core_pfams.get(bgc_id, set()):
-                            in_fasta_path = fasta_path(
-                                chunk_name, parent_hmm_id)
-                            hmm_path = path.join(program_db_folder,
-                                                 "sub_pfams",
-                                                 "hmm",
-                                                 core_pfam_accs[
-                                                     parent_hmm_id] +
-                                                 ".subpfams.hmm")
-                            out_result_path = hmm_result_path(
-                                chunk_name, parent_hmm_id)
 
-                            if not path.exists(in_fasta_path):
-                                if in_fasta_path not in fasta_sequences:
-                                    fasta_sequences[in_fasta_path] = ""
-                                fasta_sequences[in_fasta_path] += \
-                                    BGC.get_all_cds_fasta_with_hits(
-                                    bgc_id, parent_hmm_id, output_db)
+                    fasta_sequences = BGC.get_all_cds_fasta_with_hits(
+                        chunk, core_pfam_ids.values(), output_db)
+                    chunks_and_pfam_ids[chunk_name] = set(
+                        fasta_sequences.keys())
 
-                            hmmscan_queues.add(
-                                # for subpfam_scan: threshold == 20 bitscores
-                                (in_fasta_path, hmm_path, out_result_path, 20))
+                    for parent_hmm_id in fasta_sequences:
+                        in_fasta_path = fasta_path(
+                            chunk_name, parent_hmm_id)
+                        hmm_path = path.join(program_db_folder,
+                                             "sub_pfams",
+                                             "hmm",
+                                             core_pfam_accs[
+                                                 parent_hmm_id] +
+                                             ".subpfams.hmm")
+                        out_result_path = hmm_result_path(
+                            chunk_name, parent_hmm_id)
 
-                    # write down all CDSes multifasta to be hmmscanned
-                    for in_fasta_path, multifasta in fasta_sequences.items():
-                        with open(in_fasta_path, "w") as fa:
-                            fa.write(multifasta)
+                        if not path.exists(in_fasta_path):
+                            with open(in_fasta_path, "w") as fa:
+                                fa.write(fasta_sequences[parent_hmm_id])
+
+                        hmmscan_queues.add(
+                            # for subpfam_scan: threshold == 20 bitscores
+                            (in_fasta_path, hmm_path, out_result_path, 20))
 
                 # do hmmscans in parallel
                 print("Running subpfam_scans in parallel...")
@@ -549,10 +542,7 @@ def main():
                 print("Parsing subpfam_scans results...")
                 for chunk, chunk_name in get_chunk(
                         to_be_subpfam_scanned, subpfam_chunk_size):
-                    chunk_parent_pfams = set()
-                    for bgc_id in chunk:
-                        chunk_parent_pfams.update(
-                            bgc_core_pfams.get(bgc_id, set()))
+                    chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
                     for parent_hmm_id in chunk_parent_pfams:
                         out_result_path = hmm_result_path(
                             chunk_name, parent_hmm_id)

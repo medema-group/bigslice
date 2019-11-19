@@ -11,6 +11,7 @@ Handle manipulation and storing of 'bgc' table
 
 from os import path
 from Bio import SeqIO, SeqFeature
+from typing import List
 from .database import Database
 
 
@@ -262,28 +263,33 @@ class BGC:
             multifasta += "{}\n".format(row["aa_seq"])
         return multifasta
 
-    def get_all_cds_fasta_with_hits(bgc_id: int, hmm_id: int,
+    def get_all_cds_fasta_with_hits(bgc_ids: List[int], hmm_ids: List[int],
                                     database: Database):
         """query database, get all aa sequences
-        of CDS in BGC with HSP hit to a specific
-        hmm into a multifasta string e.g. for
-        the purpose of doing subpfam_scan"""
+        of CDS in BGCs with HSP hit to a list
+        of hmms into a multifasta string e.g. for
+        the purpose of doing subpfam_scan
+        split dict by hmm"""
 
         rows = database.select(
             "cds,hsp",
             "WHERE cds.id=hsp.cds_id" +
-            " AND cds.bgc_id=?" +
-            " AND hsp.hmm_id=?",
-            parameters=(bgc_id, hmm_id),
-            props=["cds.id", "aa_seq"],
+            " AND cds.bgc_id IN (" + ",".join(map(str, bgc_ids)) + ")" +
+            " AND hsp.hmm_id IN (" + ",".join(map(str, hmm_ids)) + ")",
+            props=["bgc_id", "hmm_id", "cds.id", "aa_seq"],
             distinct=True
         )
 
-        multifasta = ""
+        results = {}
         for row in rows:
-            multifasta += ">bgc:{}|cds:{}\n".format(bgc_id, row["id"])
-            multifasta += "{}\n".format(row["aa_seq"])
-        return multifasta
+            bgc_id = row["bgc_id"]
+            hmm_id = row["hmm_id"]
+            if hmm_id not in results:
+                results[hmm_id] = ""
+            results[hmm_id] += ">bgc:{}|cds:{}\n".format(
+                bgc_id, row["id"])
+            results[hmm_id] += "{}\n".format(row["aa_seq"])
+        return results
 
     class ChemSubclass:
         """Chemical subclass mapping"""
