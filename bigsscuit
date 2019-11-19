@@ -169,7 +169,7 @@ def process_input_folder(folder_path: str, database: Database,
         else:
             count_gbk_exists += 1
             all_bgc_ids.update(bgc_ids)
-    print("Found {} BGCs from {} GBKs ({} is/are to be parsed).".format(
+    print("Found {} BGCs from {} GBKs, another {} to be parsed.".format(
         len(all_bgc_ids), count_gbk_exists, len(files_to_process)))
     print("[{}s] querying GBKs".format(get_elapsed()))
 
