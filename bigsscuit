@@ -194,7 +194,7 @@ def parse_input_gbk(file_path: str):
     return (file_path, BGC.parse_gbk(file_path))
 
 
-def get_chunk(list_of_ids: list, chunk_size: int=2):
+def get_chunk(list_of_ids: list, chunk_size: int=100):
     i = 0
     while (i * chunk_size) < len(list_of_ids):
         chunk = list_of_ids[
@@ -214,6 +214,8 @@ def main():
     parser.add_argument("output_folder", type=str)
     parser.add_argument("-t", "--num_threads",
                         default=cpu_count(), type=int)
+    parser.add_argument("--subpfam_chunk_size",
+                        default=100, type=int)
     parser.add_argument("-i", "--input_folder", type=str)
     parser.add_argument("--mem", action="store_true")
     parser.add_argument("--resume", action='store_true')
@@ -226,6 +228,7 @@ def main():
     run_start = datetime.now()
     prog_params = " ".join(argv[1:])
     pool = Pool(processes=args.num_threads)
+    subpfam_chunk_size = args.subpfam_chunk_size
     output_folder = path.abspath(args.output_folder)
     tmp_folder = path.join(output_folder, "tmp")
     data_db_path = path.join(output_folder, "data.db")
@@ -498,7 +501,8 @@ def main():
 
                 print("Preparing fasta files for subpfam_scans...")
                 hmmscan_queues = set()
-                for chunk, chunk_name in get_chunk(to_be_subpfam_scanned):
+                for chunk, chunk_name in get_chunk(
+                        to_be_subpfam_scanned, subpfam_chunk_size):
                     fasta_sequences = {}
                     for bgc_id in chunk:
                         for parent_hmm_id in bgc_core_pfams.get(bgc_id, set()):
@@ -535,7 +539,8 @@ def main():
                     run_hmmscan, hmmscan_queues)
 
                 print("Parsing subpfam_scans results...")
-                for chunk, chunk_name in get_chunk(to_be_subpfam_scanned):
+                for chunk, chunk_name in get_chunk(
+                        to_be_subpfam_scanned, subpfam_chunk_size):
                     chunk_parent_pfams = set()
                     for bgc_id in chunk:
                         chunk_parent_pfams.update(
