@@ -453,10 +453,11 @@ def main():
                             out_result_path, hmm_ids):
                         hsp_object.save(output_db)
 
+                    output_db.commit_inserts()
+
                     for bgc_id in chunk:
                         if update_bgc_status(
                                 bgc_id, run.id, 2, output_db) == 1:
-                            output_db.commit_inserts()
                             hmm_scanned.add(bgc_id)
                         else:
                             print("Failed to update bgc status " +
