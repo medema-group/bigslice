@@ -7,7 +7,7 @@
 """the main script of bigsscuit"""
 
 import argparse
-from os import path, makedirs, remove
+from os import getpid, path, makedirs, remove
 from sys import exit, argv
 import glob
 from multiprocessing import Pool, cpu_count
@@ -22,10 +22,6 @@ from time import time
 from datetime import datetime
 import subprocess
 
-# fix multiprocesses run on single core
-# see https://bugs.python.org/issue17038
-from os import system, getpid
-system("taskset -p 0xff %d" % getpid())
 
 _last_timestamp = None
 
@@ -41,6 +37,29 @@ def get_elapsed():
         elapsed = now - _last_timestamp
         _last_timestamp = now
         return elapsed
+
+
+def fetch_pool(num_threads: int):
+    pool = Pool(processes=num_threads)
+
+    try:
+        # set cores for the multiprocessing pools
+        for i, p in enumerate(pool._pool):
+            subprocess.run(["taskset",
+                            "-p", "-c",
+                            str(cpu_count() - (i % cpu_count()) - 1),
+                            str(p.pid)], check=True, shell=True)
+
+        # set core for the main python script
+        subprocess.run(["taskset",
+                        "-p", "-c",
+                        str(cpu_count() - (len(pool._pool) % cpu_count()) - 1),
+                        str(getpid())], check=True, shell=True)
+
+    except subprocess.CalledProcessError:
+        pass  # running in OSX?
+
+    return pool
 
 
 def run_hmmscan(arguments: tuple):
@@ -233,7 +252,7 @@ def main():
     # define variables
     run_start = datetime.now()
     prog_params = " ".join(argv[1:])
-    pool = Pool(processes=args.num_threads)
+    pool = fetch_pool(args.num_threads)
     hmmscan_chunk_size = args.hmmscan_chunk_size
     subpfam_chunk_size = args.subpfam_chunk_size
     output_folder = path.abspath(args.output_folder)
