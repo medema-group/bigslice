@@ -48,13 +48,13 @@ def fetch_pool(num_threads: int):
             subprocess.run(["taskset",
                             "-p", "-c",
                             str(cpu_count() - (i % cpu_count()) - 1),
-                            str(p.pid)], check=True, shell=True)
+                            str(p.pid)], check=True)
 
         # set core for the main python script
         subprocess.run(["taskset",
                         "-p", "-c",
                         str(cpu_count() - (len(pool._pool) % cpu_count()) - 1),
-                        str(getpid())], check=True, shell=True)
+                        str(getpid())], check=True)
 
     except subprocess.CalledProcessError:
         pass  # running in OSX?
