@@ -218,6 +218,8 @@ def main():
     parser.add_argument("output_folder", type=str)
     parser.add_argument("-t", "--num_threads",
                         default=cpu_count(), type=int)
+    parser.add_argument("--hmmscan_chunk_size",
+                        default=100, type=int)
     parser.add_argument("--subpfam_chunk_size",
                         default=100, type=int)
     parser.add_argument("-i", "--input_folder", type=str)
@@ -232,6 +234,7 @@ def main():
     run_start = datetime.now()
     prog_params = " ".join(argv[1:])
     pool = Pool(processes=args.num_threads)
+    hmmscan_chunk_size = args.hmmscan_chunk_size
     subpfam_chunk_size = args.subpfam_chunk_size
     output_folder = path.abspath(args.output_folder)
     tmp_folder = path.join(output_folder, "tmp")
@@ -372,58 +375,75 @@ def main():
             if not path.exists(biosyn_tmp_folder):
                 makedirs(biosyn_tmp_folder)
 
-            def fasta_path(bgc_id):
+            def fasta_path(chunk_name):
                 return path.join(
-                    biosyn_tmp_folder, "bgc_{}.fa".format(bgc_id))
+                    biosyn_tmp_folder, "bgc_{}.fa".format(chunk_name))
 
-            def hmm_result_path(bgc_id):
+            def hmm_result_path(chunk_name):
                 return path.join(
-                    biosyn_tmp_folder, "bgc_{}.hmmtxt".format(bgc_id))
+                    biosyn_tmp_folder, "bgc_{}.hmmtxt".format(chunk_name))
 
             to_be_hmmscanned = list(bgc_status_bin[1] - hmm_scanned)
             if len(to_be_hmmscanned) > 0:
 
                 print("Preparing fasta files for hmmscans...")
-                # write down all CDSes multifasta to be hmmscanned
-                for bgc_id in to_be_hmmscanned:
-                    if not path.exists(fasta_path(bgc_id)):
-                        with open(fasta_path(bgc_id), "w") as fa:
-                            fa.write(BGC.get_all_cds_fasta(bgc_id, output_db))
 
-                print("Running hmmscans in parallel...")
-                # do hmmscans in parallel
+                hmmscan_queues = set()
                 hmm_path = path.join(program_db_folder,
                                      "biosynthetic_pfams",
                                      "Pfam-A.biosynthetic.hmm")
-                hmmscan_results = pool.map(run_hmmscan,
-                                           [(fasta_path(bgc_id),
-                                             hmm_path,
-                                             hmm_result_path(bgc_id),
-                                             "ga")
-                                               for bgc_id in to_be_hmmscanned])
+                for chunk, chunk_name in get_chunk(
+                        to_be_hmmscanned, hmmscan_chunk_size):
+
+                    fasta_sequences = BGC.get_all_cds_fasta(
+                        chunk, output_db)
+
+                    # write down all CDSes multifasta to be hmmscanned
+                    in_fasta_path = fasta_path(chunk_name)
+                    out_result_path = hmm_result_path(chunk_name)
+
+                    if not path.exists(in_fasta_path):
+                        with open(in_fasta_path, "w") as fa:
+                            fa.write(fasta_sequences)
+                            hmmscan_queues.add(
+                                (in_fasta_path, hmm_path,
+                                    out_result_path, "ga"))
+
+                print("Running hmmscans in parallel...")
+
+                # do hmmscans in parallel
+                hmmscan_results = pool.map(
+                    run_hmmscan, hmmscan_queues)
 
                 print("Parsing hmmscans results...")
                 # parse hmmscan txts and create database
                 # entries for them, then update bgc_status
                 hmm_ids = {
                     hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
-                for i, bgc_id in enumerate(to_be_hmmscanned):
-                    if hmmscan_results[i]:
-                        for hsp_object in HSP.parse_hmmtext(
-                                hmm_result_path(bgc_id), hmm_ids):
-                            hsp_object.save(output_db)
+
+                for chunk, chunk_name in get_chunk(
+                        to_be_hmmscanned, hmmscan_chunk_size):
+
+                    in_fasta_path = fasta_path(chunk_name)
+                    out_result_path = hmm_result_path(chunk_name)
+
+                    for hsp_object in HSP.parse_hmmtext(
+                            out_result_path, hmm_ids):
+                        hsp_object.save(output_db)
+
+                    for bgc_id in chunk:
                         if update_bgc_status(
                                 bgc_id, run.id, 2, output_db) == 1:
                             output_db.commit_inserts()
                             hmm_scanned.add(bgc_id)
-                            # clean up
-                            remove(fasta_path(bgc_id))
-                            remove(hmm_result_path(bgc_id))
                         else:
                             print("Failed to update bgc status " +
                                   "(bgc_id: " + str(bgc_id) + ") " +
                                   "(run_id: " + str(run.id) + ")")
-                            return 1
+
+                    # clean up
+                    remove(in_fasta_path)
+                    remove(out_result_path)
 
                 del hmm_ids
 
@@ -571,7 +591,6 @@ def main():
                             print("Failed to update bgc status " +
                                   "(bgc_id: " + str(bgc_id) + ") " +
                                   "(run_id: " + str(run.id) + ")")
-                            return 1
 
                     # clean up
                     for parent_hmm_id in chunk_parent_pfams:

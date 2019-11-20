@@ -245,21 +245,20 @@ class BGC:
 
         return results
 
-    def get_all_cds_fasta(bgc_id: int, database: Database):
+    def get_all_cds_fasta(bgc_ids: List[int], database: Database):
         """query database, get all aa sequences
         of the CDS into a multifasta string
         e.g. for the purpose of doing hmmscan"""
 
         rows = database.select(
             "cds",
-            "WHERE bgc_id=?",
-            parameters=(bgc_id,),
-            props=["id", "aa_seq"]
+            "WHERE bgc_id IN (" + ",".join(map(str, bgc_ids)) + ")",
+            props=["id", "bgc_id", "aa_seq"]
         )
 
         multifasta = ""
         for row in rows:
-            multifasta += ">bgc:{}|cds:{}\n".format(bgc_id, row["id"])
+            multifasta += ">bgc:{}|cds:{}\n".format(row["bgc_id"], row["id"])
             multifasta += "{}\n".format(row["aa_seq"])
         return multifasta
 
