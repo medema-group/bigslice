@@ -57,7 +57,7 @@ def fetch_pool(num_threads: int):
                         str(cpu_count() - (len(pool._pool) % cpu_count()) - 1),
                         str(getpid())], check=True)
 
-    except subprocess.CalledProcessError:
+    except FileNotFoundError:
         pass  # running in OSX?
 
     return pool
