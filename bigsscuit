@@ -21,6 +21,7 @@ from hashlib import md5
 from time import time
 from datetime import datetime
 import subprocess
+from typing import List
 
 
 _last_timestamp = None
@@ -119,7 +120,7 @@ def feature_extraction(arguments: tuple):
     return -1
 
 
-def check_pfams_exist(pfam_ids: list, database: Database):
+def check_pfams_exist(pfam_ids: List[int], database: Database):
     result = {}
     for row in database.select(
         "hsp,cds",
@@ -135,34 +136,34 @@ def check_pfams_exist(pfam_ids: list, database: Database):
     return result
 
 
-def check_hmmscanned_in_db(bgc_id: int,
+def check_hmmscanned_in_db(bgc_ids: List[int],
                            md5_biosyn_pfam: str, database: Database):
-    for row in database.select(
+    rows = database.select(
         "run_bgc_status,run,hmm_db",
         "WHERE run_bgc_status.run_id=run.id AND " +
         "run.hmm_db_id=hmm_db.id AND " +
         "hmm_db.md5_biosyn_pfam=? AND " +
-        "bgc_id=?",
-        parameters=(md5_biosyn_pfam, bgc_id),
-            props=["run_bgc_status.status as status"]):
-        if row["status"] >= 2:
-            return True
-    return False
+        "run_bgc_status.status>=2 AND " +
+        "bgc_id IN (" + ",".join(map(str, bgc_ids)) + ")",
+        parameters=(md5_biosyn_pfam,),
+        props=["bgc_id"])
+
+    return([row["bgc_id"] for row in rows])
 
 
-def check_subpfam_scanned_in_db(bgc_id: int,
+def check_subpfam_scanned_in_db(bgc_ids: List[int],
                                 md5_sub_pfam: str, database: Database):
-    for row in database.select(
+    rows = database.select(
         "run_bgc_status,run,hmm_db",
         "WHERE run_bgc_status.run_id=run.id AND " +
         "run.hmm_db_id=hmm_db.id AND " +
         "hmm_db.md5_sub_pfam=? AND " +
-        "bgc_id=?",
-        parameters=(md5_sub_pfam, bgc_id),
-            props=["run_bgc_status.status as status"]):
-        if row["status"] >= 3:
-            return True
-    return False
+        "run_bgc_status.status>=3 AND " +
+        "bgc_id IN (" + ",".join(map(str, bgc_ids)) + ")",
+        parameters=(md5_sub_pfam,),
+        props=["bgc_id"])
+
+    return([row["bgc_id"] for row in rows])
 
 
 def check_gbk_exists(file_path: str, database: Database):
@@ -217,7 +218,7 @@ def parse_input_gbk(file_path: str):
     return (file_path, BGC.parse_gbk(file_path))
 
 
-def get_chunk(list_of_ids: list, chunk_size: int=100):
+def get_chunk(list_of_ids: List[int], chunk_size: int=100):
     i = 0
     while (i * chunk_size) < len(list_of_ids):
         chunk = list_of_ids[
@@ -377,8 +378,9 @@ def main():
             hmm_scanned = set()
 
             # check if already hmmscanned in previous run
-            for bgc_id in bgc_status_bin[1]:  # hmm_scanned should be empty
-                if check_hmmscanned_in_db(bgc_id, md5_biosyn_pfam, output_db):
+            for chunk, chunk_name in get_chunk(list(bgc_status_bin[1]), 1000):
+                for bgc_id in check_hmmscanned_in_db(
+                        chunk, md5_biosyn_pfam, output_db):
                     if update_bgc_status(bgc_id, run.id, 2, output_db) == 1:
                         hmm_scanned.add(bgc_id)
                     else:
@@ -386,6 +388,7 @@ def main():
                               "(bgc_id: " + str(bgc_id) + ") " +
                               "(run_id: " + str(run.id) + ")")
                         return 1
+
             print("{} BGCs are already scanned in previous run".format(
                 len(hmm_scanned)))
 
@@ -504,9 +507,9 @@ def main():
             subpfam_scanned = set()
 
             # check if already subpfam_scanned in previous run
-            for bgc_id in bgc_status_bin[2]:
-                if check_subpfam_scanned_in_db(
-                        bgc_id, md5_sub_pfam, output_db):
+            for chunk, chunk_name in get_chunk(list(bgc_status_bin[2]), 1000):
+                for bgc_id in check_subpfam_scanned_in_db(
+                        chunk, md5_sub_pfam, output_db):
                     if update_bgc_status(bgc_id, run.id, 3, output_db) == 1:
                         subpfam_scanned.add(bgc_id)
                     else:
@@ -514,6 +517,7 @@ def main():
                               "(bgc_id: " + str(bgc_id) + ") " +
                               "(run_id: " + str(run.id) + ")")
                         return 1
+
             print("{} BGCs are already scanned in previous run".format(
                 len(subpfam_scanned)))
 
