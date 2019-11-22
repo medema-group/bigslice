@@ -195,6 +195,8 @@ CREATE TABLE IF NOT EXISTS gcf_membership (
 -- feature
 CREATE TABLE IF NOT EXISTS feature (
     bgc_id INTEGER NOT NULL,
+    run_id INTEGER NOT NULL,
     feature TEXT NOT NULL,
-    FOREIGN KEY(bgc_id) REFERENCES bgc(id)
+    FOREIGN KEY(bgc_id) REFERENCES bgc(id),
+    FOREIGN KEY(run_id) REFERENCES run(id)
 );
