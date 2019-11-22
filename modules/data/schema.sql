@@ -97,6 +97,7 @@ CREATE TABLE IF NOT EXISTS taxon (
 CREATE TABLE IF NOT EXISTS bgc_taxonomy (
     bgc_id INTEGER NOT NULL,
     taxon_id INTEGER NOT NULL,
+    level INTEGER NOT NULL,
     FOREIGN KEY(bgc_id) REFERENCES bgc(id),
     FOREIGN KEY(taxon_id) REFERENCES taxon(id)
 );

@@ -69,7 +69,7 @@ class BGC:
                 chem_subclass_object.bgc_id = self.id
                 chem_subclass_object.__save__(database)
             # insert taxons
-            for taxon in self.taxons:
+            for level, taxon in enumerate(self.taxons):
                 # TODO: store taxons
                 existing = database.select(
                     "taxon",
@@ -95,7 +95,8 @@ class BGC:
                     "bgc_taxonomy",
                     {
                         "bgc_id": self.id,
-                        "taxon_id": taxon_id
+                        "taxon_id": taxon_id,
+                        "level": level
                     }
                 )
             # insert cds
