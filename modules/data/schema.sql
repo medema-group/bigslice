@@ -16,6 +16,10 @@ CREATE TABLE IF NOT EXISTS bgc (
     orig_filename VARCHAR(250) NOT NULL,
     FOREIGN KEY(type) REFERENCES enum_bgc_type(code)
 );
+CREATE INDEX IF NOT EXISTS bgc_type ON bgc(type);
+CREATE INDEX IF NOT EXISTS bgc_filename ON bgc(orig_filename);
+CREATE INDEX IF NOT EXISTS bgc_contigedge ON bgc(on_contig_edge);
+CREATE INDEX IF NOT EXISTS bgc_length ON bgc(length_nt);
 
 -- enum_bgc_type
 CREATE TABLE IF NOT EXISTS enum_bgc_type (
@@ -39,6 +43,7 @@ CREATE TABLE IF NOT EXISTS cds (
     aa_seq TEXT NOT NULL,
     FOREIGN KEY(bgc_id) REFERENCES bgc(id)
 );
+CREATE INDEX IF NOT EXISTS cds_bgc ON cds(bgc_id,nt_start,nt_end);
 
 -- hmm_db
 CREATE TABLE IF NOT EXISTS hmm_db (
@@ -56,6 +61,8 @@ CREATE TABLE IF NOT EXISTS hmm (
     model_length INTEGER NOT NULL,
     FOREIGN KEY(db_id) REFERENCES hmm_db(id)
 );
+CREATE INDEX IF NOT EXISTS hmm_acc ON hmm(db_id, accession);
+CREATE INDEX IF NOT EXISTS hmm_name ON hmm(db_id, name);
 
 -- subpfam
 CREATE TABLE IF NOT EXISTS subpfam (
@@ -64,6 +71,7 @@ CREATE TABLE IF NOT EXISTS subpfam (
     FOREIGN KEY(hmm_id) REFERENCES hmm(id),
     FOREIGN KEY(parent_hmm_id) REFERENCES hmm(id)
 );
+CREATE INDEX IF NOT EXISTS subpfam_parenthmm ON subpfam(parent_hmm_id, hmm_id);
 
 -- hsp
 CREATE TABLE IF NOT EXISTS hsp (
@@ -74,6 +82,8 @@ CREATE TABLE IF NOT EXISTS hsp (
     FOREIGN KEY(cds_id) REFERENCES cds(id),
     FOREIGN KEY(hmm_id) REFERENCES hmm(id)    
 );
+CREATE INDEX IF NOT EXISTS hsp_cdshmm ON hsp(cds_id, hmm_id);
+CREATE INDEX IF NOT EXISTS hsp_bitscore ON hsp(bitscore);
 
 -- hsp_alignment
 CREATE TABLE IF NOT EXISTS hsp_alignment (
@@ -92,6 +102,7 @@ CREATE TABLE IF NOT EXISTS taxon (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name VARCHAR(100) NOT NULL UNIQUE
 );
+CREATE UNIQUE INDEX IF NOT EXISTS taxon_name ON taxon(name);
 
 -- bgc_taxonomy
 CREATE TABLE IF NOT EXISTS bgc_taxonomy (
@@ -101,6 +112,8 @@ CREATE TABLE IF NOT EXISTS bgc_taxonomy (
     FOREIGN KEY(bgc_id) REFERENCES bgc(id),
     FOREIGN KEY(taxon_id) REFERENCES taxon(id)
 );
+CREATE INDEX IF NOT EXISTS bgctaxonomy_bgcid ON bgc_taxonomy(bgc_id, level);
+CREATE INDEX IF NOT EXISTS bgctaxonomy_level ON bgc_taxonomy(level);
 
 -- chem_class
 CREATE TABLE IF NOT EXISTS chem_class (
@@ -115,6 +128,7 @@ INSERT OR IGNORE INTO chem_class VALUES (NULL, 'Polyketide');
 INSERT OR IGNORE INTO chem_class VALUES (NULL, 'RiPP');
 INSERT OR IGNORE INTO chem_class VALUES (NULL, 'Saccharide');
 INSERT OR IGNORE INTO chem_class VALUES (NULL, 'Terpene');
+CREATE UNIQUE INDEX IF NOT EXISTS chemclass_name ON chem_class(name);
 
 -- chem_subclass
 CREATE TABLE IF NOT EXISTS chem_subclass (
@@ -123,6 +137,9 @@ CREATE TABLE IF NOT EXISTS chem_subclass (
     name VARCHAR(100) NOT NULL,
     FOREIGN KEY(class_id) REFERENCES chem_class(id)
 );
+CREATE INDEX IF NOT EXISTS chemsubclass_name ON chem_subclass(name);
+CREATE INDEX IF NOT EXISTS chemsubclass_class ON chem_subclass(class_id, name);
+
 
 -- chem_subclass_map
 CREATE TABLE IF NOT EXISTS chem_subclass_map (
@@ -132,6 +149,7 @@ CREATE TABLE IF NOT EXISTS chem_subclass_map (
     FOREIGN KEY(type_source) REFERENCES enum_bgc_type(code),
     FOREIGN KEY(subclass_id) REFERENCES chem_subclass(id)
 );
+CREATE INDEX IF NOT EXISTS chemsubclassmap_source ON chem_subclass_map(type_source, class_source);
 
 -- bgc_class
 CREATE TABLE IF NOT EXISTS bgc_class (
@@ -140,6 +158,7 @@ CREATE TABLE IF NOT EXISTS bgc_class (
     FOREIGN KEY(bgc_id) REFERENCES bgc(id),
     FOREIGN KEY(chem_subclass_id) REFERENCES chem_subclass(id)
 );
+CREATE INDEX IF NOT EXISTS bgcclass_chemsubclass ON bgc_class(chem_subclass_id);
 
 -- enum_run_status
 CREATE TABLE IF NOT EXISTS enum_run_status (
@@ -152,6 +171,7 @@ INSERT OR IGNORE INTO enum_run_status VALUES (3, 'SUBPFAM_SCANNED');
 INSERT OR IGNORE INTO enum_run_status VALUES (4, 'FEATURES_EXTRACTED');
 INSERT OR IGNORE INTO enum_run_status VALUES (5, 'CLUSTERING_FINISHED');
 INSERT OR IGNORE INTO enum_run_status VALUES (6, 'RUN_FINISHED');
+CREATE UNIQUE INDEX IF NOT EXISTS enumrunstatus_name ON enum_run_status(name);
 
 -- run
 CREATE TABLE IF NOT EXISTS run (
@@ -165,6 +185,7 @@ CREATE TABLE IF NOT EXISTS run (
     FOREIGN KEY(status) REFERENCES enum_run_status(id),
     FOREIGN KEY(hmm_db_id) REFERENCES hmm_db(id)
 );
+CREATE INDEX IF NOT EXISTS run_hmmdb ON run(hmm_db_id, status, time_start);
 
 -- run_bgc_status
 CREATE TABLE IF NOT EXISTS run_bgc_status (
@@ -175,6 +196,7 @@ CREATE TABLE IF NOT EXISTS run_bgc_status (
     FOREIGN KEY(run_id) REFERENCES run(id),
     FOREIGN KEY(status) REFERENCES enum_run_status(id)
 );
+CREATE INDEX IF NOT EXISTS runbgcstatus_run ON run_bgc_status(run_id, status);
 
 -- gcf
 CREATE TABLE IF NOT EXISTS gcf (
