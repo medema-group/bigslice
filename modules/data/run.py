@@ -76,10 +76,14 @@ class Run:
                             str(bgcs_not_processed) +
                             " BGCs are still unprocessed.")
         else:
-            return self.database.update("run",
-                                        {"status": status},
-                                        "WHERE id=?",
-                                        (self.id,))
+            if self.database.update("run",
+                                    {"status": status},
+                                    "WHERE id=?",
+                                    (self.id,)):
+                self.status = status
+                return 1
+            else:
+                return 0
 
     @staticmethod
     def create(bgc_ids: Set[int], hmm_db_id: int, prog_params: str,
