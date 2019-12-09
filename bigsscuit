@@ -16,8 +16,8 @@ from modules.data.bgc import BGC
 from modules.data.hmm import HMMDatabase
 from modules.data.run import Run
 from modules.data.hsp import HSP
-from modules.utils import reversed_fp_iter
-from hashlib import md5
+from modules.data.features import Features
+from modules.utils import reversed_fp_iter, get_chunk
 from time import time
 from datetime import datetime
 import subprocess
@@ -220,17 +220,6 @@ def parse_input_gbk(file_path: str):
     return (file_path, BGC.parse_gbk(file_path))
 
 
-def get_chunk(list_of_ids: List[int], chunk_size: int=100):
-    i = 0
-    while (i * chunk_size) < len(list_of_ids):
-        chunk = list_of_ids[
-            i * chunk_size:min(((i + 1) * chunk_size), len(list_of_ids))]
-        chunk_name = md5(",".join(
-            map(str, chunk)).encode('utf-8')).hexdigest()
-        yield (chunk, chunk_name)
-        i += 1
-
-
 def main():
 
     # TODO: check requirements
@@ -259,6 +248,7 @@ def main():
     hmmscan_chunk_size = args.hmmscan_chunk_size
     subpfam_chunk_size = args.subpfam_chunk_size
     output_folder = path.abspath(args.output_folder)
+    features_folder = path.join(output_folder, "features")
     tmp_folder = path.join(output_folder, "tmp")
     data_db_path = path.join(output_folder, "data.db")
     program_db_folder = path.abspath(args.program_db_folder)
@@ -658,22 +648,28 @@ def main():
             return 1
 
         # phase 4: Features extraction
-        return 1
-        arguments = [bgc_run[0] for bgc_run
-                     in run.bgcs if bgc_run[1] < 4]
-        if len(arguments) > 0:
+        if 2 < run.status < 4:
             get_elapsed()
-            print("Extracting features from {} BGCs...".format(len(arguments)))
-            reports = pool.map(feature_extraction, arguments)
-            count_errors = reports.count(-1)
-            if count_errors > 0:
-                print("Failed to extract features from BGCs.".format(
-                    count_errors))
-                exit(1)
+            print("Extracting features from {} BGCs...".format(len(run.bgcs)))
+
+            if not path.exists(features_folder):
+                makedirs(features_folder)
+
+            features = Features.extract(
+                run.id, "default", output_db, pool
+            )
+            features.save(features_folder, output_db)
+            del features
+
             print("[{}s] features extraction".format(get_elapsed()))
-        if run.status < 4:
-            run.status == 4
-            run.save()
+            update_bgcs_status = output_db.update("run_bgc_status",
+                                                  {"status": 4},
+                                                  "WHERE run_id=?",
+                                                  (run.id,))
+            if update_bgcs_status > 0 and run.update_status(4) > 0:
+                print("run_status is now FEATURES_EXTRACTED")
+            else:
+                print("failed to update run_status")
 
         # phase 5: Clustering
         exit(1)  # TODO: implements

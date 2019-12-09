@@ -198,6 +198,16 @@ CREATE TABLE IF NOT EXISTS run_bgc_status (
 );
 CREATE INDEX IF NOT EXISTS runbgcstatus_run ON run_bgc_status(run_id, status);
 
+-- features
+CREATE TABLE IF NOT EXISTS features (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id INTEGER NOT NULL,
+    extraction_method VARCHAR(100) NOT NULL,
+    extraction_start DATETIME NOT NULL,
+    extraction_end DATETIME NOT NULL,
+    FOREIGN KEY(run_id) REFERENCES run(id)
+);
+
 -- gcf
 CREATE TABLE IF NOT EXISTS gcf (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -213,13 +223,4 @@ CREATE TABLE IF NOT EXISTS gcf_membership (
     membership_value DECIMAL(5, 2) NOT NULL,
     FOREIGN KEY(gcf_id) REFERENCES gcf(id),
     FOREIGN KEY(bgc_id) REFERENCES bgc(id)
-);
-
--- feature
-CREATE TABLE IF NOT EXISTS feature (
-    bgc_id INTEGER NOT NULL,
-    run_id INTEGER NOT NULL,
-    feature TEXT NOT NULL,
-    FOREIGN KEY(bgc_id) REFERENCES bgc(id),
-    FOREIGN KEY(run_id) REFERENCES run(id)
 );

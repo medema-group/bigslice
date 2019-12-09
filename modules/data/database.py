@@ -150,7 +150,8 @@ class Database:
 
     def select(self, table: str, clause: str,
                parameters: tuple = None, props: list = [],
-               distinct: bool = False):
+               distinct: bool = False,
+               as_tuples: bool = False):
         """execute a SELECT ... FROM ... WHERE"""
 
         if len(props) < 1:
@@ -176,7 +177,8 @@ class Database:
             return d
 
         orig_row_factory = self._connection.row_factory
-        self._connection.row_factory = dict_factory
+        if not as_tuples:
+            self._connection.row_factory = dict_factory
         db_cur = self._connection.cursor()
 
         if parameters:

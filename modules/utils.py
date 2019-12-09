@@ -11,6 +11,8 @@ Utility functions and classes
 
 
 import os
+from hashlib import md5
+from typing import List
 
 
 def reversed_fp_iter(fp, buf_size=8192):
@@ -47,3 +49,17 @@ def reversed_fp_iter(fp, buf_size=8192):
     # Don't yield None if the file was empty
     if segment is not None:
         yield segment
+
+
+def get_chunk(list_of_ids: List, chunk_size: int=100):
+    """generate chunks from a list of id,
+    also generate an md5 hash of the ids in the chunk
+    """
+    i = 0
+    while (i * chunk_size) < len(list_of_ids):
+        chunk = list_of_ids[
+            i * chunk_size:min(((i + 1) * chunk_size), len(list_of_ids))]
+        chunk_name = md5(",".join(
+            map(str, chunk)).encode('utf-8')).hexdigest()
+        yield (chunk, chunk_name)
+        i += 1
