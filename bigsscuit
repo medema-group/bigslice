@@ -45,16 +45,19 @@ def fetch_pool(num_threads: int):
 
     try:
         # set cores for the multiprocessing pools
+        all_cpu_ids = set()
         for i, p in enumerate(pool._pool):
+            cpu_id = str(cpu_count() - (i % cpu_count()) - 1)
             subprocess.run(["taskset",
                             "-p", "-c",
-                            str(cpu_count() - (i % cpu_count()) - 1),
+                            cpu_id,
                             str(p.pid)], check=True)
+            all_cpu_ids.add(cpu_id)
 
         # set core for the main python script
         subprocess.run(["taskset",
                         "-p", "-c",
-                        str(cpu_count() - (len(pool._pool) % cpu_count()) - 1),
+                        ",".join(all_cpu_ids),
                         str(getpid())], check=True)
 
     except FileNotFoundError:
