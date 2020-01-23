@@ -17,6 +17,7 @@ from modules.data.hmm import HMMDatabase
 from modules.data.run import Run
 from modules.data.hsp import HSP
 from modules.data.features import Features
+from modules.clustering.birch import BirchClustering
 from modules.utils import reversed_fp_iter, get_chunk
 from time import time
 from datetime import datetime
@@ -252,6 +253,7 @@ def main():
     subpfam_chunk_size = args.subpfam_chunk_size
     output_folder = path.abspath(args.output_folder)
     features_folder = path.join(output_folder, "features")
+    centroids_folder = path.join(output_folder, "centroids")
     tmp_folder = path.join(output_folder, "tmp")
     data_db_path = path.join(output_folder, "data.db")
     program_db_folder = path.abspath(args.program_db_folder)
@@ -675,10 +677,39 @@ def main():
                 print("failed to update run_status")
 
         # phase 5: Clustering
-        exit(1)  # TODO: implements
-        if run.status < 5:
-            run.status == 5
-            run.save()
+        if 3 < run.status < 5:
+            get_elapsed()
+            print("Clustering {} BGCs...".format(len(run.bgcs)))
+
+            if not path.exists(centroids_folder):
+                makedirs(centroids_folder)
+
+            # fetch mibig bgc ids as reference bgc ids
+            # todo: use datasets
+            reference_bgc_ids = [row["id"] for row in output_db.select(
+                "bgc",
+                "WHERE type LIKE 'mibig'",
+                props=["id"]
+            )]
+
+            clustering = BirchClustering.run(
+                run.id,
+                features_folder,
+                output_db,
+                reference_bgc_ids
+            )
+            clustering.save(centroids_folder)
+            del clustering
+
+            print("[{}s] clustering".format(get_elapsed()))
+            update_bgcs_status = output_db.update("run_bgc_status",
+                                                  {"status": 5},
+                                                  "WHERE run_id=?",
+                                                  (run.id,))
+            if update_bgcs_status > 0 and run.update_status(5) > 0:
+                print("run_status is now CLUSTERING_FINISHED")
+            else:
+                print("failed to update run_status")
 
         # phase 6: finishing, preparing outputs
         exit(1)  # TODO: implements

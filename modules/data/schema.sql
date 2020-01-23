@@ -170,7 +170,8 @@ INSERT OR IGNORE INTO enum_run_status VALUES (2, 'BIOSYN_SCANNED');
 INSERT OR IGNORE INTO enum_run_status VALUES (3, 'SUBPFAM_SCANNED');
 INSERT OR IGNORE INTO enum_run_status VALUES (4, 'FEATURES_EXTRACTED');
 INSERT OR IGNORE INTO enum_run_status VALUES (5, 'CLUSTERING_FINISHED');
-INSERT OR IGNORE INTO enum_run_status VALUES (6, 'RUN_FINISHED');
+INSERT OR IGNORE INTO enum_run_status VALUES (6, 'MEMBERSHIPS_ASSIGNED');
+INSERT OR IGNORE INTO enum_run_status VALUES (7, 'RUN_FINISHED');
 CREATE UNIQUE INDEX IF NOT EXISTS enumrunstatus_name ON enum_run_status(name);
 
 -- run
@@ -201,26 +202,42 @@ CREATE INDEX IF NOT EXISTS runbgcstatus_run ON run_bgc_status(run_id, status);
 -- features
 CREATE TABLE IF NOT EXISTS features (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    run_id INTEGER NOT NULL,
+    run_id INTEGER NOT NULL UNIQUE,
     extraction_method VARCHAR(100) NOT NULL,
     extraction_start DATETIME NOT NULL,
     extraction_end DATETIME NOT NULL,
     FOREIGN KEY(run_id) REFERENCES run(id)
 );
+CREATE INDEX IF NOT EXISTS features_run ON features(run_id);
+
+-- clustering
+CREATE TABLE IF NOT EXISTS clustering (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_id INTEGER NOT NULL UNIQUE,
+    clustering_method VARCHAR(100) NOT NULL,
+    clustering_start DATETIME NOT NULL,
+    clustering_end DATETIME NOT NULL,
+    random_seed INTEGER NOT NULL,
+    FOREIGN KEY(run_id) REFERENCES run(id)
+);
+CREATE INDEX IF NOT EXISTS clustering_run ON clustering(run_id);
 
 -- gcf
 CREATE TABLE IF NOT EXISTS gcf (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    run_id INTEGER NOT NULL,
-    centroid TEXT NOT NULL,
-    FOREIGN KEY(run_id) REFERENCES run(id)
+    clustering_id INTEGER NOT NULL,
+    centroid_idx INTEGER NOT NULL,
+    FOREIGN KEY(clustering_id) REFERENCES clustering(id)
 );
+CREATE INDEX IF NOT EXISTS gcf_clustering ON gcf(clustering_id);
 
 -- gcf_membership
 CREATE TABLE IF NOT EXISTS gcf_membership (
     gcf_id INTEGER NOT NULL,
     bgc_id INTEGER NOT NULL,
-    membership_value DECIMAL(5, 2) NOT NULL,
+    membership_value INTEGER NOT NULL,
     FOREIGN KEY(gcf_id) REFERENCES gcf(id),
     FOREIGN KEY(bgc_id) REFERENCES bgc(id)
 );
+CREATE INDEX IF NOT EXISTS gcf_membership_gcf ON gcf_membership(gcf_id);
+CREATE INDEX IF NOT EXISTS gcf_membership_gcf ON gcf_membership(bgc_id);
