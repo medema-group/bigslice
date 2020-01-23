@@ -661,7 +661,7 @@ def main():
             features = Features.extract(
                 run.id, "default", output_db, pool
             )
-            features.save(features_folder, output_db)
+            features.save(features_folder)
             del features
 
             print("[{}s] features extraction".format(get_elapsed()))

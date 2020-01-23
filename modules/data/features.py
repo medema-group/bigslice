@@ -35,9 +35,9 @@ class Features:
         self.extraction_end = properties["end"]
         self.data = properties["data"]
 
-    def save(self, output_folder: str, database: Database):
+    def save(self, output_folder: str):
         """commits features data"""
-        existing = database.select(
+        existing = self.database.select(
             "features",
             "WHERE run_id=? AND extraction_method=?",
             parameters=(self.run_id, self.extraction_method),
@@ -48,7 +48,7 @@ class Features:
             raise Exception("not_implemented")
         else:
             # save to database
-            self.id = database.insert(
+            self.id = self.database.insert(
                 "features",
                 {
                     "run_id": self.run_id,
@@ -58,7 +58,7 @@ class Features:
                 }
             )
             # immediately commits, don't want to have double pickled file
-            database.commit_inserts()
+            self.database.commit_inserts()
 
             # pickle data
             pickle_path = path.join(output_folder, "{}.pkl".format(self.id))
