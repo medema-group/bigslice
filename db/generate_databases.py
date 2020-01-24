@@ -6,8 +6,9 @@ feature extractions, and download MIBiG GBKs
 
 """
 
-from os import path, makedirs, remove
-from shutil import copy, rmtree
+from os import path, makedirs, remove, rename, SEEK_END
+from shutil import copy, rmtree, copyfileobj
+from multiprocessing import cpu_count
 from hashlib import md5
 import urllib.request
 import gzip
@@ -16,12 +17,15 @@ import glob
 import subprocess
 import tarfile
 from Bio import AlignIO
+from Bio.SearchIO import parse
 from sys import exit
 
 
 # default parameters
 _PFAM_DATABASE_URL = "ftp://ftp.ebi.ac.uk/pub/" + \
     "databases/Pfam/releases/Pfam31.0/Pfam-A.hmm.gz"
+_REFERENCE_PROTEINS_URL = "ftp://ftp.pir.georgetown.edu/databases/" + \
+    "rps/rp-seqs-15.fasta.gz"
 _MIBIG_GBKS_URL = "https://dl.secondarymetabolites.org/" + \
     "mibig/mibig_gbk_2.0.tar.gz"
 _MIBIG_GBKS_COUNT = 1910
@@ -161,49 +165,182 @@ def main():
     with open(biosyn_pfam_md5sum_path, "w") as f:
         f.write(biosyn_pfam_md5sum)
 
-    # build subpfams
+    # ----------- sub_pfams ----------- #
+
+    # fetch subpfams list
+    sub_pfams = {}
     with open(sub_pfams_tsv, "r") as corepfam:
-        corepfam.readline()
+        corepfam.readline()  # skip header
         for line in corepfam:
             [pfam_accession, pfam_name, pfam_desc] = line.rstrip().split("\t")
-            subpfam_hmm_path = path.join(
-                sub_pfams_hmms, "{}.subpfams.hmm".format(pfam_accession))
-            if not path.exists(subpfam_hmm_path):
-                print("Building {}...".format(subpfam_hmm_path))
-                aligned_multifasta_path = fetch_alignment_file(
-                    pfam_accession, tmp_dir_path)
-                temp_hmm_path = path.splitext(aligned_multifasta_path)[
-                    0] + ".subpfams.hmm"
-                if not path.exists(temp_hmm_path):
-                    tree_path = path.splitext(aligned_multifasta_path)[
-                        0] + ".newick"
-                    if path.exists(tree_path):
-                        remove(tree_path)
-                    if subprocess.call([
-                            "build_subpfam", "-o",
-                            tmp_dir_path,
-                            aligned_multifasta_path
-                    ]) > 0:
-                        raise
-                copy(temp_hmm_path, subpfam_hmm_path)
+            if pfam_accession in sub_pfams:
+                raise Exception(
+                    "Duplicated core pfam found in " + sub_pfams_tsv)
             else:
-                # check hmmpress
-                hmm_presses = get_pressed_hmm_filepaths(subpfam_hmm_path)
-                hmm_pressed = True
+                sub_pfams[pfam_accession] = {
+                    "name": pfam_name,
+                    "desc": pfam_desc
+                }
+
+    # generate core pfams-only HMM
+    core_hmms_path = path.join(tmp_dir_path, "core_pfams.hmm")
+    with open(biosyn_pfam_hmm, "r") as full_hmm:
+        with open(core_hmms_path, "w") as core_hmm:
+            buf_text = ""
+            cur_acc = ""
+            cur_leng = 0
+            have_ga = False
+            for line in full_hmm:
+                buf_text += line
+                if line.startswith("ACC"):
+                    cur_acc = line.rstrip().split(" ")[-1]
+                elif line.startswith("GA"):
+                    have_ga = True
+                elif line.startswith("LENG"):
+                    cur_leng = int(
+                        line.rstrip().split(" ")[-1])
+                elif line.startswith("//"):
+                    if cur_acc in sub_pfams:
+                        sub_pfams[cur_acc]["leng"] = cur_leng
+                        if not have_ga:
+                            before, after = buf_text.split("CKSUM")
+                            buf_text = before + \
+                                "GA    20.00 20.00;\n" + \
+                                "CKSUM" + after
+                        core_hmm.write(buf_text)
+                    buf_text = ""
+                    cur_acc = ""
+                    have_ga = False
+            if cur_acc in sub_pfams:
+                if not have_ga:
+                    before, after = buf_text.split("CKSUM")
+                    buf_text = before + \
+                        "GA    20.00 20.00;\n" + \
+                        "CKSUM" + after
+                core_hmm.write(buf_text)
+
+    # download reference proteins dataset
+    ref_prot_filename = path.basename(_REFERENCE_PROTEINS_URL)
+    stored_ref_prot_filename = "subpfam_refprot.fa"
+    if not path.exists(path.join(tmp_dir_path, stored_ref_prot_filename)):
+        if not path.exists(path.join(tmp_dir_path, ref_prot_filename)):
+            print("Downloading " + ref_prot_filename)
+            urllib.request.urlretrieve(
+                _REFERENCE_PROTEINS_URL, path.join(
+                    tmp_dir_path, ref_prot_filename))
+        file_ext = path.splitext(ref_prot_filename)[1]
+        if file_ext in ["fasta", "fa"]:
+            rename(
+                path.join(tmp_dir_path, ref_prot_filename),
+                path.join(tmp_dir_path, stored_ref_prot_filename)
+            )
+        elif file_ext == ".gz":
+            with gzip.open(
+                path.join(tmp_dir_path, ref_prot_filename), 'rb'
+            ) as f_in:
+                with open(
+                    path.join(tmp_dir_path, stored_ref_prot_filename), 'wb'
+                ) as f_out:
+                    copyfileobj(f_in, f_out)
+        else:
+            raise Exception("Unrecognized file format! " + file_ext)
+
+    print("Extracting subpfam reference proteins...")
+
+    # run hmmscan to get aligned fasta files
+    ref_prot_hmmtxt = path.join(
+        tmp_dir_path, "subpfam_refprot_hits.txt")
+    if not path.exists(ref_prot_hmmtxt):
+        command = [
+            "hmmsearch",
+            "--acc",
+            "--cut_ga",
+            "--cpu", str(cpu_count()),
+            "-o", ref_prot_hmmtxt,
+            core_hmms_path,
+            path.join(tmp_dir_path, stored_ref_prot_filename)
+        ]
+        ret = subprocess.run(command, check=True)
+        if ret.returncode != 0:
+            raise Exception("Error doing hmmsearch")
+    else:
+        with open(ref_prot_hmmtxt, "r") as fp:
+            if next(reversed_fp_iter(fp)).rstrip() != "[ok]":
+                # file is broken, remove
+                raise Exception(
+                    ref_prot_hmmtxt +
+                    " is broken, please remove and rerun the script")
+
+    # parse hmmtxt into alignment fastas
+    for run_result in parse(ref_prot_hmmtxt, "hmmer3-text"):
+        pfam_acc = run_result.accession
+        model_len = sub_pfams[pfam_acc]["leng"]
+        aligned_multifasta_path = path.join(
+            tmp_dir_path,
+            "ref-" + pfam_acc + ".aligned.fa"
+        )
+
+        with open(aligned_multifasta_path, "w") as fa:
+            for hsp in run_result.hsps:
+                # get hits aligned to model
+                aligned_to_model = ""
+                query_seq = str(hsp.query.seq)
+                hit_seq = str(hsp.hit.seq)
+                for i in range(hsp.query_start):
+                    aligned_to_model += "-"
+                for i in range(len(query_seq)):
+                    if query_seq[i] != ".":
+                        aligned_to_model += hit_seq[i]
+                for i in range(model_len - len(aligned_to_model)):
+                    aligned_to_model += "-"
+
+                # write to fasta
+                fa_acc = hsp.hit.id + "|" + \
+                    str(hsp.hit_start) + "-" + str(hsp.hit_end)
+                fa.write(">{}\n{}\n".format(fa_acc, aligned_to_model))
+
+    # build subpfams
+    for pfam_accession, pfam_properties in sub_pfams.items():
+        subpfam_hmm_path = path.join(
+            sub_pfams_hmms, "{}.subpfams.hmm".format(pfam_accession))
+        if not path.exists(subpfam_hmm_path):
+            print("Building {}...".format(subpfam_hmm_path))
+            aligned_multifasta_path = path.join(
+                tmp_dir_path,
+                "ref-" + pfam_acc + ".aligned.fa"
+            )
+            temp_hmm_path = path.splitext(aligned_multifasta_path)[
+                0] + ".subpfams.hmm"
+            if not path.exists(temp_hmm_path):
+                tree_path = path.splitext(aligned_multifasta_path)[
+                    0] + ".newick"
+                if path.exists(tree_path):
+                    remove(tree_path)
+                if subprocess.call([
+                        "build_subpfam", "-o",
+                        tmp_dir_path,
+                        aligned_multifasta_path
+                ]) > 0:
+                    raise
+            copy(temp_hmm_path, subpfam_hmm_path)
+        else:
+            # check hmmpress
+            hmm_presses = get_pressed_hmm_filepaths(subpfam_hmm_path)
+            hmm_pressed = True
+            for hmm_press_file in hmm_presses:
+                if not path.exists(hmm_press_file):
+                    hmm_pressed = False
+                    break
+            if not hmm_pressed:
+                print("Running hmmpress on {}".format(subpfam_hmm_path))
                 for hmm_press_file in hmm_presses:
-                    if not path.exists(hmm_press_file):
-                        hmm_pressed = False
-                        break
-                if not hmm_pressed:
-                    print("Running hmmpress on {}".format(subpfam_hmm_path))
-                    for hmm_press_file in hmm_presses:
-                        if path.exists(hmm_press_file):
-                            remove(hmm_press_file)
-                    if subprocess.call([
-                        "hmmpress",
-                        subpfam_hmm_path
-                    ]) > 0:
-                        raise
+                    if path.exists(hmm_press_file):
+                        remove(hmm_press_file)
+                if subprocess.call([
+                    "hmmpress",
+                    subpfam_hmm_path
+                ]) > 0:
+                    raise
 
     # update md5sum
     print("Writing md5sums...")
@@ -245,6 +382,41 @@ def md5sum(filename):
         for chunk in iter(lambda: f.read(128 * hash.block_size), b""):
             hash.update(chunk)
     return hash.hexdigest()
+
+
+def reversed_fp_iter(fp, buf_size=8192):
+    """a generator that returns the lines of a file in reverse order
+    ref: https://stackoverflow.com/a/23646049/8776239
+    """
+    segment = None
+    offset = 0
+    fp.seek(0, SEEK_END)
+    file_size = remaining_size = fp.tell()
+    while remaining_size > 0:
+        offset = min(file_size, offset + buf_size)
+        fp.seek(file_size - offset)
+        buffer = fp.read(min(remaining_size, buf_size))
+        remaining_size -= buf_size
+        lines = buffer.splitlines(True)
+        # the first line of the buffer is probably not a complete line so
+        # we'll save it and append it to the last line of the next buffer
+        # we read
+        if segment is not None:
+            # if the previous chunk starts right from the beginning of line
+            # do not concat the segment to the last line of new chunk
+            # instead, yield the segment first
+            if buffer[-1] == '\n':
+                # print 'buffer ends with newline'
+                yield segment
+            else:
+                lines[-1] += segment
+        segment = lines[0]
+        for index in range(len(lines) - 1, 0, -1):
+            if len(lines[index]):
+                yield lines[index]
+    # Don't yield None if the file was empty
+    if segment is not None:
+        yield segment
 
 
 if __name__ == "__main__":
