@@ -155,18 +155,20 @@ class BirchClustering:
                     features_df.loc[reference_bgc_ids].values
                 )
             )
-            # set threshold based on references
-            birch.threshold = fetch_threshold(
-                features_df.loc[reference_bgc_ids])
-            # set flat birch
-            birch.branching_factor = features_df.shape[0]
-            # fitted features = non-reference features
-            birch.partial_fit(
-                preprocess(
-                    features_df.loc[~features_df.index.isin(
-                        reference_bgc_ids)].values
+            samples_df = features_df.loc[~features_df.index.isin(
+                reference_bgc_ids)]
+            if samples_df.shape[0] > 0:
+                # set threshold based on references
+                birch.threshold = fetch_threshold(
+                    features_df.loc[reference_bgc_ids])
+                # set flat birch
+                birch.branching_factor = features_df.shape[0]
+                # fitted features = non-reference features
+                birch.partial_fit(
+                    preprocess(
+                        samples_df.values
+                    )
                 )
-            )
         else:
             # set threshold based on sampling of features
             birch.threshold = birch.threshold = fetch_threshold(
