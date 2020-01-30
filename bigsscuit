@@ -562,7 +562,7 @@ def main():
                 for chunk, chunk_name in get_chunk(
                         to_be_subpfam_scanned, subpfam_chunk_size):
 
-                    fasta_sequences = BGC.get_all_cds_fasta_with_hits(
+                    fasta_sequences = BGC.get_all_aligned_hsp(
                         chunk, core_pfam_ids.values(), output_db)
                     chunks_and_pfam_ids[chunk_name] = set(
                         fasta_sequences.keys())

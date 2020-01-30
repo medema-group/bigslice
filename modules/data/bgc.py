@@ -259,9 +259,59 @@ class BGC:
 
         multifasta = ""
         for row in rows:
-            multifasta += ">bgc:{}|cds:{}\n".format(row["bgc_id"], row["id"])
+            multifasta += ">bgc:{}|cds:{}|{}-{}\n".format(
+                row["bgc_id"], row["id"],
+                0, len(row["aa_seq"]))
             multifasta += "{}\n".format(row["aa_seq"])
         return multifasta
+
+    def get_all_aligned_hsp(bgc_ids: List[int], hmm_ids: List[int],
+                            database: Database):
+        """query database, get all aligned hsp
+        hits from the list of hmm ids"""
+
+        rows = database.select(
+            "cds,hsp,hsp_alignment",
+            "WHERE cds.id=hsp.cds_id" +
+            " AND hsp.id=hsp_alignment.hsp_id" +
+            " AND cds.bgc_id IN (" + ",".join(map(str, bgc_ids)) + ")" +
+            " AND hsp.hmm_id IN (" + ",".join(map(str, hmm_ids)) + ")",
+            props=["bgc_id", "hsp.id as hsp_id", "hmm_id", "cds.id",
+                   "aa_seq", "hsp_alignment.*"]
+        )
+
+        results = {}
+        for row in rows:
+            bgc_id = row["bgc_id"]
+            hmm_id = row["hmm_id"]
+            if hmm_id not in results:
+                results[hmm_id] = ""
+
+            # restore aligned-to-model sequences
+            aln = ""
+            hit_prot = row["aa_seq"][row["cds_start"]:row["cds_end"]]
+            skips = 0
+            cds_gaps = [int(gap)
+                        for gap in row[
+                        "cds_gaps"].split(",") if len(gap) > 0]
+            model_gaps = [int(gap)
+                          for gap in row[
+                          "model_gaps"].split(",") if len(gap) > 0]
+            len_full = row["cds_end"] - row["cds_start"] + len(cds_gaps)
+
+            for i in range(len_full):
+                if i not in model_gaps:
+                    if i not in cds_gaps:
+                        aln += hit_prot[i - skips]
+                    else:
+                        skips += 1
+
+            results[hmm_id] += ">bgc:{}|cds:{}|{}-{}\n".format(
+                bgc_id, row["id"], row["hsp_id"],
+                row["cds_start"],
+                row["cds_end"])
+            results[hmm_id] += "{}\n".format(aln)
+        return results
 
     def get_all_cds_fasta_with_hits(bgc_ids: List[int], hmm_ids: List[int],
                                     database: Database):

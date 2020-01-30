@@ -40,19 +40,22 @@ class HSP:
             if self.alignment:
                 database.insert(
                     "hsp_alignment",
-                    {                
+                    {
                         "hsp_id": self.id,
                         "model_start": self.alignment["model_start"],
                         "model_end": self.alignment["model_end"],
-                        "model_gaps": ",".join(map(str, self.alignment["model_gaps"])),
+                        "model_gaps": ",".join(
+                            map(str, self.alignment["model_gaps"])),
                         "cds_start": self.alignment["cds_start"],
                         "cds_end": self.alignment["cds_end"],
-                        "cds_gaps": ",".join(map(str, self.alignment["cds_gaps"]))
+                        "cds_gaps": ",".join(
+                            map(str, self.alignment["cds_gaps"]))
                     }
                 )
 
     @staticmethod
-    def parse_hmmtext(hmm_text_path: str, hmm_ids: dict, save_alignment: bool=True):
+    def parse_hmmtext(hmm_text_path: str,
+                      hmm_ids: dict, save_alignment: bool=True):
         """parse hmmtext result, create HSP object
         """
 
@@ -65,10 +68,11 @@ class HSP:
             for hsp in run_result.hsps:
 
                 try:
-                    # accession format: "bgc:X|cds:Y"
-                    bgc_id, cds_id = hsp.query_id.split("|")
+                    # accession format: "bgc:X|cds:Y|start-end"
+                    bgc_id, cds_id, locs = hsp.query_id.split("|")
                     bgc_id = int(bgc_id.split("bgc:")[-1])
                     cds_id = int(cds_id.split("cds:")[-1])
+                    locs = tuple(map(int, locs.split("-")))
                 except IndexError:
                     raise Exception("couldn't parse {}".format(hmm_text_path))
 
@@ -85,8 +89,8 @@ class HSP:
                         "model_gaps": [i for i, c
                                        in enumerate(str(hsp.hit.seq))
                                        if c == '.'],
-                        "cds_start": hsp.query_start,
-                        "cds_end": hsp.query_end,
+                        "cds_start": hsp.query_start + locs[0],
+                        "cds_end": hsp.query_end + locs[0],
                         "cds_gaps": [i for i, c
                                      in enumerate(str(hsp.query.seq))
                                      if c == '-']
@@ -98,7 +102,7 @@ class HSP:
                     "cds_id": cds_id,
                     "hmm_id": hmm_id,
                     "bitscore": hsp.bitscore,
-                    "alignment": hsp_alignment                
+                    "alignment": hsp_alignment
                 }))
 
         return results
