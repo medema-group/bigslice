@@ -14,8 +14,12 @@ import urllib.request
 import gzip
 import csv
 import glob
+from tempfile import TemporaryDirectory
 import subprocess
 import tarfile
+import numpy as np
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import pairwise_distances
 from Bio import AlignIO
 from Bio.SearchIO import parse
 from sys import exit
@@ -271,6 +275,7 @@ def main():
                     ref_prot_hmmtxt +
                     " is broken, please remove and rerun the script")
 
+    print("Parsing hmmscan results")
     # parse hmmtxt into alignment fastas
     for run_result in parse(ref_prot_hmmtxt, "hmmer3-text"):
         pfam_acc = run_result.accession
@@ -307,21 +312,15 @@ def main():
             print("Building {}...".format(subpfam_hmm_path))
             aligned_multifasta_path = path.join(
                 tmp_dir_path,
-                "ref-" + pfam_acc + ".aligned.fa"
+                "ref-" + pfam_accession + ".aligned.fa"
             )
             temp_hmm_path = path.splitext(aligned_multifasta_path)[
                 0] + ".subpfams.hmm"
             if not path.exists(temp_hmm_path):
-                tree_path = path.splitext(aligned_multifasta_path)[
-                    0] + ".newick"
-                if path.exists(tree_path):
-                    remove(tree_path)
-                if subprocess.call([
-                        "build_subpfam", "-o",
-                        tmp_dir_path,
-                        aligned_multifasta_path
-                ]) > 0:
-                    raise
+                build_subpfam(
+                    aligned_multifasta_path,
+                    temp_hmm_path
+                )
             copy(temp_hmm_path, subpfam_hmm_path)
         else:
             # check hmmpress
@@ -374,6 +373,68 @@ def fetch_alignment_file(pfam_accession, folder_path):
     if not path.exists(multifasta_path):
         AlignIO.convert(stockholm_path, "stockholm", multifasta_path, "fasta")
     return multifasta_path
+
+
+def build_subpfam(input_fasta, output_hmm):
+
+    # fetch sequences into numpy array
+    labels = []
+    sequences = []
+    with open(input_fasta, "r") as fa:
+        for line in fa:
+            line = line.rstrip()
+            if len(line) > 0:
+                if line.startswith(">"):
+                    labels.append(line[1:])
+                else:
+                    if line.count("-") > (len(line) / 4):
+                        if len(labels) > 0:
+                            del labels[-1]
+                    else:
+                        sequences.append(list(line))
+    assert len(labels) == len(sequences)
+    uniques = np.unique(sequences)
+    X = np.searchsorted(uniques, sequences)
+
+    # calculate pdist
+    dist = pairwise_distances(
+        X, metric='hamming', n_jobs=-1)
+
+    # clustering
+    cl = AgglomerativeClustering(
+        n_clusters=min(50, max(10, int(X.shape[0] / 200))),
+        affinity='precomputed',
+        linkage='complete')
+    cl.fit(dist)
+
+    clades = {}
+    for i, label in enumerate(cl.labels_):
+        if label not in clades:
+            clades[label] = []
+        clades[label].append(i)
+
+    # hmmbuild
+    with TemporaryDirectory() as temp_dir:
+        pfam_name = path.splitext(input_fasta)[0]
+        for cl in clades:
+            hmm_name = "{}_c{}".format(pfam_name, cl)
+            with open(path.join(
+                    temp_dir, "{}.fa".format(hmm_name)), "w") as fa:
+                for i in clades[cl]:
+                    seq = "".join([c for c in sequences[i]])
+                    fa.write(">{}\n{}\n".format(labels[i], seq))
+            command = "hmmbuild -n {} {} {}".format(hmm_name, path.join(
+                temp_dir, "{}.hmm".format(hmm_name)),
+                path.join(temp_dir, "{}.fa".format(hmm_name)))
+            if subprocess.check_call(command, shell=True) == 0:
+                continue
+        with open(output_hmm, "w") as hm:
+            for cl in clades:
+                hmm_name = "{}_c{}".format(pfam_name, cl)
+                with open(path.join(
+                        temp_dir, "{}.hmm".format(hmm_name)), "r") as sm:
+                    for line in sm.readlines():
+                        hm.write(line)
 
 
 def md5sum(filename):
