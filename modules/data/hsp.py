@@ -55,14 +55,17 @@ class HSP:
 
     @staticmethod
     def parse_hmmtext(hmm_text_path: str,
-                      hmm_ids: dict, save_alignment: bool=True):
+                      hmm_ids: dict,
+                      save_alignment: bool=True,
+                      top_k: int=0,
+                      rank_normalize: bool=False):
         """parse hmmtext result, create HSP object
         """
 
         if not path.exists(hmm_text_path):
             raise FileNotFoundError()
 
-        results = []
+        results_bin = {}
 
         for run_result in parse(hmm_text_path, 'hmmer3-text'):
             for hsp in run_result.hsps:
@@ -98,11 +101,37 @@ class HSP:
                 else:
                     hsp_alignment = None
 
-                results.append(HSP({
+                bin_id = "{}/{}-{}".format(cds_id, locs[0], locs[1])
+                if bin_id not in results_bin:
+                    results_bin[bin_id] = []
+
+                results_bin[bin_id].append(HSP({
                     "cds_id": cds_id,
                     "hmm_id": hmm_id,
                     "bitscore": hsp.bitscore,
                     "alignment": hsp_alignment
                 }))
+
+        # reorder results by bitscore
+        # then put into a list
+        results = []
+        for bin_id in results_bin:
+            results_bin[bin_id] = sorted(
+                results_bin[bin_id],
+                key=lambda x: x.bitscore,
+                reverse=True
+            )
+            if top_k > 0:
+                # take only top-k
+                if len(results_bin[bin_id]) > top_k:
+                    del results_bin[bin_id][top_k:]
+
+            if rank_normalize:
+                # modify bitscore values according to ranks
+                n = len(results_bin[bin_id])
+                for i, hsp in enumerate(results_bin[bin_id]):
+                    hsp.bitscore = int(255 - (i * (255 / n)))
+
+            results.extend(results_bin[bin_id])
 
         return results

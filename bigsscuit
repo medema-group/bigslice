@@ -607,7 +607,9 @@ def main():
 
                         for hsp_object in HSP.parse_hmmtext(
                                 out_result_path, sub_pfam_ids,
-                                save_alignment=False):
+                                save_alignment=False,
+                                top_k=3,
+                                rank_normalize=True):
                             hsp_object.save(output_db)
 
                     output_db.commit_inserts()

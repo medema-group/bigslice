@@ -130,7 +130,7 @@ class Features:
 
             for bgc_id in hsps:
                 biosyn_present = set()  # per-bgc
-                subpfam_bitscores = {}  # per-hmm
+                subpfam_bitscores = {}  # per-hmm, per cds-region
                 for cds_id in hsps[bgc_id]:
                     for hmm_id in hsps[bgc_id][cds_id]:
                         bitscore = max(hsps[bgc_id][cds_id][hmm_id])
@@ -138,24 +138,15 @@ class Features:
                         if not parent_hmm_id:  # biosyn
                             biosyn_present.add(hmm_id)
                         else:  # subpfam
-                            if parent_hmm_id not in subpfam_bitscores:
-                                subpfam_bitscores[parent_hmm_id] = {}
-                            subpfam_bitscores[parent_hmm_id][
-                                hmm_id] = max(
-                                bitscore,
-                                subpfam_bitscores[parent_hmm_id].get(hmm_id, 0)
-                            )
+                            subpfam_bitscores[hmm_id] = int(
+                                np.mean(hsps[bgc_id][cds_id][hmm_id]))
+
                 for hmm_id in biosyn_present:
                     bgc_features[bgc_idx[bgc_id], hmm_idx[hmm_id]] = 255
-                for parent_hmm_id in subpfam_bitscores:
-                    max_bitscore = max(
-                        subpfam_bitscores[parent_hmm_id].values())
-                    if max_bitscore > 0:
-                        for hmm_id, bitscore in subpfam_bitscores[parent_hmm_id
-                                                                  ].items():
-                            bgc_features[bgc_idx[bgc_id], hmm_idx[hmm_id]
-                                         ] = np.uint8(
-                                (bitscore / max_bitscore) * 255)
+
+                for hmm_id, bitscore in subpfam_bitscores.items():
+                    bgc_features[bgc_idx[bgc_id], hmm_idx[hmm_id]
+                                 ] = np.uint8(bitscore)
 
         # create object
         end_time = datetime.now()
