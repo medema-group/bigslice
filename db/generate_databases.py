@@ -282,7 +282,7 @@ def main():
         model_len = sub_pfams[pfam_acc]["leng"]
         aligned_multifasta_path = path.join(
             tmp_dir_path,
-            "ref-" + pfam_acc + ".aligned.fa"
+            pfam_acc + ".aligned.fa"
         )
 
         with open(aligned_multifasta_path, "w") as fa:
@@ -312,7 +312,7 @@ def main():
             print("Building {}...".format(subpfam_hmm_path))
             aligned_multifasta_path = path.join(
                 tmp_dir_path,
-                "ref-" + pfam_accession + ".aligned.fa"
+                pfam_accession + ".aligned.fa"
             )
             temp_hmm_path = path.splitext(aligned_multifasta_path)[
                 0] + ".subpfams.hmm"
@@ -322,24 +322,24 @@ def main():
                     temp_hmm_path
                 )
             copy(temp_hmm_path, subpfam_hmm_path)
-        else:
-            # check hmmpress
-            hmm_presses = get_pressed_hmm_filepaths(subpfam_hmm_path)
-            hmm_pressed = True
+
+        # check hmmpress
+        hmm_presses = get_pressed_hmm_filepaths(subpfam_hmm_path)
+        hmm_pressed = True
+        for hmm_press_file in hmm_presses:
+            if not path.exists(hmm_press_file):
+                hmm_pressed = False
+                break
+        if not hmm_pressed:
+            print("Running hmmpress on {}".format(subpfam_hmm_path))
             for hmm_press_file in hmm_presses:
-                if not path.exists(hmm_press_file):
-                    hmm_pressed = False
-                    break
-            if not hmm_pressed:
-                print("Running hmmpress on {}".format(subpfam_hmm_path))
-                for hmm_press_file in hmm_presses:
-                    if path.exists(hmm_press_file):
-                        remove(hmm_press_file)
-                if subprocess.call([
-                    "hmmpress",
-                    subpfam_hmm_path
-                ]) > 0:
-                    raise
+                if path.exists(hmm_press_file):
+                    remove(hmm_press_file)
+            if subprocess.call([
+                "hmmpress",
+                subpfam_hmm_path
+            ]) > 0:
+                raise
 
     # update md5sum
     print("Writing md5sums...")
@@ -407,6 +407,13 @@ def build_subpfam(input_fasta, output_hmm):
         linkage='complete')
     cl.fit(dist)
 
+    import pickle
+    with open("pickled_hc.pkl", "wb") as pk:
+        pickle.dump({
+            "model": cl,
+            "dist": dist
+            }, pk)
+
     clades = {}
     for i, label in enumerate(cl.labels_):
         if label not in clades:
@@ -415,7 +422,7 @@ def build_subpfam(input_fasta, output_hmm):
 
     # hmmbuild
     with TemporaryDirectory() as temp_dir:
-        pfam_name = path.splitext(input_fasta)[0]
+        pfam_name = path.splitext(path.basename(input_fasta))[0]
         for cl in clades:
             hmm_name = "{}_c{}".format(pfam_name, cl)
             with open(path.join(
@@ -423,11 +430,16 @@ def build_subpfam(input_fasta, output_hmm):
                 for i in clades[cl]:
                     seq = "".join([c for c in sequences[i]])
                     fa.write(">{}\n{}\n".format(labels[i], seq))
-            command = "hmmbuild -n {} {} {}".format(hmm_name, path.join(
-                temp_dir, "{}.hmm".format(hmm_name)),
-                path.join(temp_dir, "{}.fa".format(hmm_name)))
-            if subprocess.check_call(command, shell=True) == 0:
-                continue
+            command = [
+                "hmmbuild",
+                "--cpu",
+                str(cpu_count()),
+                "-n",
+                hmm_name,
+                path.join(temp_dir, "{}.hmm".format(hmm_name)),
+                path.join(temp_dir, "{}.fa".format(hmm_name))
+            ]
+            subprocess.call(" ".join(command), shell=True)
         with open(output_hmm, "w") as hm:
             for cl in clades:
                 hmm_name = "{}_c{}".format(pfam_name, cl)
