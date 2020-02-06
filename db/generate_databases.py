@@ -28,6 +28,9 @@ from sys import exit
 # default parameters
 _PFAM_DATABASE_URL = "ftp://ftp.ebi.ac.uk/pub/" + \
     "databases/Pfam/releases/Pfam31.0/Pfam-A.hmm.gz"
+_ANTISMASH_URL = "https://github.com/" + \
+    "antismash/antismash/archive/5-1-1.tar.gz"
+_ANTISMASH_VERSION = "antismash-5-1-1"
 _REFERENCE_PROTEINS_URL = "ftp://ftp.pir.georgetown.edu/databases/" + \
     "rps/rp-seqs-15.fasta.gz"
 _MIBIG_GBKS_URL = "https://dl.secondarymetabolites.org/" + \
@@ -68,11 +71,17 @@ def main():
         print("MIBiG GBKs exist!")
 
     # prepare generate_hmm steps
+
+    antismash_folder = path.join(tmp_dir_path,
+                                 _ANTISMASH_VERSION,
+                                 "antismash")
+
     biosyn_pfam_tsv = path.join(dir_path, "biosynthetic_pfams", "biopfam.tsv")
     biosyn_pfam_hmm = path.join(
         dir_path, "biosynthetic_pfams", "Pfam-A.biosynthetic.hmm")
     biosyn_pfam_md5sum_path = path.splitext(biosyn_pfam_tsv)[0] + ".md5sum"
     biosyn_pfam_md5sum = md5sum(biosyn_pfam_tsv)
+
     sub_pfams_tsv = path.join(dir_path, "sub_pfams", "corepfam.tsv")
     sub_pfams_hmms = path.join(dir_path, "sub_pfams", "hmm")
     sub_pfams_md5sum = md5sum(sub_pfams_tsv)
@@ -91,6 +100,58 @@ def main():
     if not path.exists(sub_pfams_hmms):
         makedirs(sub_pfams_hmms)
 
+    # download and extract antiSMASH models
+    if not path.exists(antismash_folder):
+        antismash_zipped_file = path.join(tmp_dir_path, "antismash.tar.gz")
+        if not path.exists(antismash_zipped_file):
+            print("Downloading antismash.tar.gz...")
+            urllib.request.urlretrieve(
+                _ANTISMASH_URL, path.join(
+                    tmp_dir_path, "antismash.tar.gz"))
+
+        print("Extracting antismash.tar.gz...")
+        with tarfile.open(antismash_zipped_file, "r:gz") as as_zipped:
+            as_zipped.extractall(path=tmp_dir_path)
+
+    # parse antiSMASH hmmdetails.txt
+    antismash_domains = {}
+    antismash_from_pfams = set()
+    antismash_data_folder = path.join(antismash_folder,
+                                      "detection",
+                                      "hmm_detection",
+                                      "data")
+    hmmdetails_path = path.join(antismash_data_folder,
+                                "hmmdetails.txt")
+    with open(hmmdetails_path, "r") as hmmdetails:
+        for line in hmmdetails:
+            line = line.rstrip()
+            name, desc, cutoff, filename = line.split("\t")
+            cutoff = int(cutoff)
+            acc = None
+
+            with open(path.join(
+                    antismash_data_folder,
+                    filename), "r") as ashmm:
+                for line in ashmm:
+                    line = line.rstrip()
+                    if line.startswith("ACC "):
+                        acc = line.split(" ")[-1]
+                    elif line.startswith("HMM "):
+                        break
+
+            antismash_domains[name] = {
+                "desc": desc,
+                "cutoff": cutoff,
+                "filename": filename
+            }
+
+            if acc and acc.startswith("PF"):
+                antismash_from_pfams.add(acc.split(".")[0])
+
+    # parse antiSMASH cluster_rules to get a list of
+    # core domains
+    antismash_core_list = []
+
     # check if Pfam-A.biosynthetic.hmm exists
     if not path.exists(biosyn_pfam_hmm):
 
@@ -107,6 +168,10 @@ def main():
             reader = csv.DictReader(biopfam_tsv, dialect="excel-tab")
             for row in reader:
                 if row["Status"] == "included":
+                    # check if included in antismash
+                    if row["Acc"].split(".")[0] in antismash_from_pfams:
+                        print(row["Acc"] + " is in antiSMASH pfam, skipping..")
+                        continue
                     biosynthetic_pfams.append(row["Acc"])
 
         # apply biosynthetic pfams filtering
@@ -130,8 +195,35 @@ def main():
                             biosynthetic_pfams.remove(pfam_acc)
                         except ValueError:
                             skipping = True
+                biopfam.write("//\n")
 
         assert len(biosynthetic_pfams) == 0
+
+        # add antismash domains
+        with open(biosyn_pfam_hmm, "a") as biopfam:
+            for as_name, as_data in antismash_domains.items():
+                with open(path.join(
+                        antismash_data_folder,
+                        filename), "r") as ashmm:
+                    for line in ashmm:
+                        line = line.rstrip()
+                        if line.startswith("NAME "):
+                            line = "NAME  AS-" + as_name
+                        elif line.startswith("ACC "):
+                            line = "ACC   AS-" + as_name
+                        elif line.startswith("DESC "):
+                            line = "DESC  " + as_data["desc"]
+                        elif line.startswith(("TC ", "GA ", "NC ")):
+                            continue
+                        elif line.startswith("STATS LOCAL MSV "):
+                            cutoff_str = str(as_data["cutoff"]) + ".0"
+                            biopfam.write("GA    {} {};\n".format(
+                                cutoff_str, cutoff_str))
+                            biopfam.write("TC    {} {};\n".format(
+                                cutoff_str, cutoff_str))
+                            biopfam.write("NC    {} {};\n".format(
+                                cutoff_str, cutoff_str))
+                        biopfam.write(line + "\n")
 
     else:
         # check md5sum
@@ -148,22 +240,22 @@ def main():
                                     "please check or remove the old hmm file!")
         print("Pfam-A.biosynthetic.hmm exists!")
 
-        hmm_presses = get_pressed_hmm_filepaths(biosyn_pfam_hmm)
-        hmm_pressed = True
+    hmm_presses = get_pressed_hmm_filepaths(biosyn_pfam_hmm)
+    hmm_pressed = True
+    for hmm_press_file in hmm_presses:
+        if not path.exists(hmm_press_file):
+            hmm_pressed = False
+            break
+    if not hmm_pressed:
+        print("Running hmmpress on Pfam-A.biosynthetic.hmm")
         for hmm_press_file in hmm_presses:
-            if not path.exists(hmm_press_file):
-                hmm_pressed = False
-                break
-        if not hmm_pressed:
-            print("Running hmmpress on Pfam-A.biosynthetic.hmm")
-            for hmm_press_file in hmm_presses:
-                if path.exists(hmm_press_file):
-                    remove(hmm_press_file)
-            if subprocess.call([
-                "hmmpress",
-                biosyn_pfam_hmm
-            ]) > 0:
-                raise
+            if path.exists(hmm_press_file):
+                remove(hmm_press_file)
+        if subprocess.call([
+            "hmmpress",
+            biosyn_pfam_hmm
+        ]) > 0:
+            raise
 
     # update md5sum
     with open(biosyn_pfam_md5sum_path, "w") as f:
@@ -181,6 +273,11 @@ def main():
                 raise Exception(
                     "Duplicated core pfam found in " + sub_pfams_tsv)
             else:
+                # check if included in antismash
+                if pfam_accession.split(".")[0] in antismash_from_pfams:
+                    print(pfam_accession +
+                          " is in antiSMASH pfam, skipping subpfam..")
+                    continue
                 sub_pfams[pfam_accession] = {
                     "name": pfam_name,
                     "desc": pfam_desc
@@ -406,13 +503,6 @@ def build_subpfam(input_fasta, output_hmm):
         affinity='precomputed',
         linkage='complete')
     cl.fit(dist)
-
-    import pickle
-    with open("pickled_hc.pkl", "wb") as pk:
-        pickle.dump({
-            "model": cl,
-            "dist": dist
-            }, pk)
 
     clades = {}
     for i, label in enumerate(cl.labels_):
