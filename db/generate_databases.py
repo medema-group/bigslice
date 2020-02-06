@@ -150,7 +150,23 @@ def main():
 
     # parse antiSMASH cluster_rules to get a list of
     # core domains
-    antismash_core_list = []
+    cluster_rules_dir = path.join(antismash_folder,
+                                  "detection",
+                                  "hmm_detection",
+                                  "cluster_rules")
+    antismash_core_list = set()
+    for cluster_rules_file in glob.iglob(
+            path.join(cluster_rules_dir, "*.txt")):
+        with open(cluster_rules_file, "r") as cr_handle:
+            rules = parse_antismash_rules(cr_handle)
+            for rule, rule_prop in rules.items():
+                antismash_core_list.update(
+                    fetch_antismash_domain_names(rule_prop["conditions"]))
+
+    as_domains = set(antismash_domains.keys())
+    for core in antismash_core_list:
+        if core not in as_domains:
+            raise Exception(core + " is not found in antiSMASH domains!")
 
     # check if Pfam-A.biosynthetic.hmm exists
     if not path.exists(biosyn_pfam_hmm):
@@ -282,6 +298,18 @@ def main():
                     "name": pfam_name,
                     "desc": pfam_desc
                 }
+    for as_core in antismash_core_list:  # from antiSMASH
+        if as_core in antismash_domains:
+            acc = "AS-" + as_core
+            if acc in sub_pfams:
+                raise Exception(
+                    "Duplicated core pfam found: " + acc)
+            sub_pfams[acc] = {
+                "name": "AS-" + as_core,
+                "desc": antismash_domains[as_core]["desc"]
+            }
+        else:
+            raise Exception(as_core + " is not in antiSMASH domain list!")
 
     # generate core pfams-only HMM
     core_hmms_path = path.join(tmp_dir_path, "core_pfams.hmm")
@@ -336,6 +364,7 @@ def main():
                 path.join(tmp_dir_path, stored_ref_prot_filename)
             )
         elif file_ext == ".gz":
+            print("Extracting reference proteins...")
             with gzip.open(
                 path.join(tmp_dir_path, ref_prot_filename), 'rb'
             ) as f_in:
@@ -346,7 +375,7 @@ def main():
         else:
             raise Exception("Unrecognized file format! " + file_ext)
 
-    print("Extracting subpfam reference proteins...")
+    print("HMMScanning reference proteins...")
 
     # run hmmscan to get aligned fasta files
     ref_prot_hmmtxt = path.join(
@@ -537,6 +566,54 @@ def build_subpfam(input_fasta, output_hmm):
                         temp_dir, "{}.hmm".format(hmm_name)), "r") as sm:
                     for line in sm.readlines():
                         hm.write(line)
+
+
+def parse_antismash_rules(file_handle):
+    conds = {}
+    cur_cond = {}
+    parsing_cond = False
+    for line in file_handle:
+        line = line.split("#")[0]
+        line = line.rstrip().lstrip()
+        if line.startswith("RULE "):
+            if "rule" in cur_cond:
+                conds[cur_cond["rule"]] = cur_cond
+            cur_cond = {
+                "rule": line.split(" ")[-1]
+            }
+            parsing_cond = False
+        elif parsing_cond:
+            if len(line) > 0:
+                cur_cond["conditions"] += " " + line
+        elif line.startswith("COMMENT "):
+            cur_cond["comment"] = line.split(" ")[-1]
+        elif line.startswith("CUTOFF "):
+            cur_cond["cutoff"] = int(line.split(" ")[-1])
+        elif line.startswith("NEIGHBOURHOOD "):
+            cur_cond["neighbourhood"] = int(line.split(" ")[-1])
+        elif line.startswith("CONDITIONS "):
+            cur_cond["conditions"] = line.split("CONDITIONS ")[-1]
+            parsing_cond = True
+    if "rule" in cur_cond:
+        conds[cur_cond["rule"]] = cur_cond
+
+    return conds
+
+
+def fetch_antismash_domain_names(conditions):
+    # replace all non-token with space
+    non_tokens = [
+        "minimum(", "minscore(",
+        " and ", "not ",
+        " or ", "cds(",
+        "[", "]", ",", ")", "("  # shorter chars should be in the back
+    ]
+    for nt in non_tokens:
+        conditions = conditions.replace(nt, " ")
+    return set([
+        token for token in conditions.split(" ")
+        if len(token) > 0 and not token.isdigit()
+    ])
 
 
 def md5sum(filename):
