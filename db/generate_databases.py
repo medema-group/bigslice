@@ -403,6 +403,7 @@ def main():
 
     print("Parsing hmmscan results")
     # parse hmmtxt into alignment fastas
+    core_pfam_hit_counts = {acc: 0 for acc in sub_pfams.keys()}
     for run_result in parse(ref_prot_hmmtxt, "hmmer3-text"):
         pfam_acc = run_result.accession
         model_len = sub_pfams[pfam_acc]["leng"]
@@ -429,6 +430,13 @@ def main():
                 fa_acc = hsp.hit.id + "|" + \
                     str(hsp.hit_start) + "-" + str(hsp.hit_end)
                 fa.write(">{}\n{}\n".format(fa_acc, aligned_to_model))
+                core_pfam_hit_counts[pfam_acc] += 1
+
+    # filter for subpfams not having any hits
+    for acc, count in core_pfam_hit_counts.items():
+        if count < 20:
+            print("skipping subpfam " + acc + ", not enough reference...")
+            del sub_pfams[acc]
 
     # build subpfams
     for pfam_accession, pfam_properties in sub_pfams.items():
@@ -555,6 +563,8 @@ def build_subpfam(input_fasta, output_hmm):
                 str(cpu_count()),
                 "-n",
                 hmm_name,
+                "-o",
+                "/dev/null",
                 path.join(temp_dir, "{}.hmm".format(hmm_name)),
                 path.join(temp_dir, "{}.fa".format(hmm_name))
             ]
