@@ -220,7 +220,7 @@ def main():
             for as_name, as_data in antismash_domains.items():
                 with open(path.join(
                         antismash_data_folder,
-                        filename), "r") as ashmm:
+                        as_data["filename"]), "r") as ashmm:
                     for line in ashmm:
                         line = line.rstrip()
                         if line.startswith("NAME "):
