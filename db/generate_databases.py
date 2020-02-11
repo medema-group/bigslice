@@ -224,9 +224,10 @@ def main():
                     for line in ashmm:
                         line = line.rstrip()
                         if line.startswith("NAME "):
-                            line = "NAME  AS-" + as_name
+                            line = "NAME  AS-" + as_name + "\n"
+                            line += "ACC   AS-" + as_name
                         elif line.startswith("ACC "):
-                            line = "ACC   AS-" + as_name
+                            continue
                         elif line.startswith("DESC "):
                             line = "DESC  " + as_data["desc"]
                         elif line.startswith(("TC ", "GA ", "NC ")):
@@ -521,7 +522,7 @@ def build_subpfam(input_fasta, output_hmm):
                 if line.startswith(">"):
                     labels.append(line[1:])
                 else:
-                    if line.count("-") > (len(line) / 4):
+                    if line.count("-") > (len(line) * 0.75):
                         if len(labels) > 0:
                             del labels[-1]
                     else:
