@@ -68,7 +68,7 @@ def fetch_pool(num_threads: int):
 
 
 def run_hmmscan(arguments: tuple):
-    fasta_path, hmm_path, result_path, cutoff = arguments
+    fasta_path, hmm_path, result_path, cutoff, make_alignment = arguments
     if path.exists(result_path):
         with open(result_path, "r") as fp:
             if next(reversed_fp_iter(fp)).rstrip() == "[ok]":
@@ -86,6 +86,9 @@ def run_hmmscan(arguments: tuple):
         hmm_path,
         fasta_path
     ]
+
+    if not make_alignment:
+        command.insert(1, "--noali")
 
     if cutoff == "ga":
         command.insert(1, "--cut_ga")
@@ -434,7 +437,7 @@ def main():
                             fa.write(fasta_sequences)
                             hmmscan_queues.add(
                                 (in_fasta_path, hmm_path,
-                                    out_result_path, "ga"))
+                                    out_result_path, "ga", True))
 
                 print("Running hmmscans in parallel...")
 
@@ -585,7 +588,7 @@ def main():
 
                         hmmscan_queues.add(
                             # for subpfam_scan: threshold == 20 bitscores
-                            (in_fasta_path, hmm_path, out_result_path, 20))
+                            (in_fasta_path, hmm_path, out_result_path, 20, False))
 
                 # do hmmscans in parallel
                 print("Running subpfam_scans in parallel...")
