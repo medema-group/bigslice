@@ -65,26 +65,36 @@ class HSP:
         if not path.exists(hmm_text_path):
             raise FileNotFoundError()
 
-        results_bin = {}
-
+        results = []
         for run_result in parse(hmm_text_path, 'hmmer3-text'):
-            for hsp in run_result.hsps:
+            # fetch query id
+            try:
+                # accession format: "bgc:X|cds:Y|start-end"
+                bgc_id, cds_id, locs = run_result.id.split("|")
+                bgc_id = int(bgc_id.split("bgc:")[-1])
+                cds_id = int(cds_id.split("cds:")[-1])
+                locs = tuple(map(int, locs.split("-")))
+            except IndexError:
+                raise Exception("couldn't parse {}".format(hmm_text_path))
 
-                try:
-                    # accession format: "bgc:X|cds:Y|start-end"
-                    bgc_id, cds_id, locs = hsp.query_id.split("|")
-                    bgc_id = int(bgc_id.split("bgc:")[-1])
-                    cds_id = int(cds_id.split("cds:")[-1])
-                    locs = tuple(map(int, locs.split("-")))
-                except IndexError:
-                    raise Exception("couldn't parse {}".format(hmm_text_path))
+            for idx, hsp in enumerate(run_result.hsps):
 
+                # check top-k & if needs to be rank_normalized
+                bitscore = hsp.bitscore
+                if top_k > 0:
+                    if idx >= top_k:
+                        break
+                    elif rank_normalize:
+                        bitscore = 255 - int((255 / top_k) * (idx + 1))
+
+                # fetch hmm id
                 try:
                     hmm_id = hmm_ids[hsp.hit_id]
                 except KeyError:
                     raise Exception(
                         "couldn't find hmm_id for {}".format(hsp.hit_id))
 
+                # check if need to save alignment
                 if save_alignment:
                     hsp_alignment = {
                         "model_start": hsp.hit_start,
@@ -101,37 +111,12 @@ class HSP:
                 else:
                     hsp_alignment = None
 
-                bin_id = "{}/{}-{}".format(cds_id, locs[0], locs[1])
-                if bin_id not in results_bin:
-                    results_bin[bin_id] = []
-
-                results_bin[bin_id].append(HSP({
+                # save
+                results.append(HSP({
                     "cds_id": cds_id,
                     "hmm_id": hmm_id,
-                    "bitscore": hsp.bitscore,
+                    "bitscore": bitscore,
                     "alignment": hsp_alignment
                 }))
-
-        # reorder results by bitscore
-        # then put into a list
-        results = []
-        for bin_id in results_bin:
-            results_bin[bin_id] = sorted(
-                results_bin[bin_id],
-                key=lambda x: x.bitscore,
-                reverse=True
-            )
-            if top_k > 0:
-                # take only top-k
-                if len(results_bin[bin_id]) > top_k:
-                    del results_bin[bin_id][top_k:]
-
-            if rank_normalize:
-                # modify bitscore values according to ranks
-                n = len(results_bin[bin_id])
-                for i, hsp in enumerate(results_bin[bin_id]):
-                    hsp.bitscore = int(255 - (i * (255 / n)))
-
-            results.extend(results_bin[bin_id])
 
         return results
