@@ -33,9 +33,6 @@ _ANTISMASH_URL = "https://github.com/" + \
 _ANTISMASH_VERSION = "antismash-5-1-1"
 _REFERENCE_PROTEINS_URL = "ftp://ftp.pir.georgetown.edu/databases/" + \
     "rps/rp-seqs-15.fasta.gz"
-_MIBIG_GBKS_URL = "https://dl.secondarymetabolites.org/" + \
-    "mibig/mibig_gbk_2.0.tar.gz"
-_MIBIG_GBKS_COUNT = 1910
 
 
 def main():
@@ -45,30 +42,6 @@ def main():
     # create temporary directory
     if not path.exists(tmp_dir_path):
         makedirs(tmp_dir_path)
-
-    # download and unzip MIBiG dataset
-    mibig_gbks_folder = path.join(dir_path, "mibig_gbks")
-    if not path.exists(mibig_gbks_folder) or \
-            len(glob.glob(
-                path.join(mibig_gbks_folder, "BGC*.gbk"))
-                ) != _MIBIG_GBKS_COUNT:
-        if path.exists(mibig_gbks_folder):
-            rmtree(mibig_gbks_folder)
-        makedirs(mibig_gbks_folder)
-        mibig_temp_file = path.join(
-            tmp_dir_path, "mibig_gbk_2.0.tar.gz")
-        if not path.exists(mibig_temp_file):
-            print("Downloading mibig_gbk_2.0.tar.gz...")
-            urllib.request.urlretrieve(
-                _MIBIG_GBKS_URL, path.join(
-                    tmp_dir_path, "mibig_gbk_2.0.tar.gz"))
-        print("Extracting mibig_gbk_2.0.tar.gz...")
-        with tarfile.open(mibig_temp_file, "r:gz") as mibig_zipped:
-            mibig_zipped.extractall(path=tmp_dir_path)
-            for mibig_file in glob.glob(path.join(tmp_dir_path, "*/BGC*.gbk")):
-                copy(mibig_file, mibig_gbks_folder)
-    else:
-        print("MIBiG GBKs exist!")
 
     # prepare generate_hmm steps
 

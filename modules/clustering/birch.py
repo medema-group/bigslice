@@ -15,7 +15,6 @@ todo: assign reference by datasets
 from os import path
 from random import randint, seed
 from datetime import datetime
-from typing import List
 import pickle
 from ..data.database import Database
 import numpy as np
@@ -71,7 +70,6 @@ class BirchClustering:
     def run(run_id: int,
             features_folder: str,
             database: Database,
-            reference_bgc_ids: List[int]=[],
             random_seed: int=randint(1, 9999999)):
         """ run clustering and returns object """
 
@@ -106,10 +104,6 @@ class BirchClustering:
             "method": "birch"
         }
 
-        # set if using reference/not
-        reference_bgc_ids = np.array(reference_bgc_ids)
-        use_reference = reference_bgc_ids.shape[0] > 0
-
         # check if feature data exists
         feature_ids = database.select(
             "features",
@@ -136,52 +130,17 @@ class BirchClustering:
 
         # run birch
         properties["start"] = datetime.now()
-        if use_reference:
-            # check if all reference features are in dataset
-            ref_not_in_features = np.setdiff1d(
-                reference_bgc_ids, features_df.index)
-            if len(ref_not_in_features) > 0:
-                raise Exception(
-                    str(len(ref_not_in_features)) +
-                    " out of " +
-                    str(features_df.shape[0]) +
-                    " reference BGCs are not in the features matrix"
-                )
-            # seed birch with reference features
-            birch.threshold = 0
-            birch.branching_factor = len(reference_bgc_ids)
-            birch.fit(
-                preprocess(
-                    features_df.loc[reference_bgc_ids].values
-                )
+        # set threshold based on sampling of features
+        birch.threshold = birch.threshold = fetch_threshold(
+            features_df)
+        # set flat birch
+        birch.branching_factor = features_df.shape[0]
+        # fitted features = all
+        birch.fit(
+            preprocess(
+                features_df.values
             )
-            samples_df = features_df.loc[~features_df.index.isin(
-                reference_bgc_ids)]
-            if samples_df.shape[0] > 0:
-                # set threshold based on references
-                birch.threshold = fetch_threshold(
-                    features_df.loc[reference_bgc_ids])
-                # set flat birch
-                birch.branching_factor = features_df.shape[0]
-                # fitted features = non-reference features
-                birch.partial_fit(
-                    preprocess(
-                        samples_df.values
-                    )
-                )
-        else:
-            # set threshold based on sampling of features
-            birch.threshold = birch.threshold = fetch_threshold(
-                features_df)
-            # set flat birch
-            birch.branching_factor = features_df.shape[0]
-            # fitted features = all
-            birch.fit(
-                preprocess(
-                    features_df.values
-                )
-            )
-            pass
+        )
         properties["end"] = datetime.now()
 
         # save centroids

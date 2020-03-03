@@ -260,7 +260,6 @@ def main():
     tmp_folder = path.join(output_folder, "tmp")
     data_db_path = path.join(output_folder, "data.db")
     program_db_folder = path.abspath(args.program_db_folder)
-    mibig_gbks_folder = path.join(program_db_folder, "mibig_gbks")
     resume = args.resume
     use_memory = args.mem
 
@@ -335,15 +334,6 @@ def main():
 
             new_bgc_count = 0
 
-            # first, parse and read MIBiGs
-            # TODO: can this be pre-cached?
-            mibig_bgc_ids, count_new = process_input_folder(
-                mibig_gbks_folder, output_db, pool)
-            all_bgc_ids.update(mibig_bgc_ids)
-            new_bgc_count += count_new
-            print("Found {} new BGC(s) from MIBiG".format(count_new))
-
-            # then the input folder
             dataset_bgc_ids, count_new = process_input_folder(
                 input_folder, output_db, pool)
             all_bgc_ids.update(dataset_bgc_ids)
@@ -689,19 +679,10 @@ def main():
             if not path.exists(centroids_folder):
                 makedirs(centroids_folder)
 
-            # fetch mibig bgc ids as reference bgc ids
-            # todo: use datasets
-            reference_bgc_ids = [row["id"] for row in output_db.select(
-                "bgc",
-                "WHERE type LIKE 'mibig'",
-                props=["id"]
-            )]
-
             clustering = BirchClustering.run(
                 run.id,
                 features_folder,
-                output_db,
-                reference_bgc_ids
+                output_db
             )
             clustering.save(centroids_folder)
             del clustering
