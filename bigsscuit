@@ -10,6 +10,7 @@ import argparse
 from os import getpid, path, makedirs, remove
 from sys import exit, argv
 import glob
+import re
 from multiprocessing import Pool, cpu_count
 from modules.data.database import Database
 from modules.data.bgc import BGC
@@ -173,10 +174,10 @@ def check_subpfam_scanned_in_db(bgc_ids: List[int],
     return([row["bgc_id"] for row in rows])
 
 
-def check_gbk_exists(file_path: str, database: Database):
+def check_gbk_exists(dataset_id: int, orig_gbk_path: str, database: Database):
     existing = database.select("bgc",
-                               "WHERE orig_filename=?",
-                               parameters=(path.basename(file_path),),
+                               "WHERE dataset_id=? AND orig_gbk_path=?",
+                               parameters=(dataset_id, orig_gbk_path),
                                props=["id"])
     if len(existing) > 0:
         return [row["id"] for row in existing]
@@ -187,44 +188,127 @@ def check_gbk_exists(file_path: str, database: Database):
 def process_input_folder(folder_path: str, database: Database,
                          mp_pool: Pool):
 
-    # check if input gbks exist in database
-    print("processing {}...".format(folder_path))
-    get_elapsed()
-    all_bgc_ids = set()
-    new_bgcs_count = 0
-    files_to_process = []
-    count_gbk_exists = 0
-    for file_path in glob.iglob(path.join(folder_path, "*.gbk")):
-        bgc_ids = check_gbk_exists(file_path, database)
-        if len(bgc_ids) < 1:
-            files_to_process.append(file_path)
-        else:
-            count_gbk_exists += 1
-            all_bgc_ids.update(bgc_ids)
-    print("Found {} BGCs from {} GBKs, another {} to be parsed.".format(
-        len(all_bgc_ids), count_gbk_exists, len(files_to_process)))
-    print("[{}s] querying GBKs".format(get_elapsed()))
+    # load metadata file
+    metadata_file = path.join(folder_path, "datasets.tsv")
+    datasets = {}
+    if not path.exists(metadata_file):
+        raise Exception(
+            "Can't find metadata file ({})".format(metadata_file))
+    with open(metadata_file, "r") as metadata_handle:
+        for line in metadata_handle:
+            if line.startswith("#"):  # comments
+                continue
+            line = line.rstrip()
+            dataset_name, dataset_path, dataset_desc = line.split("\t")
 
-    # parse new GBKs
-    get_elapsed()
-    print("Parsing and inserting {} GBKs...".format(len(files_to_process)))
-    pool_results = mp_pool.map(parse_input_gbk, files_to_process)
-    new_bgc_ids = []
-    for file_path, bgcs in pool_results:
-        for bgc in bgcs:
-            bgc.save(database)
-            new_bgc_ids.append(bgc.id)
-            new_bgcs_count += 1
-    all_bgc_ids.update(new_bgc_ids)
-    database.commit_inserts()
-    print("Inserted {} new BGCs.".format(len(new_bgc_ids)))
-    print("[{}s] inserting BGCs".format(get_elapsed()))
+            # dataset name should be unique
+            if dataset_name in datasets:
+                raise Exception(
+                    "Dataset name should be unique! " +
+                    "duplicated name found: " + dataset_name)
 
-    return all_bgc_ids, new_bgcs_count
+            # check if dataset folder exists
+            dataset_folder_path = path.join(
+                folder_path,
+                dataset_path)
+            if not path.exists(dataset_folder_path):
+                raise Exception(
+                    "Can't find dataset folder: {}".format(
+                        dataset_folder_path))
+
+            datasets[dataset_name] = {
+                "path": dataset_path, "desc": dataset_desc}
+
+    # define eligible regexes for clustergbks
+    eligible_regexes = [re.compile(rgx) for rgx in [
+        "^.*$"
+    ]]
+
+    # process datasets
+    dataset_bgc_ids = {}
+    for dataset_name, dataset_meta in datasets.items():
+
+        # This only store bgcs from gbk files
+        # exist within the folder
+        # e.g. if a dataset has been parsed before,
+        # then a folder is deleted, the previous BGCs
+        # won't be included here
+        dataset_bgc_ids[dataset_name] = set()
+
+        # check if dataset exists in database
+        try:
+            dataset_id = database.select(
+                "dataset",
+                "WHERE name=?",
+                parameters=(dataset_name,),
+                props=["id"])[0]["id"]
+        except IndexError:  # create new
+            dataset_id = database.insert(
+                "dataset",
+                {
+                    "name": dataset_name,
+                    "orig_folder": dataset_meta["path"],
+                    "description": dataset_meta["desc"]
+                }
+            )
+
+        get_elapsed()
+        print("processing dataset: {}...".format(dataset_name))
+        new_bgcs_count = 0
+        files_to_process = []
+        count_gbk_exists = 0
+
+        # fetch gbk files
+        dataset_folder_path = path.join(
+            folder_path,
+            dataset_meta["path"])
+        for gbk_full_path in glob.iglob(path.join(
+                dataset_folder_path,
+                "**/*.gbk"),
+                recursive=True):
+
+            # first check: only take antiSMASH/MIBiG-derived GBKs
+            gbk_name = path.splitext(path.basename(gbk_full_path))[0]
+            eligible_file = False
+            for eligible_pattern in eligible_regexes:
+                if eligible_pattern.match(gbk_name):
+                    eligible_file = True
+                    break
+
+            # second check: see if already exists in db
+            if eligible_file:
+                gbk_path = gbk_full_path[len(dataset_folder_path) + 1:]
+                bgc_ids = check_gbk_exists(dataset_id, gbk_path, database)
+                if len(bgc_ids) < 1:
+                    files_to_process.append((gbk_path, gbk_full_path))
+                else:
+                    count_gbk_exists += 1
+                    dataset_bgc_ids[dataset_name].update(bgc_ids)
+
+        print("Found {} BGCs from {} GBKs, another {} to be parsed.".format(
+            len(dataset_bgc_ids[dataset_name]),
+            count_gbk_exists,
+            len(files_to_process)))
+
+        # parse new GBKs
+        print("Parsing and inserting {} GBKs...".format(len(files_to_process)))
+        pool_results = mp_pool.map(parse_input_gbk, files_to_process)
+        for file_path, bgcs in pool_results:
+            for bgc in bgcs:
+                bgc.save(dataset_id, database)
+                new_bgcs_count += 1
+                dataset_bgc_ids[dataset_name].add(bgc.id)
+        database.commit_inserts()
+        print("Inserted {} new BGCs.".format(new_bgcs_count))
+        print("[{}s] processing dataset: {}".format(
+            get_elapsed(), dataset_name))
+
+    return dataset_bgc_ids
 
 
-def parse_input_gbk(file_path: str):
-    return (file_path, BGC.parse_gbk(file_path))
+def parse_input_gbk(arguments: tuple):
+    orig_gbk_path, file_path = arguments
+    return (file_path, BGC.parse_gbk(file_path, orig_gbk_path=orig_gbk_path))
 
 
 def main():
@@ -331,21 +415,22 @@ def main():
         else:
             # read input folder
             all_bgc_ids = set()
+            datasets_count = 0
 
-            new_bgc_count = 0
-
-            dataset_bgc_ids, count_new = process_input_folder(
-                input_folder, output_db, pool)
-            all_bgc_ids.update(dataset_bgc_ids)
-            new_bgc_count += count_new
-            print("Found {} new BGC(s) from input folder".format(count_new))
+            for dataset_name, dataset_bgc_ids in process_input_folder(
+                    input_folder, output_db, pool).items():
+                datasets_count += 1
+                all_bgc_ids.update(dataset_bgc_ids)
+            print("Found {} BGC(s) from {} datasets".format(
+                len(all_bgc_ids),
+                datasets_count))
 
             # create new run data
             run = Run.create(all_bgc_ids, hmm_db.id, prog_params,
                              run_start, output_db)
             output_db.commit_inserts()
 
-            if use_memory and new_bgc_count > 0:
+            if use_memory:
                 output_db.dump_db_file()
 
         # check run_bgc status, bin into a list of statuses
@@ -698,7 +783,7 @@ def main():
                 print("failed to update run_status")
 
         # phase 6: finishing, preparing outputs
-        exit(1)  # TODO: implements
+        return 1  # TODO: implements
         if run.status < 6:
             run.status == 6
             run.save()

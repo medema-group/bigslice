@@ -24,18 +24,18 @@ class BGC:
         self.type = properties["type"]
         self.on_contig_edge = properties["on_contig_edge"]
         self.length_nt = properties["length_nt"]
-        self.orig_filename = properties["orig_filename"]
+        self.orig_gbk_path = properties["orig_gbk_path"]
         self.chem_subclasses = properties["chem_subclasses"]
         self.taxons = properties["taxons"]
         self.cds = properties["cds"]
 
-    def save(self, database: Database):
+    def save(self, dataset_id: int, database: Database):
         """commits bgc data"""
 
         existing = database.select(
             "bgc",
-            "WHERE name=?",
-            parameters=(self.name,)
+            "WHERE name=? AND dataset_id=?",
+            parameters=(self.name, dataset_id)
         )
         if existing:
             # for now, this should not get called
@@ -55,11 +55,12 @@ class BGC:
             self.id = database.insert(
                 "bgc",
                 {
+                    "dataset_id": dataset_id,
                     "name": self.name,
                     "type": self.type,
                     "on_contig_edge": self.on_contig_edge,
                     "length_nt": self.length_nt,
-                    "orig_filename": self.orig_filename
+                    "orig_gbk_path": self.orig_gbk_path
                 }
             )
             # insert classes
@@ -105,12 +106,14 @@ class BGC:
                 cds.__save__(database)
 
     @staticmethod
-    def parse_gbk(gbk_path: str):
+    def parse_gbk(gbk_path: str, orig_gbk_path: str=None):
         """Load BGCs from a gbk file, return a list of BGC
         objects (one gbk file can contain multiple BGCs e.g.
         in the case of antiSMASH5 GBKs"""
 
-        orig_filename = path.basename(gbk_path)
+        if not orig_gbk_path:
+            orig_gbk_path = gbk_path
+
         results = []
 
         gbk_type = None
@@ -136,7 +139,7 @@ class BGC:
                             gbk_type = "mibig"
                             break
                 if not gbk_type:
-                    print(orig_filename +
+                    print(orig_gbk_path +
                           " is not a recognized antiSMASH clustergbk")
                     # not recognized, skip for now
                     pass
@@ -162,7 +165,7 @@ class BGC:
                                 "type": gbk_type,
                                 "on_contig_edge": on_edge,
                                 "length_nt": len_nt,
-                                "orig_filename": orig_filename,
+                                "orig_gbk_path": orig_gbk_path,
                                 "chem_subclasses": chem_subclasses,
                                 "taxons": taxons,
                                 "cds": [BGC.CDS.from_feature(f)
@@ -179,7 +182,7 @@ class BGC:
                                 qual.get("kind", [""])[0] in \
                                 ("single", "interleaved", "chemical_hybrid"):
                             cc = feature
-                            name = path.splitext(orig_filename)[0] + \
+                            name = path.splitext(orig_gbk_path)[0] + \
                                 ".cc" + \
                                 qual["candidate_cluster_number"][0]
                             on_edge = qual["contig_edge"][0] == "True"
@@ -194,7 +197,7 @@ class BGC:
                                 "type": gbk_type,
                                 "on_contig_edge": on_edge,
                                 "length_nt": len_nt,
-                                "orig_filename": orig_filename,
+                                "orig_gbk_path": orig_gbk_path,
                                 "chem_subclasses": chem_subclasses,
                                 "taxons": taxons,
                                 "cds": [BGC.CDS.from_feature(f)
@@ -211,7 +214,7 @@ class BGC:
                         else:
                             cluster = feature
                 if not cluster:
-                    print(orig_filename +
+                    print(orig_gbk_path +
                           " is not a recognized antiSMASH clustergbk")
                     break
                 qual = cluster.qualifiers
@@ -222,7 +225,7 @@ class BGC:
                         break
                 if not gbk_type:
                     gbk_type = "as4"
-                name = path.splitext(orig_filename)[0]
+                name = path.splitext(orig_gbk_path)[0]
                 on_edge = None
                 loc = cluster.location
                 len_nt = loc.end - loc.start
@@ -235,7 +238,7 @@ class BGC:
                     "type": gbk_type,
                     "on_contig_edge": on_edge,
                     "length_nt": len_nt,
-                    "orig_filename": orig_filename,
+                    "orig_gbk_path": orig_gbk_path,
                     "chem_subclasses": chem_subclasses,
                     "taxons": taxons,
                     "cds": [BGC.CDS.from_feature(f)
