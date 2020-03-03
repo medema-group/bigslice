@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS hsp (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     cds_id INTEGER NOT NULL,
     hmm_id INTEGER NOT NULL,
-    bitscore DECIMAL(4,2) NOT NULL,
+    bitscore REAL NOT NULL,
     FOREIGN KEY(cds_id) REFERENCES cds(id),
     FOREIGN KEY(hmm_id) REFERENCES hmm(id)    
 );
@@ -231,6 +231,8 @@ CREATE TABLE IF NOT EXISTS clustering (
     clustering_method VARCHAR(100) NOT NULL,
     clustering_start DATETIME NOT NULL,
     clustering_end DATETIME NOT NULL,
+    num_centroids INTEGER NOT NULL,
+    threshold REAL NOT NULL,
     random_seed INTEGER NOT NULL,
     FOREIGN KEY(run_id) REFERENCES run(id)
 );

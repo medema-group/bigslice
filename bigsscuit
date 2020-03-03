@@ -325,6 +325,10 @@ def main():
     parser.add_argument("--subpfam_chunk_size",
                         default=100, type=int)
     parser.add_argument("-i", "--input_folder", type=str)
+    parser.add_argument("--threshold",
+                        default=-1, type=float)
+    parser.add_argument("--threshold_pct",
+                        default=1.00, type=float)
     parser.add_argument("--mem", action="store_true")
     parser.add_argument("--resume", action='store_true')
     parser.add_argument("--program_db_folder",
@@ -338,6 +342,8 @@ def main():
     pool = fetch_pool(args.num_threads)
     hmmscan_chunk_size = args.hmmscan_chunk_size
     subpfam_chunk_size = args.subpfam_chunk_size
+    clustering_threshold = args.threshold
+    clustering_threshold_percentile = args.threshold_pct
     output_folder = path.abspath(args.output_folder)
     features_folder = path.join(output_folder, "features")
     centroids_folder = path.join(output_folder, "centroids")
@@ -767,7 +773,9 @@ def main():
             clustering = BirchClustering.run(
                 run.id,
                 features_folder,
-                output_db
+                output_db,
+                threshold=clustering_threshold,
+                threshold_percentile=clustering_threshold_percentile
             )
             clustering.save(centroids_folder)
             del clustering

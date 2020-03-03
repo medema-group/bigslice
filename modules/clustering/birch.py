@@ -30,6 +30,7 @@ class BirchClustering:
         self.database = database
         self.run_id = properties["run_id"]
         self.random_seed = properties["random_seed"]
+        self.threshold = properties["threshold"]
         self.clustering_method = properties["method"]
         self.clustering_start = properties["start"]
         self.clustering_end = properties["end"]
@@ -55,7 +56,9 @@ class BirchClustering:
                     "clustering_method": self.clustering_method,
                     "clustering_start": self.clustering_start,
                     "clustering_end": self.clustering_end,
-                    "random_seed": self.random_seed
+                    "num_centroids": self.centroids.shape[0],
+                    "random_seed": self.random_seed,
+                    "threshold": self.threshold
                 }
             )
             # immediately commits, don't want to have double pickled file
@@ -70,6 +73,8 @@ class BirchClustering:
     def run(run_id: int,
             features_folder: str,
             database: Database,
+            threshold: np.float=-1,
+            threshold_percentile: np.float=-1,
             random_seed: int=randint(1, 9999999)):
         """ run clustering and returns object """
 
@@ -79,20 +84,23 @@ class BirchClustering:
             return preprocessed_features
 
         def fetch_threshold(df: pd.DataFrame,
-                            percentile: int=1,
-                            iter: int=100,
+                            percentile: np.float,
+                            num_iter: int=100,
                             num_sample: int=1000
                             ):
             seed(random_seed)  # to make things reproducible
+            if df.shape[0] < num_sample:
+                num_sample = df.shape[0]
+                num_iter = 1
             threshold = np.array([np.percentile(
                 pairwise_distances(
                     df.sample(
-                        min(num_sample, int(0.1 * df.shape[0])),
+                        num_sample,
                         random_state=randint(0, 999999)
                     ).values,
                     metric='euclidean',
                     n_jobs=-1
-                ), percentile) for i in range(iter)]
+                ), percentile) for i in range(num_iter)]
 
             ).mean()
             return threshold
@@ -128,14 +136,26 @@ class BirchClustering:
             copy=False  # data already copied
         )
 
-        # run birch
+        # start clustering
         properties["start"] = datetime.now()
-        # set threshold based on sampling of features
-        birch.threshold = birch.threshold = fetch_threshold(
-            features_df)
+
+        # set threshold
+        if threshold >= 0:
+            birch.threshold = threshold
+        else:
+            if threshold_percentile < 0:
+                raise Exception("Threshold percentile can't be < 0.00")
+            # set threshold based on sampling of features
+            birch.threshold = fetch_threshold(
+                features_df,
+                threshold_percentile
+            )
+        properties["threshold"] = birch.threshold
+
         # set flat birch
         birch.branching_factor = features_df.shape[0]
-        # fitted features = all
+
+        # call birch
         birch.fit(
             preprocess(
                 features_df.values
