@@ -17,7 +17,6 @@ todo: use Dask
 from os import path
 from .database import Database
 from ..utils import get_chunk
-from datetime import datetime
 from multiprocessing import Pool
 import numpy as np
 import pandas as pd
@@ -31,8 +30,6 @@ class Features:
         self.database = database
         self.run_id = properties["run_id"]
         self.extraction_method = properties["method"]
-        self.extraction_start = properties["start"]
-        self.extraction_end = properties["end"]
         self.data = properties["data"]
 
     def save(self, output_folder: str):
@@ -52,9 +49,7 @@ class Features:
                 "features",
                 {
                     "run_id": self.run_id,
-                    "extraction_method": self.extraction_method,
-                    "extraction_start": self.extraction_start,
-                    "extraction_end": self.extraction_end
+                    "extraction_method": self.extraction_method
                 }
             )
             # immediately commits, don't want to have double pickled file
@@ -69,8 +64,6 @@ class Features:
 
     @staticmethod
     def extract(run_id: int, method: str, database: Database, pool: Pool):
-
-        start_time = datetime.now()
 
         # fetch bgc ids
         bgc_ids, bgc_status = map(tuple, list(zip(*database.select(
@@ -149,11 +142,8 @@ class Features:
                                  ] = np.uint8(bitscore)
 
         # create object
-        end_time = datetime.now()
         properties = {
             "run_id": run_id,
-            "start": start_time,
-            "end": end_time,
             "method": method,
             "data": pd.DataFrame(
                 data=bgc_features,

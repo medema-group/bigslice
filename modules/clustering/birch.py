@@ -14,7 +14,6 @@ todo: assign reference by datasets
 
 from os import path
 from random import randint, seed
-from datetime import datetime
 import pickle
 from ..data.database import Database
 import numpy as np
@@ -32,8 +31,6 @@ class BirchClustering:
         self.random_seed = properties["random_seed"]
         self.threshold = properties["threshold"]
         self.clustering_method = properties["method"]
-        self.clustering_start = properties["start"]
-        self.clustering_end = properties["end"]
         self.centroids = properties["centroids"]
 
     def save(self, output_folder: str):
@@ -54,8 +51,6 @@ class BirchClustering:
                 {
                     "run_id": self.run_id,
                     "clustering_method": self.clustering_method,
-                    "clustering_start": self.clustering_start,
-                    "clustering_end": self.clustering_end,
                     "num_centroids": self.centroids.shape[0],
                     "random_seed": self.random_seed,
                     "threshold": self.threshold
@@ -136,9 +131,6 @@ class BirchClustering:
             copy=False  # data already copied
         )
 
-        # start clustering
-        properties["start"] = datetime.now()
-
         # set threshold
         if threshold >= 0:
             birch.threshold = threshold
@@ -161,7 +153,6 @@ class BirchClustering:
                 features_df.values
             )
         )
-        properties["end"] = datetime.now()
 
         # save centroids
         properties["centroids"] = np.uint8(birch.subcluster_centers_)

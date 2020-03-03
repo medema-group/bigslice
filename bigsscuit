@@ -21,7 +21,6 @@ from modules.data.features import Features
 from modules.clustering.birch import BirchClustering
 from modules.utils import reversed_fp_iter, get_chunk
 from time import time
-from datetime import datetime
 import subprocess
 from typing import List
 
@@ -337,7 +336,6 @@ def main():
     args = parser.parse_args()
 
     # define variables
-    run_start = datetime.now()
     prog_params = " ".join(argv[1:])
     pool = fetch_pool(args.num_threads)
     hmmscan_chunk_size = args.hmmscan_chunk_size
@@ -414,10 +412,10 @@ def main():
                 print("No run data to resume, exiting..")
                 return 1
             else:
-                print("Resuming run #{} (started {})".format(
-                    run.id,
-                    run.time_start
+                print("Resuming run #{}".format(
+                    run.id
                 ))
+                run.log("run resumed " + str(len(run.bgcs)) + " BGCs")
         else:
             # read input folder
             all_bgc_ids = set()
@@ -432,9 +430,9 @@ def main():
                 datasets_count))
 
             # create new run data
-            run = Run.create(all_bgc_ids, hmm_db.id, prog_params,
-                             run_start, output_db)
+            run = Run.create(all_bgc_ids, hmm_db.id, prog_params, output_db)
             output_db.commit_inserts()
+            run.log("run created " + str(len(run.bgcs)) + " BGCs")
 
             if use_memory:
                 output_db.dump_db_file()
@@ -463,6 +461,8 @@ def main():
         if len(bgc_status_bin[1]) > 0:
             print("Doing biosyn_pfam scan on {} BGCs...".format(
                 len(bgc_status_bin[1])))
+            run.log("biosyn_pfam start " +
+                    str(len(bgc_status_bin[1])) + " BGCs")
             get_elapsed()
             hmm_scanned = set()
 
@@ -498,6 +498,8 @@ def main():
             if len(to_be_hmmscanned) > 0:
 
                 print("Preparing fasta files for hmmscans...")
+                run.log("hmmscan prepare " +
+                        str(len(to_be_hmmscanned)) + " BGCs")
 
                 hmmscan_queues = set()
                 hmm_path = path.join(program_db_folder,
@@ -521,12 +523,16 @@ def main():
                                     out_result_path, "ga", True))
 
                 print("Running hmmscans in parallel...")
+                run.log("hmmscan run " +
+                        str(len(to_be_hmmscanned)) + " BGCs")
 
                 # do hmmscans in parallel
-                hmmscan_results = pool.map(
+                _ = pool.map(
                     run_hmmscan, hmmscan_queues)
 
                 print("Parsing hmmscans results...")
+                run.log("hmmscan parse " +
+                        str(len(to_be_hmmscanned)) + " BGCs")
                 # parse hmmscan txts and create database
                 # entries for them, then update bgc_status
                 hmm_ids = {
@@ -576,6 +582,7 @@ def main():
             del hmm_result_path
 
             print("[{}s] biosyn_pfam scan".format(get_elapsed()))
+            run.log("biosyn_pfam end")
         if len(bgc_status_bin[1]) == 0:
             if run.status < 2:
                 if run.update_status(2) > 0:
@@ -593,6 +600,8 @@ def main():
             get_elapsed()
             print("Doing sub_pfam scan on {} BGCs...".format(
                 len(bgc_status_bin[2])))
+            run.log("sub_pfam start " +
+                    str(len(bgc_status_bin[2])) + " BGCs")
 
             subpfam_scanned = set()
 
@@ -642,6 +651,8 @@ def main():
                 chunks_and_pfam_ids = {}
 
                 print("Preparing fasta files for subpfam_scans...")
+                run.log("hmmscan prepare " +
+                        str(len(to_be_subpfam_scanned)) + " BGCs")
                 hmmscan_queues = set()
                 for chunk, chunk_name in get_chunk(
                         to_be_subpfam_scanned, subpfam_chunk_size):
@@ -668,15 +679,23 @@ def main():
                                 fa.write(fasta_sequences[parent_hmm_id])
 
                         hmmscan_queues.add(
-                            # for subpfam_scan: threshold == 20 bitscores
-                            (in_fasta_path, hmm_path, out_result_path, 20, False))
+                            (in_fasta_path,
+                                hmm_path,
+                                out_result_path,
+                                20,  # for subpfam_scan
+                                False
+                             ))
 
                 # do hmmscans in parallel
                 print("Running subpfam_scans in parallel...")
-                hmmscan_results = pool.map(
+                run.log("hmmscan run " +
+                        str(len(to_be_subpfam_scanned)) + " BGCs")
+                _ = pool.map(
                     run_hmmscan, hmmscan_queues)
 
                 print("Parsing subpfam_scans results...")
+                run.log("hmmscan parse " +
+                        str(len(to_be_subpfam_scanned)) + " BGCs")
                 for chunk, chunk_name in get_chunk(
                         to_be_subpfam_scanned, subpfam_chunk_size):
                     chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
@@ -722,6 +741,7 @@ def main():
             bgc_status_bin[3].update(subpfam_scanned)
 
             print("[{}s] sub_pfam scan".format(get_elapsed()))
+            run.log("sub_pfam end")
 
             if len(to_be_subpfam_scanned) > 0 and use_memory:
                 output_db.dump_db_file()
@@ -742,6 +762,8 @@ def main():
         if 2 < run.status < 4:
             get_elapsed()
             print("Extracting features from {} BGCs...".format(len(run.bgcs)))
+            run.log("features_extraction start " +
+                    str(len(run.bgcs)) + " BGCs")
 
             if not path.exists(features_folder):
                 makedirs(features_folder)
@@ -753,6 +775,7 @@ def main():
             del features
 
             print("[{}s] features extraction".format(get_elapsed()))
+            run.log("features_extraction end")
             update_bgcs_status = output_db.update("run_bgc_status",
                                                   {"status": 4},
                                                   "WHERE run_id=?",
@@ -766,6 +789,8 @@ def main():
         if 3 < run.status < 5:
             get_elapsed()
             print("Clustering {} BGCs...".format(len(run.bgcs)))
+            run.log("clustering start " +
+                    str(len(run.bgcs)) + " BGCs")
 
             if not path.exists(centroids_folder):
                 makedirs(centroids_folder)
@@ -781,6 +806,7 @@ def main():
             del clustering
 
             print("[{}s] clustering".format(get_elapsed()))
+            run.log("clustering end")
             update_bgcs_status = output_db.update("run_bgc_status",
                                                   {"status": 5},
                                                   "WHERE run_id=?",
@@ -796,6 +822,7 @@ def main():
             run.status == 6
             run.save()
 
+        run.log("run finished")
     # exit program cleanly
     return 0
 

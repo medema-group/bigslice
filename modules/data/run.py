@@ -22,9 +22,6 @@ class Run:
         self.database = database
         self.prog_params = properties["prog_params"]
         self.status = properties.get("status", 1)
-        self.time_start = properties["time_start"]
-        self.time_end = properties.get("time_end", None)
-        self.num_resumes = properties.get("num_resumes", 0)
         self.hmm_db_id = properties["hmm_db_id"]
         self.bgcs = properties["bgcs"]
 
@@ -35,14 +32,11 @@ class Run:
         else:
             # insert new run
             assert self.status == 1
-            assert self.num_resumes == 0
             self.id = self.database.insert(
                 "run",
                 {
                     "prog_params": self.prog_params,
                     "status": self.status,
-                    "time_start": self.time_start,
-                    "num_resumes": self.num_resumes,
                     "hmm_db_id": self.hmm_db_id
                 }
             )
@@ -64,7 +58,7 @@ class Run:
         has reached this point"""
 
         if self.id < 0:
-            raise Exception("not_found")
+            raise Exception("Run entry is not set")
 
         bgcs_not_processed = len(self.database.select(
             "run_bgc_status",
@@ -85,16 +79,32 @@ class Run:
             else:
                 return 0
 
+    def log(self, message: str, commit_directly=True):
+        """insert run_log entry"""
+
+        if self.id < 0:
+            raise Exception("Run entry is not set")
+
+        self.database.insert(
+            "run_log",
+            {
+                "run_id": self.id,
+                "time_stamp": datetime.now(),
+                "message": message
+            }
+        )
+        if commit_directly:
+            self.database.commit_inserts()
+
     @staticmethod
-    def create(bgc_ids: Set[int], hmm_db_id: int, prog_params: str,
-               run_start: datetime, database: Database):
+    def create(bgc_ids: Set[int], hmm_db_id: int,
+               prog_params: str, database: Database):
         """Creates a new run object
         and immediately save it in the
         database"""
 
         properties = {
             "status": 1,  # RUN_STARTED
-            "time_start": run_start,
             "prog_params": prog_params,
             "hmm_db_id": hmm_db_id,
             "bgcs": {bgc_id: 1 for bgc_id in bgc_ids}
@@ -125,8 +135,6 @@ class Run:
                 "id": run_row["id"],
                 "prog_params": run_row["prog_params"],
                 "status": run_row["status"],
-                "time_start": run_row["time_start"],
-                "time_end": run_row["time_end"],
                 "num_resumes": run_row["num_resumes"],
                 "hmm_db_id": run_row["hmm_db_id"],
                 "bgcs": bgcs

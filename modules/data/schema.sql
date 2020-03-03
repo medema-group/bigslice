@@ -193,14 +193,20 @@ CREATE TABLE IF NOT EXISTS run (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     status INTEGER NOT NULL,
     prog_params VARCHAR(250) NOT NULL,
-    time_start DATETIME NOT NULL,
-    time_end DATETIME,
     num_resumes INTEGER DEFAULT 0,
     hmm_db_id INTEGER,
     FOREIGN KEY(status) REFERENCES enum_run_status(id),
     FOREIGN KEY(hmm_db_id) REFERENCES hmm_db(id)
 );
-CREATE INDEX IF NOT EXISTS run_hmmdb ON run(hmm_db_id, status, time_start);
+CREATE INDEX IF NOT EXISTS run_hmmdb ON run(hmm_db_id, status);
+
+-- run_log
+CREATE TABLE IF NOT EXISTS run_log (
+    run_id INTEGER NOT NULL,
+    time_stamp DATETIME NOT NULL,
+    message VARCHAR(500) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS runlog_run ON run_log(run_id, time_stamp);
 
 -- run_bgc_status
 CREATE TABLE IF NOT EXISTS run_bgc_status (
@@ -218,8 +224,6 @@ CREATE TABLE IF NOT EXISTS features (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     run_id INTEGER NOT NULL UNIQUE,
     extraction_method VARCHAR(100) NOT NULL,
-    extraction_start DATETIME NOT NULL,
-    extraction_end DATETIME NOT NULL,
     FOREIGN KEY(run_id) REFERENCES run(id)
 );
 CREATE INDEX IF NOT EXISTS features_run ON features(run_id);
@@ -229,8 +233,6 @@ CREATE TABLE IF NOT EXISTS clustering (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     run_id INTEGER NOT NULL UNIQUE,
     clustering_method VARCHAR(100) NOT NULL,
-    clustering_start DATETIME NOT NULL,
-    clustering_end DATETIME NOT NULL,
     num_centroids INTEGER NOT NULL,
     threshold REAL NOT NULL,
     random_seed INTEGER NOT NULL,

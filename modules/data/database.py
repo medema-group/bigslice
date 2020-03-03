@@ -253,7 +253,6 @@ class Database:
         """perform actual commit for the insert queue"""
 
         db_cur = self._connection.cursor()
-        print("Commiting " + str(len(self._insert_queues)) + " inserts..")
         for table, data, _ in self._insert_queues:
             keys = []
             values = []
