@@ -85,7 +85,7 @@ class HSP:
                     if idx >= top_k:
                         break
                     elif rank_normalize:
-                        bitscore = 255 - int((255 / top_k) * (idx + 1))
+                        bitscore = 255 - int((255 / top_k) * idx)
 
                 # fetch hmm id
                 try:
