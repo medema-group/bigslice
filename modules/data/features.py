@@ -132,7 +132,7 @@ class Features:
                             biosyn_present.add(hmm_id)
                         else:  # subpfam
                             subpfam_bitscores[hmm_id] = int(
-                                np.mean(hsps[bgc_id][cds_id][hmm_id]))
+                                np.max(hsps[bgc_id][cds_id][hmm_id]))
 
                 for hmm_id in biosyn_present:
                     bgc_features[bgc_idx[bgc_id], hmm_idx[hmm_id]] = 255
