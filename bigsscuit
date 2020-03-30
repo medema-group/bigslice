@@ -220,6 +220,7 @@ def process_input_folder(folder_path: str, database: Database,
 
     # define eligible regexes for clustergbks
     eligible_regexes = [re.compile(rgx) for rgx in [
+        "^BGC[0-9]{7}$", # MIBiG
         "^.+\\.cluster[0-9]+$",  # antiSMASH4 clustergbks
         "^.+\\.region[0-9]+$",  # antiSMASH5 clustergbks
     ]]
