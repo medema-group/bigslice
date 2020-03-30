@@ -469,7 +469,7 @@ def main():
             hmm_scanned = set()
 
             # check if already hmmscanned in previous run
-            for chunk, chunk_name in get_chunk(list(bgc_status_bin[1]), 1000):
+            for chunk, chunk_name in get_chunk(list(bgc_status_bin[1]), args.num_threads, 1000):
                 for bgc_id in check_hmmscanned_in_db(
                         chunk, md5_biosyn_pfam, output_db):
                     if update_bgc_status(bgc_id, run.id, 2, output_db) == 1:
@@ -508,7 +508,9 @@ def main():
                                      "biosynthetic_pfams",
                                      "Pfam-A.biosynthetic.hmm")
                 for chunk, chunk_name in get_chunk(
-                        to_be_hmmscanned, hmmscan_chunk_size):
+                        to_be_hmmscanned,
+                        args.num_threads,
+                        hmmscan_chunk_size):
 
                     fasta_sequences = BGC.get_all_cds_fasta(
                         chunk, output_db)
@@ -541,7 +543,9 @@ def main():
                     hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
 
                 for chunk, chunk_name in get_chunk(
-                        to_be_hmmscanned, hmmscan_chunk_size):
+                        to_be_hmmscanned,
+                        args.num_threads,
+                        hmmscan_chunk_size):
 
                     in_fasta_path = fasta_path(chunk_name)
                     out_result_path = hmm_result_path(chunk_name)
@@ -608,7 +612,7 @@ def main():
             subpfam_scanned = set()
 
             # check if already subpfam_scanned in previous run
-            for chunk, chunk_name in get_chunk(list(bgc_status_bin[2]), 1000):
+            for chunk, chunk_name in get_chunk(list(bgc_status_bin[2]), args.num_threads, subpfam_chunk_size):
                 for bgc_id in check_subpfam_scanned_in_db(
                         chunk, md5_sub_pfam, output_db):
                     if update_bgc_status(bgc_id, run.id, 3, output_db) == 1:
@@ -657,7 +661,9 @@ def main():
                         str(len(to_be_subpfam_scanned)) + " BGCs")
                 hmmscan_queues = set()
                 for chunk, chunk_name in get_chunk(
-                        to_be_subpfam_scanned, subpfam_chunk_size):
+                        to_be_subpfam_scanned,
+                        args.num_threads,
+                        subpfam_chunk_size):
 
                     fasta_sequences = BGC.get_all_aligned_hsp(
                         chunk, core_pfam_ids.values(), output_db)
@@ -699,7 +705,9 @@ def main():
                 run.log("hmmscan parse " +
                         str(len(to_be_subpfam_scanned)) + " BGCs")
                 for chunk, chunk_name in get_chunk(
-                        to_be_subpfam_scanned, subpfam_chunk_size):
+                        to_be_subpfam_scanned,
+                        args.num_threads,
+                        subpfam_chunk_size):
                     chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
                     for parent_hmm_id in chunk_parent_pfams:
                         out_result_path = hmm_result_path(
