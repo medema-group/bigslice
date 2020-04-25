@@ -237,13 +237,35 @@ def process_input_folder(folder_path: str, database: Database,
         dataset_bgc_ids[dataset_name] = set()
 
         # check if dataset exists in database
-        try:
-            dataset_id = database.select(
-                "dataset",
-                "WHERE name=?",
-                parameters=(dataset_name,),
-                props=["id"])[0]["id"]
-        except IndexError:  # create new
+        queried_dataset = database.select(
+            "dataset",
+            "WHERE name=?",
+            parameters=(dataset_name,),
+            props=["id"])
+        assert len(queried_dataset) <= 1
+
+        if len(queried_dataset) > 0:
+            # dataset exists, use entries from db
+            ## note:
+            ## in the future, we would like to match
+            ## between what's in the database
+            ## and what's in the folder, and adjust
+            ## the included BGCs accordingly
+            ## i.e. if there's a new file to parse
+            dataset_id = queried_dataset[0]["id"]
+            dataset_bgc_ids[dataset_name] = [
+                row["id"] for row in database.select(
+                "bgc",
+                "WHERE dataset_id=?",
+                parameters=(dataset_id,),
+                props=["id"])]
+            print("Found {} BGCs in the database.".format(
+                len(dataset_bgc_ids[dataset_name])))
+            print("[{}s] processing dataset: {}".format(
+                get_elapsed(), dataset_name))
+            continue
+
+        else:  # create a new dataset entry
             dataset_id = database.insert(
                 "dataset",
                 {
@@ -279,7 +301,9 @@ def process_input_folder(folder_path: str, database: Database,
             # second check: see if already exists in db
             if eligible_file:
                 gbk_path = gbk_full_path[len(dataset_folder_path) + 1:]
-                bgc_ids = check_gbk_exists(dataset_id, gbk_path, database)
+                ## note: this check is turned off for now,
+                ## see above note
+                bgc_ids = []#check_gbk_exists(dataset_id, gbk_path, database)
                 if len(bgc_ids) < 1:
                     files_to_process.append((gbk_path, gbk_full_path))
                 else:
@@ -427,7 +451,7 @@ def main():
                     input_folder, output_db, pool).items():
                 datasets_count += 1
                 all_bgc_ids.update(dataset_bgc_ids)
-            print("Found {} BGC(s) from {} datasets".format(
+            print("Found {} BGC(s) from {} dataset(s)".format(
                 len(all_bgc_ids),
                 datasets_count))
 
