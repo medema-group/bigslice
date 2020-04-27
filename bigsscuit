@@ -8,7 +8,7 @@
 
 import argparse
 from os import getpid, path, makedirs, remove
-from sys import exit, argv
+from sys import argv
 import glob
 import re
 from multiprocessing import Pool, cpu_count
