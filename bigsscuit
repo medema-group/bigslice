@@ -495,7 +495,8 @@ def main():
             hmm_scanned = set()
 
             # check if already hmmscanned in previous run
-            for chunk, chunk_name in get_chunk(list(bgc_status_bin[1]), args.num_threads, 1000):
+            for chunk, chunk_name in get_chunk(
+                    list(bgc_status_bin[1]), args.num_threads, 1000):
                 for bgc_id in check_hmmscanned_in_db(
                         chunk, md5_biosyn_pfam, output_db):
                     if update_bgc_status(bgc_id, run.id, 2, output_db) == 1:
@@ -638,7 +639,9 @@ def main():
             subpfam_scanned = set()
 
             # check if already subpfam_scanned in previous run
-            for chunk, chunk_name in get_chunk(list(bgc_status_bin[2]), args.num_threads, subpfam_chunk_size):
+            for chunk, chunk_name in get_chunk(
+                    list(bgc_status_bin[2]),
+                    args.num_threads, subpfam_chunk_size):
                 for bgc_id in check_subpfam_scanned_in_db(
                         chunk, md5_sub_pfam, output_db):
                     if update_bgc_status(bgc_id, run.id, 3, output_db) == 1:
