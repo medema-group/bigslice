@@ -358,7 +358,8 @@ def main():
     parser.add_argument("--resume", action='store_true')
     parser.add_argument("--program_db_folder",
                         default=path.join(path.dirname(
-                            path.realpath(__file__)), "db"), type=str)
+                            path.realpath(__file__)),
+                            "db", "models"), type=str)
     args = parser.parse_args()
 
     # define variables

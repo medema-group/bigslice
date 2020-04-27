@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-
+# vim: set fileencoding=utf-8 :
+#
+# Copyright (C) 2019 Satria A. Kautsar
+# Wageningen University & Research
+# Bioinformatics Group
 """
-generate pHMM databases required by BIGSSCUIT to do its
-feature extractions, and download MIBiG GBKs
-
+generate pHMM databases required by the core algorithm
+to do its feature extractions
 """
 
+# python imports
 from os import path, makedirs, remove, rename, SEEK_END
 from shutil import copy, rmtree, copyfileobj
 from multiprocessing import cpu_count
@@ -17,22 +21,17 @@ import glob
 from tempfile import TemporaryDirectory
 import subprocess
 import tarfile
+from sys import exit
+
+# external imports
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import pairwise_distances
 from Bio import AlignIO
 from Bio.SearchIO import parse
-from sys import exit
 
-
-# default parameters
-_PFAM_DATABASE_URL = "ftp://ftp.ebi.ac.uk/pub/" + \
-    "databases/Pfam/releases/Pfam31.0/Pfam-A.hmm.gz"
-_ANTISMASH_URL = "https://github.com/" + \
-    "antismash/antismash/archive/5-1-1.tar.gz"
-_ANTISMASH_VERSION = "antismash-5-1-1"
-_REFERENCE_PROTEINS_URL = "ftp://ftp.pir.georgetown.edu/databases/" + \
-    "rps/rp-seqs-15.fasta.gz"
+# local imports
+from config import db_config
 
 
 def main():
@@ -46,7 +45,7 @@ def main():
     # prepare generate_hmm steps
 
     antismash_folder = path.join(tmp_dir_path,
-                                 _ANTISMASH_VERSION,
+                                 db_config["ANTISMASH_VERSION"],
                                  "antismash")
 
     biosyn_pfam_tsv = path.join(dir_path, "biosynthetic_pfams", "biopfam.tsv")
@@ -79,7 +78,7 @@ def main():
         if not path.exists(antismash_zipped_file):
             print("Downloading antismash.tar.gz...")
             urllib.request.urlretrieve(
-                _ANTISMASH_URL, path.join(
+                db_config["ANTISMASH_URL"], path.join(
                     tmp_dir_path, "antismash.tar.gz"))
 
         print("Extracting antismash.tar.gz...")
@@ -148,7 +147,7 @@ def main():
         if not path.exists(path.join(tmp_dir_path, "Pfam-A.hmm.gz")):
             print("Downloading Pfam-A.hmm.gz...")
             urllib.request.urlretrieve(
-                _PFAM_DATABASE_URL, path.join(
+                db_config["PFAM_DB_URL"], path.join(
                     tmp_dir_path, "Pfam-A.hmm.gz"))
 
         # load biosynthetic pfams list
@@ -323,13 +322,13 @@ def main():
                 core_hmm.write(buf_text)
 
     # download reference proteins dataset
-    ref_prot_filename = path.basename(_REFERENCE_PROTEINS_URL)
+    ref_prot_filename = path.basename(db_config["REFERENCE_PROTEINS_URL"])
     stored_ref_prot_filename = "subpfam_refprot.fa"
     if not path.exists(path.join(tmp_dir_path, stored_ref_prot_filename)):
         if not path.exists(path.join(tmp_dir_path, ref_prot_filename)):
             print("Downloading " + ref_prot_filename)
             urllib.request.urlretrieve(
-                _REFERENCE_PROTEINS_URL, path.join(
+                db_config["REFERENCE_PROTEINS_URL"], path.join(
                     tmp_dir_path, ref_prot_filename))
         file_ext = path.splitext(ref_prot_filename)[1]
         if file_ext in ["fasta", "fa"]:
@@ -408,7 +407,7 @@ def main():
 
     # filter for subpfams not having any hits
     for acc, count in core_pfam_hit_counts.items():
-        if count < 20:
+        if count < db_config["MIN_PROTEIN_SEQUENCES"]:
             print("skipping subpfam " + acc + ", not enough reference...")
             del sub_pfams[acc]
 
@@ -510,7 +509,8 @@ def build_subpfam(input_fasta, output_hmm):
 
     # clustering
     cl = AgglomerativeClustering(
-        n_clusters=min(50, max(10, int(X.shape[0] / 200))),
+        n_clusters=min(db_config["MAX_CLADE_NUMBERS"], max(
+            db_config["MIN_CLADE_NUMBERS"], int(X.shape[0] / 200))),
         affinity='precomputed',
         linkage='complete')
     cl.fit(dist)
