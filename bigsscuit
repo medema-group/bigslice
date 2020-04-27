@@ -351,6 +351,7 @@ def main():
     parser.add_argument("--subpfam_chunk_size",
                         default=100, type=int)
     parser.add_argument("-i", "--input_folder", type=str)
+    parser.add_argument("--complete", action="store_true")
     parser.add_argument("--threshold",
                         default=-1, type=float)
     parser.add_argument("--threshold_pct",
@@ -376,6 +377,7 @@ def main():
     tmp_folder = path.join(output_folder, "tmp")
     data_db_path = path.join(output_folder, "data.db")
     program_db_folder = path.abspath(args.program_db_folder)
+    clustering_complete_only = args.complete
     resume = args.resume
     use_memory = args.mem
 
@@ -838,6 +840,7 @@ def main():
                 run.id,
                 features_folder,
                 output_db,
+                complete_only=clustering_complete_only,
                 threshold=clustering_threshold,
                 threshold_percentile=clustering_threshold_percentile
             )

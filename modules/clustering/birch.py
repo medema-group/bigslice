@@ -68,6 +68,7 @@ class BirchClustering:
     def run(run_id: int,
             features_folder: str,
             database: Database,
+            complete_only: bool=True,
             threshold: np.float=-1,
             threshold_percentile: np.float=-1,
             random_seed: int=randint(1, 9999999)):
@@ -123,6 +124,22 @@ class BirchClustering:
         feature_path = path.join(
             features_folder, "{}.pkl".format(feature_ids[0]["id"]))
         features_df = pd.read_pickle(feature_path)
+
+        # check if complete-only
+        if complete_only:
+            bgc_idx_complete = [row[0] for row in database.select(
+                "bgc,run_bgc_status",
+                "WHERE run_bgc_status.run_id=?" +
+                " AND run_bgc_status.bgc_id=bgc.id" +
+                " AND bgc.on_contig_edge IS FALSE",
+                parameters=(run_id, ),
+                props=["bgc.id"],
+                as_tuples=True
+            )]
+            if len(bgc_idx_complete) < 1:
+                raise Exception("Empty clustering features")
+            # filter features_df, take only complete BGCs
+            features_df = features_df.loc[bgc_idx_complete]
 
         # initiate birch object
         birch = Birch(
