@@ -864,4 +864,8 @@ def main():
 
 
 if __name__ == "__main__":
-    exit(main())
+    return_code = main()
+    if return_code == 0:
+        print("BiG-SLiCE run complete!")
+    else:
+        print("BiG-SLiCE run failed.")
