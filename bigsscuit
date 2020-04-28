@@ -830,7 +830,7 @@ def main():
         # phase 5: Clustering
         if 3 < run.status < 5:
             get_elapsed()
-            print("Clustering {} BGCs...".format(len(run.bgcs)))
+            print("Building GCF models...")
             run.log("clustering start " +
                     str(len(run.bgcs)) + " BGCs")
 
@@ -851,20 +851,6 @@ def main():
             del clustering
             run.log("BIRCH run end")
 
-            # Membership assignment
-            run.log("Membership assignment start")
-            for membership in Membership.assign(
-                run.id,
-                features_folder,
-                centroids_folder,
-                output_db,
-                top_hits=3,
-                threshold=None
-            ):
-                membership.save()
-            output_db.commit_inserts()
-            run.log("Membership assignment end")
-
             print("[{}s] clustering".format(get_elapsed()))
             run.log("clustering end")
             update_bgcs_status = output_db.update("run_bgc_status",
@@ -876,13 +862,44 @@ def main():
             else:
                 print("failed to update run_status")
 
-        # phase 6: finishing, preparing outputs
+        # phase 6: Membership assignment
+        if 4 < run.status < 6:
+            get_elapsed()
+            print("Assigning GCF membership...")
+            run.log("membership assignment start for " +
+                    str(len(run.bgcs)) + " BGCs")
+
+            for membership in Membership.assign(
+                run.id,
+                features_folder,
+                centroids_folder,
+                output_db,
+                top_hits=3,
+                threshold=None
+            ):
+                membership.save()
+            output_db.commit_inserts()
+
+            print("[{}s] membership_assignment".format(get_elapsed()))
+            run.log("membership assignment end")
+            update_bgcs_status = output_db.update("run_bgc_status",
+                                                  {"status": 6},
+                                                  "WHERE run_id=?",
+                                                  (run.id,))
+            if update_bgcs_status > 0 and run.update_status(6) > 0:
+                print("run_status is now MEMBERSHIPS_ASSIGNED")
+            else:
+                print("failed to update run_status")
+
+        # phase 7: finishing, preparing outputs
         return 1  # TODO: implements
-        if run.status < 6:
-            run.status == 6
+        if run.status < 7:
+
+            run.status == 7
             run.save()
 
         run.log("run finished")
+
     # exit program cleanly
     return 0
 
