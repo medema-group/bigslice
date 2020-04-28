@@ -244,7 +244,6 @@ CREATE INDEX IF NOT EXISTS clustering_run ON clustering(run_id);
 CREATE TABLE IF NOT EXISTS gcf (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     clustering_id INTEGER NOT NULL,
-    centroid_idx INTEGER NOT NULL,
     FOREIGN KEY(clustering_id) REFERENCES clustering(id)
 );
 CREATE INDEX IF NOT EXISTS gcf_clustering ON gcf(clustering_id);
@@ -254,8 +253,11 @@ CREATE TABLE IF NOT EXISTS gcf_membership (
     gcf_id INTEGER NOT NULL,
     bgc_id INTEGER NOT NULL,
     membership_value INTEGER NOT NULL,
+    rank INTEGER NOT NULL,
     FOREIGN KEY(gcf_id) REFERENCES gcf(id),
     FOREIGN KEY(bgc_id) REFERENCES bgc(id)
 );
-CREATE INDEX IF NOT EXISTS gcf_membership_gcf ON gcf_membership(gcf_id);
-CREATE INDEX IF NOT EXISTS gcf_membership_gcf ON gcf_membership(bgc_id);
+CREATE INDEX IF NOT EXISTS gcf_membership_gcf_rank ON gcf_membership(gcf_id, rank);
+CREATE INDEX IF NOT EXISTS gcf_membership_gcf_val ON gcf_membership(gcf_id, membership_value);
+CREATE INDEX IF NOT EXISTS gcf_membership_bgc_rank ON gcf_membership(bgc_id, rank);
+CREATE INDEX IF NOT EXISTS gcf_membership_bgc_val ON gcf_membership(bgc_id, membership_value);

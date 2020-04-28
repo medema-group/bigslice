@@ -34,7 +34,7 @@ class BirchClustering:
         self.centroids = properties["centroids"]
 
     def save(self, output_folder: str):
-        """commits features data"""
+        """commits clustering data"""
         existing = self.database.select(
             "clustering",
             "WHERE run_id=? AND clustering_method=?",
@@ -56,13 +56,27 @@ class BirchClustering:
                     "threshold": self.threshold
                 }
             )
+
+            # save gcf entries
+            gcf_ids = []
+            for centroid_idx in range(self.centroids.shape[0]):
+                gcf_ids.append(self.database.insert(
+                    "gcf",
+                    {
+                        "clustering_id": self.id
+                    }
+                ))
+            self.centroids.index = gcf_ids
+
             # immediately commits, don't want to have double pickled file
             self.database.commit_inserts()
 
             # pickle data
             pickle_path = path.join(output_folder, "{}.pkl".format(self.id))
             with open(pickle_path, "wb") as pickle_file:
-                pickle.dump(self.centroids, pickle_file, protocol=4)
+                pickle.dump(self.centroids,
+                            pickle_file,
+                            protocol=4)
 
     @staticmethod
     def run(run_id: int,
@@ -172,6 +186,8 @@ class BirchClustering:
         )
 
         # save centroids
-        properties["centroids"] = np.uint8(birch.subcluster_centers_)
+        properties["centroids"] = pd.DataFrame(
+            np.uint8(birch.subcluster_centers_),
+            columns=features_df.columns)
 
         return BirchClustering(properties, database)

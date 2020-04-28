@@ -19,6 +19,7 @@ from modules.data.run import Run
 from modules.data.hsp import HSP
 from modules.data.features import Features
 from modules.clustering.birch import BirchClustering
+from modules.clustering.membership import Membership
 from modules.utils import reversed_fp_iter, get_chunk
 from time import time
 import subprocess
@@ -836,6 +837,8 @@ def main():
             if not path.exists(centroids_folder):
                 makedirs(centroids_folder)
 
+            # build GCF models
+            run.log("BIRCH run start")
             clustering = BirchClustering.run(
                 run.id,
                 features_folder,
@@ -846,6 +849,21 @@ def main():
             )
             clustering.save(centroids_folder)
             del clustering
+            run.log("BIRCH run end")
+
+            # Membership assignment
+            run.log("Membership assignment start")
+            for membership in Membership.assign(
+                run.id,
+                features_folder,
+                centroids_folder,
+                output_db,
+                top_hits=3,
+                threshold=None
+            ):
+                membership.save()
+            output_db.commit_inserts()
+            run.log("Membership assignment end")
 
             print("[{}s] clustering".format(get_elapsed()))
             run.log("clustering end")
