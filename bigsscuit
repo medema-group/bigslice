@@ -14,6 +14,7 @@ import re
 from multiprocessing import Pool, cpu_count
 from modules.data.database import Database
 from modules.data.bgc import BGC
+from modules.data.taxonomy import Taxonomy
 from modules.data.hmm import HMMDatabase
 from modules.data.run import Run
 from modules.data.hsp import HSP
@@ -199,25 +200,28 @@ def process_input_folder(folder_path: str, database: Database,
             if line.startswith("#"):  # comments
                 continue
             line = line.rstrip()
-            dataset_name, dataset_path, dataset_desc = line.split("\t")
+            ds_name, ds_path, ds_taxonomy_path, ds_desc = line.split("\t")
 
             # dataset name should be unique
-            if dataset_name in datasets:
+            if ds_name in datasets:
                 raise Exception(
                     "Dataset name should be unique! " +
-                    "duplicated name found: " + dataset_name)
+                    "duplicated name found: " + ds_name)
 
             # check if dataset folder exists
             dataset_folder_path = path.join(
                 folder_path,
-                dataset_path)
+                ds_path)
             if not path.exists(dataset_folder_path):
                 raise Exception(
                     "Can't find dataset folder: {}".format(
                         dataset_folder_path))
 
-            datasets[dataset_name] = {
-                "path": dataset_path, "desc": dataset_desc}
+            datasets[ds_name] = {
+                "path": ds_path,
+                "taxonomy_path": ds_taxonomy_path,
+                "desc": ds_desc
+            }
 
     # define eligible regexes for clustergbks
     eligible_regexes = [re.compile(rgx) for rgx in [
@@ -317,7 +321,7 @@ def process_input_folder(folder_path: str, database: Database,
             count_gbk_exists,
             len(files_to_process)))
 
-        # parse new GBKs
+        # parse and insert new GBKs #
         print("Parsing and inserting {} GBKs...".format(len(files_to_process)))
         pool_results = mp_pool.map(parse_input_gbk, files_to_process)
         for file_path, bgcs in pool_results:
@@ -327,6 +331,43 @@ def process_input_folder(folder_path: str, database: Database,
                 dataset_bgc_ids[dataset_name].add(bgc.id)
         database.commit_inserts()
         print("Inserted {} new BGCs.".format(new_bgcs_count))
+
+        # parse and insert taxonomy information #
+        if len(dataset_meta["taxonomy_path"]) > 0:
+            taxonomy_file_path = path.join(
+                folder_path, dataset_meta["taxonomy_path"])
+            if not path.exists(taxonomy_file_path):
+                raise Exception("Can't find taxonomy file: " +
+                                taxonomy_file_path)
+            with open(taxonomy_file_path, "r") as fp:
+                print("Parsing and inserting taxonomy information...")
+                columns = [
+                    "path_startswith",
+                    "Kingdom",
+                    "Phylum",
+                    "Class",
+                    "Order",
+                    "Family",
+                    "Genus",
+                    "Species",
+                    "Organism"
+                ]
+                total_bgcs_assigned = 0
+                for line in fp:
+                    line = line.rstrip("\n")
+                    if not line.startswith("#"):
+                        tax_dict = {
+                            columns[i]: value for i,
+                            value in enumerate(line.split("\t"))
+                        }
+                        tax_dict["dataset_id"] = dataset_id
+                        total_bgcs_assigned += len(
+                            Taxonomy(tax_dict).save(database)
+                        )
+                database.commit_inserts()
+                print("Added taxonomy info for {} BGCs...".format(
+                    total_bgcs_assigned))
+
         print("[{}s] processing dataset: {}".format(
             get_elapsed(), dataset_name))
 

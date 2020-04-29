@@ -26,7 +26,6 @@ class BGC:
         self.length_nt = properties["length_nt"]
         self.orig_gbk_path = properties["orig_gbk_path"]
         self.chem_subclasses = properties["chem_subclasses"]
-        self.taxons = properties["taxons"]
         self.cds = properties["cds"]
 
     def save(self, dataset_id: int, database: Database):
@@ -69,37 +68,6 @@ class BGC:
                     database, cc, self.type)
                 chem_subclass_object.bgc_id = self.id
                 chem_subclass_object.__save__(database)
-            # insert taxons
-            for level, taxon in enumerate(self.taxons):
-                # TODO: store taxons
-                existing = database.select(
-                    "taxon",
-                    "WHERE name=?",
-                    parameters=(taxon,)
-                )
-                if existing:
-                    assert len(existing) == 1
-                    taxon_id = existing[0]["id"]
-                else:
-                    # check inserts buffer
-                    pending_ids = database.get_pending_id(
-                        "taxon", {"name": taxon}
-                    )
-                    if len(pending_ids) > 0:
-                        assert len(pending_ids) == 1
-                        taxon_id = pending_ids[0]
-                    else:
-                        taxon_id = database.insert(
-                            "taxon", {"name": taxon}
-                        )
-                database.insert(
-                    "bgc_taxonomy",
-                    {
-                        "bgc_id": self.id,
-                        "taxon_id": taxon_id,
-                        "level": level
-                    }
-                )
             # insert cds
             for cds in self.cds:
                 cds.bgc_id = self.id
@@ -119,9 +87,6 @@ class BGC:
         gbk_type = None
         records = SeqIO.parse(gbk_path, "gb")
         for gbk in records:
-
-            # fetch common stuff
-            taxons = gbk.annotations["taxonomy"]
 
             # fetch type-specific information
             antismash_dict = gbk.annotations.get(
@@ -167,7 +132,6 @@ class BGC:
                                 "length_nt": len_nt,
                                 "orig_gbk_path": orig_gbk_path,
                                 "chem_subclasses": chem_subclasses,
-                                "taxons": taxons,
                                 "cds": [BGC.CDS.from_feature(f)
                                         for f in cds_features]
                             }))
@@ -196,14 +160,13 @@ class BGC:
                                 "length_nt": len_nt,
                                 "orig_gbk_path": orig_gbk_path,
                                 "chem_subclasses": chem_subclasses,
-                                "taxons": taxons,
                                 "cds": [BGC.CDS.from_feature(f)
                                         for f in cds_features]
                             }))
                         # this was a piece of code to fetch cand_clusters
                         # instead of region. It is disabled now
                         # TODO: decide what's best to use
-                        #if feature.type == "cand_cluster" and \
+                        # if feature.type == "cand_cluster" and \
                         #        qual.get("kind", [""])[0] in \
                         #        ("single", "interleaved", "chemical_hybrid"):
                         #    cc = feature
@@ -265,7 +228,6 @@ class BGC:
                     "length_nt": len_nt,
                     "orig_gbk_path": orig_gbk_path,
                     "chem_subclasses": chem_subclasses,
-                    "taxons": taxons,
                     "cds": [BGC.CDS.from_feature(f)
                             for f in cds_features]
                 }))

@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS bgc (
     on_contig_edge BOOLEAN,
     length_nt INTEGER NOT NULL,
     orig_gbk_path VARCHAR(1500) NOT NULL,
+    UNIQUE(orig_gbk_path, dataset_id),
     FOREIGN KEY(dataset_id) REFERENCES dataset(id),
     FOREIGN KEY(type) REFERENCES enum_bgc_type(code)
 );
@@ -111,23 +112,43 @@ CREATE TABLE IF NOT EXISTS hsp_alignment (
     FOREIGN KEY(hsp_id) REFERENCES hsp(id)
 );
 
+-- taxon_class
+CREATE TABLE IF NOT EXISTS taxon_class (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    level INTEGER NOT NULL UNIQUE,
+    name VARCHAR(100) NOT NULL UNIQUE
+);
+INSERT OR IGNORE INTO taxon_class VALUES (NULL, 0, 'Kingdom');
+INSERT OR IGNORE INTO taxon_class VALUES (NULL, 1, 'Phylum');
+INSERT OR IGNORE INTO taxon_class VALUES (NULL, 2, 'Class');
+INSERT OR IGNORE INTO taxon_class VALUES (NULL, 3, 'Order');
+INSERT OR IGNORE INTO taxon_class VALUES (NULL, 4, 'Family');
+INSERT OR IGNORE INTO taxon_class VALUES (NULL, 5, 'Genus');
+INSERT OR IGNORE INTO taxon_class VALUES (NULL, 6, 'Species');
+INSERT OR IGNORE INTO taxon_class VALUES (NULL, 7, 'Organism');
+CREATE UNIQUE INDEX IF NOT EXISTS taxon_class_level ON taxon_class(level);
+CREATE UNIQUE INDEX IF NOT EXISTS taxon_class_name ON taxon_class(name);
+
 -- taxon
 CREATE TABLE IF NOT EXISTS taxon (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    name VARCHAR(100) NOT NULL UNIQUE
+    level INTEGER NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    UNIQUE(name, level),
+    FOREIGN KEY(level) REFERENCES taxon_class(level)
 );
-CREATE UNIQUE INDEX IF NOT EXISTS taxon_name ON taxon(name);
+CREATE INDEX IF NOT EXISTS taxon_level ON taxon(level, name);
+CREATE INDEX IF NOT EXISTS taxon_name ON taxon(name, level);
 
 -- bgc_taxonomy
 CREATE TABLE IF NOT EXISTS bgc_taxonomy (
     bgc_id INTEGER NOT NULL,
     taxon_id INTEGER NOT NULL,
-    level INTEGER NOT NULL,
     FOREIGN KEY(bgc_id) REFERENCES bgc(id),
     FOREIGN KEY(taxon_id) REFERENCES taxon(id)
 );
-CREATE INDEX IF NOT EXISTS bgctaxonomy_bgcid ON bgc_taxonomy(bgc_id, level);
-CREATE INDEX IF NOT EXISTS bgctaxonomy_level ON bgc_taxonomy(level);
+CREATE INDEX IF NOT EXISTS bgctaxonomy_bgcid ON bgc_taxonomy(bgc_id);
+CREATE INDEX IF NOT EXISTS bgctaxonomy_taxid ON bgc_taxonomy(taxon_id);
 
 -- chem_class
 CREATE TABLE IF NOT EXISTS chem_class (
