@@ -54,13 +54,23 @@ class Taxonomy:
                 if len(existing_taxa) > 0:
                     tax_ids.append(existing_taxa[0]["id"])
                 else:
-                    tax_ids.append(database.insert(
-                        "taxon",
-                        {
-                            "level": level,
-                            "name": name
+                    # check inserts buffer
+                    pending_ids = database.get_pending_id(
+                        "taxon", {
+                            "name": name,
+                            "level": level
                         }
-                    ))
+                    )
+                    if len(pending_ids) > 0:
+                        tax_ids.append(pending_ids[0])
+                    else:
+                        tax_ids.append(database.insert(
+                            "taxon",
+                            {
+                                "level": level,
+                                "name": name
+                            }
+                        ))
 
         # insert bgc_taxonomy
         bgc_ids = []
