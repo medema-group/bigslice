@@ -398,7 +398,7 @@ def main():
                         default=-1, type=float)
     parser.add_argument("--threshold_pct",
                         default=1.00, type=float)
-    parser.add_argument("--mem", action="store_true")
+    parser.add_argument("--scratch", action="store_true")
     parser.add_argument("--resume", action='store_true')
     parser.add_argument("--program_db_folder",
                         default=path.join(path.dirname(
@@ -421,7 +421,7 @@ def main():
     program_db_folder = path.abspath(args.program_db_folder)
     clustering_complete_only = args.complete
     resume = args.resume
-    use_memory = args.mem
+    use_memory = not args.scratch
 
     # first gate keeping
     if resume and args.input_folder:
