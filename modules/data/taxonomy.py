@@ -10,6 +10,7 @@ Handle manipulation and storing of bgc taxonomy
 """
 
 from .database import Database
+from os import path
 
 
 class Taxonomy:
@@ -76,9 +77,10 @@ class Taxonomy:
         bgc_ids = []
         for bgc in database.select(
             "bgc",
-            "WHERE dataset_id={} AND orig_gbk_path LIKE '{}%'".format(
+            "WHERE dataset_id={} AND orig_folder LIKE '{}%' and orig_filename LIKE '{}%'".format(
                 self.dataset_id,
-                self.path_startswith
+                path.dirname(self.path_startswith),
+                path.basename(self.path_startswith),
             ),
             props=["id"]
         ):

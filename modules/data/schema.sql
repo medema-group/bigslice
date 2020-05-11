@@ -24,15 +24,17 @@ CREATE TABLE IF NOT EXISTS bgc (
     type VARCHAR(10) NOT NULL,
     on_contig_edge BOOLEAN,
     length_nt INTEGER NOT NULL,
-    orig_gbk_path VARCHAR(1500) NOT NULL,
-    UNIQUE(orig_gbk_path, dataset_id),
+    orig_folder VARCHAR(1500) NOT NULL,
+    orig_filename VARCHAR(1500) NOT NULL,
+    UNIQUE(orig_folder, orig_filename, dataset_id),
     FOREIGN KEY(dataset_id) REFERENCES dataset(id),
     FOREIGN KEY(type) REFERENCES enum_bgc_type(code)
 );
 CREATE INDEX IF NOT EXISTS bgc_dataset ON bgc(dataset_id);
 CREATE INDEX IF NOT EXISTS bgc_name ON bgc(name);
 CREATE INDEX IF NOT EXISTS bgc_type ON bgc(type);
-CREATE INDEX IF NOT EXISTS bgc_gbkpath ON bgc(orig_gbk_path);
+CREATE INDEX IF NOT EXISTS bgc_gbkpath ON bgc(orig_folder, orig_filename);
+CREATE INDEX IF NOT EXISTS bgc_filename ON bgc(orig_filename);
 CREATE INDEX IF NOT EXISTS bgc_contigedge ON bgc(on_contig_edge);
 CREATE INDEX IF NOT EXISTS bgc_length ON bgc(length_nt);
 

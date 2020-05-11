@@ -177,8 +177,9 @@ def check_subpfam_scanned_in_db(bgc_ids: List[int],
 
 def check_gbk_exists(dataset_id: int, orig_gbk_path: str, database: Database):
     existing = database.select("bgc",
-                               "WHERE dataset_id=? AND orig_gbk_path=?",
-                               parameters=(dataset_id, orig_gbk_path),
+                               "WHERE dataset_id=? AND orig_folder=? AND orig_filename=?",
+                               parameters=(dataset_id, path.dirname(
+                                   orig_gbk_path), path.basename(orig_gbk_path)),
                                props=["id"])
     if len(existing) > 0:
         return [row["id"] for row in existing]

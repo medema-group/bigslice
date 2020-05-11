@@ -24,7 +24,8 @@ class BGC:
         self.type = properties["type"]
         self.on_contig_edge = properties["on_contig_edge"]
         self.length_nt = properties["length_nt"]
-        self.orig_gbk_path = properties["orig_gbk_path"]
+        self.orig_folder = properties["orig_folder"]
+        self.orig_filename = properties["orig_filename"]
         self.chem_subclasses = properties["chem_subclasses"]
         self.cds = properties["cds"]
 
@@ -59,7 +60,8 @@ class BGC:
                     "type": self.type,
                     "on_contig_edge": self.on_contig_edge,
                     "length_nt": self.length_nt,
-                    "orig_gbk_path": self.orig_gbk_path
+                    "orig_folder": self.orig_folder,
+                    "orig_filename": self.orig_filename
                 }
             )
             # insert classes
@@ -130,7 +132,8 @@ class BGC:
                                 "type": gbk_type,
                                 "on_contig_edge": on_edge,
                                 "length_nt": len_nt,
-                                "orig_gbk_path": orig_gbk_path,
+                                "orig_folder": path.dirname(orig_gbk_path),
+                                "orig_filename": path.basename(orig_gbk_path),
                                 "chem_subclasses": chem_subclasses,
                                 "cds": [BGC.CDS.from_feature(f)
                                         for f in cds_features]
@@ -158,7 +161,8 @@ class BGC:
                                 "type": gbk_type,
                                 "on_contig_edge": on_edge,
                                 "length_nt": len_nt,
-                                "orig_gbk_path": orig_gbk_path,
+                                "orig_folder": path.dirname(orig_gbk_path),
+                                "orig_filename": path.basename(orig_gbk_path),
                                 "chem_subclasses": chem_subclasses,
                                 "cds": [BGC.CDS.from_feature(f)
                                         for f in cds_features]
@@ -185,7 +189,8 @@ class BGC:
                         #        "type": gbk_type,
                         #        "on_contig_edge": on_edge,
                         #        "length_nt": len_nt,
-                        #        "orig_gbk_path": orig_gbk_path,
+                        #        "orig_folder": path.dirname(orig_gbk_path),
+                        #        "orig_filename": path.basename(orig_gbk_path),
                         #        "chem_subclasses": chem_subclasses,
                         #        "taxons": taxons,
                         #        "cds": [BGC.CDS.from_feature(f)
@@ -226,7 +231,8 @@ class BGC:
                     "type": gbk_type,
                     "on_contig_edge": on_edge,
                     "length_nt": len_nt,
-                    "orig_gbk_path": orig_gbk_path,
+                    "orig_folder": path.dirname(orig_gbk_path),
+                    "orig_filename": path.basename(orig_gbk_path),
                     "chem_subclasses": chem_subclasses,
                     "cds": [BGC.CDS.from_feature(f)
                             for f in cds_features]
