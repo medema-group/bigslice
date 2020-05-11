@@ -11,6 +11,7 @@ from os import getpid, path, makedirs, remove
 from sys import argv
 import glob
 import re
+import shutil
 from multiprocessing import Pool, cpu_count
 from modules.data.database import Database
 from modules.data.bgc import BGC
@@ -415,10 +416,11 @@ def main():
     clustering_threshold = args.threshold
     clustering_threshold_percentile = args.threshold_pct
     output_folder = path.abspath(args.output_folder)
-    features_folder = path.join(output_folder, "features")
-    centroids_folder = path.join(output_folder, "centroids")
-    tmp_folder = path.join(output_folder, "tmp")
-    data_db_path = path.join(output_folder, "data.db")
+    result_folder = path.join(output_folder, "result")
+    features_folder = path.join(result_folder, "features")
+    centroids_folder = path.join(result_folder, "centroids")
+    tmp_folder = path.join(result_folder, "tmp")
+    data_db_path = path.join(result_folder, "data.db")
     program_db_folder = path.abspath(args.program_db_folder)
     clustering_complete_only = args.complete
     resume = args.resume
@@ -437,7 +439,32 @@ def main():
 
     # create output folder if not exists
     if not path.exists(output_folder):
+        print("creating output folder...")
         makedirs(output_folder)
+        # make result folder
+        makedirs(result_folder)
+        # copy template from output module
+        template_dir = path.join(
+            path.dirname(path.realpath(__file__)),
+            "modules", "output", "flask_app")
+        shutil.copytree(
+            path.join(template_dir, "app"),
+            path.join(output_folder, "app")
+        )
+        shutil.copy(
+            path.join(template_dir, "start_server.sh"),
+            path.join(output_folder, "start_server.sh")
+        )
+        shutil.copy(
+            path.join(template_dir, "requirements.txt"),
+            path.join(output_folder, "requirements.txt")
+        )
+        shutil.copy(
+            path.join(
+                path.dirname(path.realpath(__file__)),
+                "LICENSE.txt"),
+            path.join(output_folder, "LICENSE.txt")
+        )
     else:
         if not resume:
             user_input = input("Folder " + output_folder +
@@ -933,14 +960,22 @@ def main():
             else:
                 print("failed to update run_status")
 
-        # phase 7: finishing, preparing outputs
-        return 1  # TODO: implements
-        if run.status < 7:
+        # phase 7: finishing
+        if 5 < run.status < 7:
+            get_elapsed()
 
-            run.status == 7
-            run.save()
+            pass  # todo: need to do something here?
 
-        run.log("run finished")
+            print("[{}s] preparing_output".format(get_elapsed()))
+            update_bgcs_status = output_db.update("run_bgc_status",
+                                                  {"status": 7},
+                                                  "WHERE run_id=?",
+                                                  (run.id,))
+            if update_bgcs_status > 0 and run.update_status(7) > 0:
+                run.log("run finished")
+                print("run_status is now RUN_FINISHED")
+            else:
+                print("failed to update run_status")
 
     # exit program cleanly
     return 0

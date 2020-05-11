@@ -1,0 +1,32 @@
+<ul class="nav flex-column">
+  <li class="nav-link text-center">
+    <a href="https://github.com/medema-group/BiG-SLiCE">
+      <img src="{{ url_for('static', filename='img/bigslice_logo.png') }}" class="img-fluid w-75">
+    </a>
+  </li>
+  {% for nav_item in nav_items %}
+    {% if nav_item[1] is string %}
+      <li>
+        <a class="nav-link" href="{{ nav_item[1] }}">{{ nav_item[0] }}</a>
+      </li>
+    {% else %}
+      <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle" href="javascript:void(0);" data-toggle="dropdown">
+          {{ nav_item[0] }}
+        </a>
+        <div class="dropdown-menu container-fluid">
+          {% for nav_sub in nav_item[1] %}
+            <a class="dropdown-item" href="{{ nav_sub[1] }}">{{ nav_sub[0] }}</a>
+          {% endfor %}
+        </div>
+      </li>
+    {% endif %}
+  {% endfor %}
+  <li class="nav-link text-center">
+    App version: {{ g["version"] }} <br />
+    License:
+    <a href="/about/license">
+      <img src="{{ url_for('static', filename='img/agplv3_logo.png') }}">
+    </a>
+  </li>
+</ul>

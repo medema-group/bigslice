@@ -8,6 +8,7 @@ db/*.h3f
 db/*.h3m
 db/*.h3p
 db/*.md5sum
+modules/output/flask_app/result
 __pycache__/
 *.py[cod]
 *$py.class

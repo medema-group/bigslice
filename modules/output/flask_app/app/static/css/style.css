@@ -1,0 +1,8 @@
+#layout-topbar {
+	border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+	padding-bottom: 1em;
+}
+
+#layout-sidebar {
+	border-right: 1px solid rgba(0, 0, 0, 0.1);
+}

@@ -1,0 +1,85 @@
+{% extends "layout.html.j2" %}
+{% block content %}
+	{% include "basic_header.html.j2" %}
+	<!-- Datasets -->
+	<div class="row mt-4">
+		<div class="col">
+			<h3>Datasets</h3>
+			<table id="table_datasets" class="table container-fluid text-center">
+				<thead class="thead-light">
+					<tr>
+						<th rowspan="2">name</th>
+						<th rowspan="2">#genomes</th>
+						<th colspan="2">#BGCs</th>
+						<th rowspan="2">description</th>
+						<th rowspan="2">details</th>
+					</tr>
+					<tr>
+						<th>total</th>
+						<th>with taxonomy</th>
+					</tr>
+				</thead>
+				<tbody class="tbody">
+					{% for ds in datasets %}
+						<tr>
+							<td>{{ ds["name"] }}</td>
+							<td class="numbers">{{ ds["count_genomes"] }}</td>
+							<td class="numbers">{{ ds["count_bgcs"] }}</td>
+							<td class="numbers">{{ ds["count_bgcs_with_taxonomy"] }}</td>
+							<td>{{ ds["desc"] }}</td>
+							<td><a href="/dataset/{{ ds['id'] }}"><button type="button" class="btn btn-sm btn-primary">view</button></a></td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<!-------------->
+	<!-- Runs -->
+	<div class="row mt-5">
+		<div class="col">
+			<h3>Runs</h3>
+			<table id="table_runs" class="table container-fluid text-center">
+				<thead class="thead-light">
+					<tr>
+						<th>name</th>
+						<th>started</th>
+						<th>finished</th>
+						<th>status</th>
+						<th>#BGCs</th>
+						<th>#GCFs</th>
+						<th>details</th>
+					</tr>
+				</thead>
+				<tbody class="tbody">
+					{% for rn in runs %}
+						<tr>
+							<td>{{ rn["name"] }}</td>
+							<td>{{ rn["start"] }}</td>
+							<td>
+								{{ rn["finished"] }}
+								{% if rn["resumes"]|length > 0 and rn["finished"] != "n/a" %}
+									[<a tabindex="0" href="javascript:void(0);" data-toggle="popover" data-trigger="focus" data-html="true" title="Note" data-content="
+										This run was resumed {{ rn['resumes']|length }} time(s): <br/>
+										<ul>
+											{% for resumed in rn['resumes'] %}
+												<li>{{ resumed }}</li>
+											{% endfor %}
+										</ul>
+										">
+										note
+									</a>]
+								{% endif %}
+							</td>
+							<td>{{ rn["status"] }}</td>
+							<td class="numbers">{{ rn["count_bgcs"] }}</td>
+							<td class="numbers">{{ rn["count_gcfs"] }}</td>
+							<td><a href="/run/{{ rn['id'] }}"><button type="button" class="btn btn-sm btn-primary">view</button></a></td>
+						</tr>
+					{% endfor %}
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<!-------------->
+{% endblock %}
