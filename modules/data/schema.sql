@@ -216,7 +216,6 @@ CREATE TABLE IF NOT EXISTS run (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     status INTEGER NOT NULL,
     prog_params VARCHAR(250) NOT NULL,
-    num_resumes INTEGER DEFAULT 0,
     hmm_db_id INTEGER,
     FOREIGN KEY(status) REFERENCES enum_run_status(id),
     FOREIGN KEY(hmm_db_id) REFERENCES hmm_db(id)
