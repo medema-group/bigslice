@@ -135,7 +135,6 @@ class Run:
                 "id": run_row["id"],
                 "prog_params": run_row["prog_params"],
                 "status": run_row["status"],
-                "num_resumes": run_row["num_resumes"],
                 "hmm_db_id": run_row["hmm_db_id"],
                 "bgcs": bgcs
             }
