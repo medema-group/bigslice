@@ -145,7 +145,7 @@ class BirchClustering:
                 "bgc,run_bgc_status",
                 "WHERE run_bgc_status.run_id=?" +
                 " AND run_bgc_status.bgc_id=bgc.id" +
-                " AND bgc.on_contig_edge IS FALSE",
+                " AND NOT bgc.on_contig_edge",
                 parameters=(run_id, ),
                 props=["bgc.id"],
                 as_tuples=True
