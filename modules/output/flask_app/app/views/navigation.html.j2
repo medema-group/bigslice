@@ -7,10 +7,10 @@
   <div class="list-group panel">
     {% for nav_item in nav_items %}
       {% if nav_item[1] is string %}
-        <a href="{{ nav_item[1] }}" class="list-group-item list-group-item-primary list-group-item-action {{ 'active' if request.path.startswith(nav_item[1]) else '' }}" data-parent="#MainMenu">{{ nav_item[0] }}</a>
+        <a href="{{ nav_item[1] }}" class="list-group-item list-group-item-primary list-group-item-action {{ 'active' if request.path.split('/')[1] == nav_item[1].split('/')[1] else '' }}" data-parent="#MainMenu">{{ nav_item[0] }}</a>
       {% else %}
-        <a href="#SubMenu-{{ nav_item[0].replace(' ', '-') }}" class="list-group-item list-group-item-primary list-group-item-action collapsed" data-toggle="collapse" data-parent="#MainMenu">{{ nav_item[0] }}</a>
-        <div class="collapse list-group-submenu" id="SubMenu-{{ nav_item[0].replace(' ', '-') }}">
+        <a href="#SubMenu-{{ nav_item[0].replace(' ', '-') }}" class="list-group-item list-group-item-primary list-group-item-action" data-toggle="collapse" data-parent="#MainMenu">{{ nav_item[0] }}</a>
+        <div class="collapse list-group-submenu {{'show' if request.path.split('/')[1] == nav_item[1][0][1].split('/')[1] else 'collapsed' }}" id="SubMenu-{{ nav_item[0].replace(' ', '-') }}">
           {% for nav_sub in nav_item[1] %}
             <a href="{{ nav_sub[1] }}" class="list-group-item list-group-item-secondary list-group-item-action {{ 'active' if request.path.startswith(nav_sub[1]) else '' }}" data-parent="#SubMenu-{{ nav_item[0].replace(' ', '-') }}">{{ nav_sub[0] }}</a>
           {% endfor %}
