@@ -4,7 +4,10 @@
 	<!-- Datasets -->
 	<div class="row mt-4">
 		<div class="col">
-			<h3>Datasets</h3>
+			<h3>
+			Datasets
+			<a href="/dataset/0"><button type="button" class="btn btn-sm btn-info">view</button></a>
+			</h3>
 			<table id="table_datasets" class="table container-fluid text-center">
 				<thead class="thead-light">
 					<tr>
@@ -27,7 +30,7 @@
 							<td class="numbers">{{ ds["count_bgcs"] }}</td>
 							<td class="numbers">{{ ds["count_bgcs_with_taxonomy"] }}</td>
 							<td>{{ ds["desc"] }}</td>
-							<td><a href="/dataset/{{ ds['id'] }}"><button type="button" class="btn btn-sm btn-primary">view</button></a></td>
+							<td><a href="/dataset/{{ ds['id'] }}"><button type="button" class="btn btn-sm btn-info">view</button></a></td>
 						</tr>
 					{% endfor %}
 				</tbody>
@@ -74,7 +77,7 @@
 							<td>{{ rn["status"] }}</td>
 							<td class="numbers">{{ rn["count_bgcs"] }}</td>
 							<td class="numbers">{{ rn["count_gcfs"] }}</td>
-							<td><a href="/run/{{ rn['id'] }}"><button type="button" class="btn btn-sm btn-primary">view</button></a></td>
+							<td><a href="/run/{{ rn['id'] }}"><button type="button" class="btn btn-sm btn-info">view</button></a></td>
 						</tr>
 					{% endfor %}
 				</tbody>

@@ -49,6 +49,7 @@ def inject_global():
                 "select id,name from dataset"
             ).fetchall()]
         ))
+        nav_items[-1][1].insert(0, ("&lt;all&gt;", "/dataset/0"))
 
         # fetch run ids and names
         nav_items.append(("Runs", [

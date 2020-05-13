@@ -1,0 +1,168 @@
+<div class="row mt-2">
+	<div class="col">
+		<h3>Statistics</h3>
+		<div class="row mt-4 list-group list-group-horizontal">
+			<!-- overview -->
+			<div class="col-1"></div>
+			<div class="col-5 list-group-item d-flex justify-content-between align-items-center">
+				Total BGCs:
+				<a id="popover-stat_bgcs" href="javascript:void();" class="badge badge-info badge-pill" data-trigger="hover" data-html="true" data-content="" title="Details">?</a>
+			</div>
+			<div class="col-5 list-group-item d-flex justify-content-between align-items-center">
+				Total genomes: <span class="badge badge-secondary badge-pill" id="stat_total_genomes">?</span>
+			</div>
+			<div class="col-1"></div>
+		</div>
+		<div class="row mt-2">
+			<!-- bgc class counts -->
+			<div class="col-6" style="min-width: 480px;">
+				<div id="pie_bgc_class">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
+			</div>
+			<!-- bgc length histogram -->
+			<div class="col-6" style="min-width: 480px;">
+				<div id="hist_bgc_length">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript">
+		$(document).ready(function(){
+			// fetch and update statistics
+			$.get({
+				url: "/api/dataset/get_stats",
+				data: {
+					"dataset_id": $("#dataset_id").val()
+				},
+				dataType: "json",
+				success: function(response) {
+					$("#popover-stat_bgcs").text(response["total_bgcs"]);
+					$("#stat_total_genomes").text(response["total_genomes"]);
+					$('#popover-stat_bgcs').popover({
+						content: "<div class='list-group'><div class='list-group-item'><span class='badge badge-secondary badge-pill'>" + response["total_bgcs_in_genome"] + "</span> have taxonomy.</div><div class='list-group-item'><span class='badge badge-secondary badge-pill'>" + response["total_bgcs_in_genome"] + "</span> in genomes.</div></div>"
+					});
+				}})
+			// fetch and render bgc class pie chart
+			$.get({
+				url: "/api/dataset/get_class_counts",
+				data: {
+					"dataset_id": $("#dataset_id").val()
+				},
+				dataType: "json",
+				success: function(response) {
+					let container_id = "pie_bgc_class";
+					
+					// hide spinner
+					$("#" + container_id + " .spinner-border").addClass("d-none");
+					// set values
+					let values = [];
+					let labels = [];
+					for (let key in response) {
+						values.push(response[key]);
+						labels.push(key);
+					}
+										let data = [{
+					values: values,
+					labels: labels,
+					type: 'pie',
+					hoverinfo: 'label+value+percent',
+					hole: .2,
+					sort: false,
+					automargin: true
+					}];
+					let layout = {
+						title: "BGC class",
+						showlegend: true
+					};
+					let config = {
+						responsive: false,
+						staticPlot: false
+					}
+					Plotly.newPlot(container_id, data, layout, config);
+				}})
+			// fetch and render bgc class pie chart
+			let bin_size = 5000; // base pairs
+			let max_bgc_length = 50000; // only show detailed bars for bgc < this length
+			$.get({
+				url: "/api/dataset/get_bgclength_hist",
+				data: {
+					"dataset_id": $("#dataset_id").val(),
+					"bin_size": bin_size
+				},
+				dataType: "json",
+				success: function(response) {
+					let container_id = "hist_bgc_length";
+					
+					// hide spinner
+					$("#" + container_id + " .spinner-border").addClass("d-none");
+					// collapse data > max_bgc_length
+					let labels = ["> " + Math.floor(max_bgc_length / 1000) + " kb"];
+					let values = {
+						"complete": [0],
+						"fragmented": [0],
+						"n/a": [0]
+					};
+					response["labels"].forEach(function(min_max, idx) {
+						if (min_max[1] <= max_bgc_length) {
+							labels.push(Math.floor(min_max[0] / 1000) + "-" + Math.floor(min_max[1] / 1000) + " kb");
+							for (let key in values) {
+								values[key].push(response[key][idx]);
+							}
+						} else {
+							for (let key in values) {
+								values[key][0] += response[key][idx];
+							}
+						}
+					});
+					labels.push(labels.shift());
+					for (let key in values) {
+						values[key].push(values[key].shift());
+					}
+					// define traces
+					let trace_complete = {
+					x: labels,
+					y: values["complete"],
+					name: 'Complete',
+					type: 'bar'
+					};
+					let trace_fragmented = {
+					x: labels,
+					y: values["fragmented"],
+					name: 'Fragmented<br />(on_contig_edge)',
+					type: 'bar'
+					};
+					let trace_na = {
+					x: labels,
+					y: values["n/a"],
+					name: 'n/a<br />(antiSMASH < 4.2.0)',
+					type: 'bar'
+					};
+					let data = [trace_complete, trace_fragmented, trace_na];
+					let layout = {
+						title: "BGC length",
+						barmode: "group",
+						yaxis: {
+							title: "count"
+						},
+						showlegend: true,
+						legend: {
+							font: {
+								size: 8
+							}
+						}
+					};
+					let config = {
+						responsive: false,
+						staticPlot: false
+					}
+					Plotly.newPlot(container_id, data, layout, config);
+				}})
+		})
+	</script>
+</div>

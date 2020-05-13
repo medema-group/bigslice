@@ -13,6 +13,7 @@
   <body data-gr-c-s-loaded="true" cz-shortcut-listen="true">
     <script type="text/javascript" src="{{ url_for('static', filename='js/jquery-3.4.1.min.js') }}"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+    <script type="text/javascript" src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script type="text/javascript" src="{{ url_for('static', filename='js/datatables.min.js') }}"></script>
     <div class="container-fluid">
       <div class="row">
@@ -29,12 +30,12 @@
         </div>
         <!-- desktop:sidebar -->
         <div id="layout-sidebar" class="d-none d-md-inline col-2 bg-white min-vh-100">
-          <div class="sticky-top sticky-offset">
+          <div class="sticky-top sticky-offset mt-2">
             {% include "navigation.html.j2" %}
           </div>
         </div>
         <!-- body:content -->
-        <div id="layout-content" class="container col-10 ml-0">
+        <div id="layout-content" class="container col-10 mt-2 ml-0">
           {% block content %}
           {% endblock %}
         </div>
@@ -42,7 +43,9 @@
     </div>
     <script type="text/javascript">
     $(function () {
-    $('[data-toggle="popover"]').popover()
+    $('[data-toggle="popover"]').popover({
+    container: 'body'
+    })
     })
     </script>
   </body>
