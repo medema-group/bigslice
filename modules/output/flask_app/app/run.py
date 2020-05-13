@@ -65,6 +65,7 @@ def inject_global():
         ("Generate a new report", "/report/new")
     ]))
     nav_items.append(("Help", "/help"))
+    nav_items.append(("Feedback", "/feedback"))
     nav_items.append(("About", "/about"))
 
     return dict(
