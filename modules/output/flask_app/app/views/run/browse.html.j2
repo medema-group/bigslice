@@ -1,0 +1,39 @@
+<div class="row mt-2">
+	<div class="col">
+		<h3>Browse</h3>
+		<div class="row mt-4">
+			<div class="col">
+				<table id="table_gcfs" class="table table-striped table-bordered table-hover nowrap">
+					<thead class="thead-light">
+						<tr>
+							<th>GCF</th>
+							<th>
+								#core members <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="BGCs paired to the GCF model on a best-match basis (rank-0)<br />while satisfying the specified distance threshold <strong>(d <= T)</strong>." title="Explanation">&nbsp;?&nbsp;</a>
+							</th>
+							<th>
+								#putative members <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="BGCs having a best-match pairing to the GCF model (rank-0)<br />but does not satisfy the specified distance threshold <strong>(d > T)</strong>.<br />This set may consists BGC fragments, atypical hybrids, and <br />BGCs not included in the GCF models construction (BIRCH <br />clustering) phase." title="Explanation">&nbsp;?&nbsp;</a>
+							</th>
+							<th>
+								representative class
+							</th>
+							<th>
+								representative taxon <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="Genus having the most BGCs in a GCF" title="Explanation">&nbsp;?&nbsp;</a>
+							</th>
+							<th>details</th>
+						</tr>
+					</thead>
+					<tbody class="tbody">
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	$(document).ready(function(){
+		$("#table_gcfs").DataTable({
+			searching: false,
+			ordering:  false
+		});
+	});
+</script>

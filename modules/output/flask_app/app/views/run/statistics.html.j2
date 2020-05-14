@@ -1,0 +1,37 @@
+<div class="row mt-2 mb-4">
+	<div class="col">
+		<h3>Statistics</h3>
+		<!-- first row -->
+		<div class="row mt-4 list-group list-group-horizontal">
+			<div class="col-1"></div>
+			<div class="col-4 list-group-item d-flex justify-content-between align-items-center">
+				Threshold value (T):
+				<span>?</span>
+			</div>
+			<div class="col-6 list-group-item d-flex justify-content-between align-items-center">
+				Result:
+				<span>? BGCs assigned to ? GCFs <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="" title="Details">details</a></span>
+			</div>
+			<div class="col-1"></div>
+		</div>
+		<!-- second row -->
+		<div class="row mt-2">
+			<!-- num BGCs per GCF -->
+			<div class="col-6" style="min-width: 480px;">
+				<div id="hist_bgc_counts" class="text-center">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
+			</div>
+			<!-- bgc length histogram -->
+			<div class="col-6" style="min-width: 480px;">
+				<div id="hist_avg_dist" class="text-center">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>

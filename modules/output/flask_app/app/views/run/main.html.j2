@@ -1,4 +1,18 @@
 {% extends "layout.html.j2" %}
 {% block content %}
 	{% include "basic_header.html.j2" %}
+	<!-- for javascript -->
+	<input type="hidden" id="dataset_id" value="{{ dataset_id }}"/>
+	<!-- Overview -->
+	{% include "run/overview.html.j2" %}
+	{% if status_id >= 7 %}
+		<!-- Statistics -->
+		{% include "run/statistics.html.j2" %}
+		<!-- Browse -->
+		{% include "run/browse.html.j2" %}
+	{% else %}
+		<div class="col mt-4 text-center text-secondary">
+			This run is not yet finished. No result data to show for this page.
+		</div>
+	{% endif %}
 {% endblock %}
