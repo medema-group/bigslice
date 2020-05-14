@@ -1,6 +1,7 @@
 <div class="row mt-2">
 	<div class="col">
 		<h3>Statistics</h3>
+		<!-- first row -->
 		<div class="row mt-4 list-group list-group-horizontal">
 			<!-- overview -->
 			<div class="col-1"></div>
@@ -13,10 +14,11 @@
 			</div>
 			<div class="col-1"></div>
 		</div>
+		<!-- second row -->
 		<div class="row mt-2">
 			<!-- bgc class counts -->
 			<div class="col-6" style="min-width: 480px;">
-				<div id="pie_bgc_class">
+				<div id="pie_bgc_class" class="text-center">
 					<div class="spinner-border text-info" role="status">
 						<span class="sr-only">Loading...</span>
 					</div>
@@ -24,7 +26,7 @@
 			</div>
 			<!-- bgc length histogram -->
 			<div class="col-6" style="min-width: 480px;">
-				<div id="hist_bgc_length">
+				<div id="hist_bgc_length" class="text-center">
 					<div class="spinner-border text-info" role="status">
 						<span class="sr-only">Loading...</span>
 					</div>
@@ -88,8 +90,8 @@
 				Plotly.newPlot(container_id, data, layout, config);
 			}})
 		// fetch and render bgc class pie chart
-		let bin_size = 5000; // base pairs
-		let max_bgc_length = 50000; // only show detailed bars for bgc < this length
+		let bin_size = 10000; // base pairs
+		let max_bgc_length = 100000; // only show detailed bars for bgc < this length
 		$.get({
 			url: "/api/dataset/get_bgclength_hist",
 			data: {
@@ -148,6 +150,9 @@
 				let layout = {
 					title: "BGC length",
 					barmode: "group",
+					xaxis: {
+					    tickangle: -45
+					},
 					yaxis: {
 						title: "count"
 					},

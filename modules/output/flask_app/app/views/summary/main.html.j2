@@ -62,7 +62,7 @@
 							<td>
 								{{ rn["finished"] }}
 								{% if rn["resumes"]|length > 0 and rn["finished"] != "n/a" %}
-									[<a tabindex="0" href="javascript:void(0);" data-toggle="popover" data-trigger="focus" data-html="true" title="Note" data-content="
+									<a tabindex="0" href="javascript:void(0);" data-toggle="popover" data-trigger="hover" data-html="true" class="badge badge-info badge-pill ml-2" title="Note" data-content="
 										This run was resumed {{ rn['resumes']|length }} time(s): <br/>
 										<ul>
 											{% for resumed in rn['resumes'] %}
@@ -71,7 +71,7 @@
 										</ul>
 										">
 										note
-									</a>]
+									</a>
 								{% endif %}
 							</td>
 							<td>{{ rn["status"] }}</td>
