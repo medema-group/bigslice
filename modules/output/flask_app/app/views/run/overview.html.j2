@@ -38,7 +38,7 @@
 			<div class="col-4 border-top-0 list-group-item d-flex justify-content-between align-items-center">
 				HMM models:
 				<span>
-					<span id="run_overview_hmm_total" class="badge badge-secondary badge-pill">?</span> HMMs <a id="run_overview_hmm_popover" href="javascript:void();" class="badge badge-secondary badge-pill ml-2 d-none" data-trigger="hover" data-html="true" data-content="" title="Details">details</a>
+					<span id="run_overview_hmm_total" class="badge badge-secondary badge-pill">?</span> HMMs <a id="run_overview_hmm_popover" href="javascript:void();" class="badge badge-info badge-pill ml-2 d-none" data-trigger="hover" data-html="true" data-content="" title="Details">details</a>
 				</span>
 			</div>
 			<div class="col-6 border-top-0 list-group-item d-flex justify-content-between align-items-center">
@@ -71,9 +71,9 @@
 
 			// popover-resumes
 			if (response["resumes"].length > 0) {
-				let content_popover = "This run was resumed " + response["resumes"].length + " time(s): <br/><ul>";
+				let content_popover = "This run was resumed " + response["resumes"].length + " time(s): <br/><ul class='list-group'>";
 				response["resumes"].forEach(function(value, index) {
-					content_popover += "<li>" + value + "</li>";
+					content_popover += "<li class='list-group-item'>" + value + "</li>";
 				});
 				content_popover += "</ul>";
 				$("#run_overview_finished_popover").removeClass("d-none");
