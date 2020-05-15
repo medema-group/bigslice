@@ -45,7 +45,7 @@ def page_run(run_id):
 
 @blueprint.route("/api/run/get_overview")
 def get_overview():
-    """ for statistic summary """
+    """ for overview summary """
     run_id = request.args.get('run_id', type=int)
     result = {}
     with sqlite3.connect(conf["db_path"]) as con:
@@ -126,5 +126,74 @@ def get_overview():
         result["bgc_counts_total"] = sum(
             result["bgc_counts_per_dataset"].values())
         result["dataset_counts"] = len(result["bgc_counts_per_dataset"])
+
+    return result
+
+
+@blueprint.route("/api/run/get_statistics_summary")
+def get_statistics_summary():
+    """ for statistic summary """
+    run_id = request.args.get('run_id', type=int)
+    result = {}
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        # set clustering id, get threshold
+        clustering_id, result["threshold"] = cur.execute(
+            ("select id, threshold"
+             " from clustering"
+             " where run_id=?"),
+            (run_id, )
+        ).fetchall()[0]
+
+        # fetch gcf total counts
+        result["gcf_total_counts"] = cur.execute(
+            ("select count(id)"
+             " from gcf"
+             " where clustering_id=?"),
+            (clustering_id, )
+        ).fetchall()[0][0]
+
+        # fetch singleton gcfs
+        result["gcf_singleton_counts"] = cur.execute(
+            ("select count(gcf_id)"
+             " from ("
+             " select gcf.id as gcf_id, count(bgc.id) as bgc_counts"
+             " from bgc, gcf, gcf_membership"
+             " where gcf_membership.bgc_id=bgc.id"
+             " and gcf_membership.gcf_id=gcf.id"
+             " and gcf.clustering_id=?"
+             " and gcf_membership.rank=0"
+             " and gcf_membership.membership_value<700"
+             " group by gcf.id"
+             " )"
+             " where bgc_counts == 1"),
+            (clustering_id, )
+        ).fetchall()[0][0]
+
+        # fetch bgc assigned to gcf
+        result["bgc_assigned_counts"], \
+            result["gcf_assigned_counts"] = cur.execute(
+            ("select count(distinct bgc.id), count(distinct gcf.id)"
+             " from bgc, gcf, gcf_membership"
+             " where gcf_membership.bgc_id=bgc.id"
+             " and gcf_membership.gcf_id=gcf.id"
+             " and gcf.clustering_id=?"
+             " and gcf_membership.rank=0"
+             " and gcf_membership.membership_value<=?"),
+            (clustering_id, result["threshold"])
+        ).fetchall()[0]
+
+        # fetch bgc not assigned to gcf
+        result["bgc_not_assigned_counts"] = cur.execute(
+            ("select count(distinct bgc.id), count(distinct gcf.id)"
+             " from bgc, gcf, gcf_membership"
+             " where gcf_membership.bgc_id=bgc.id"
+             " and gcf_membership.gcf_id=gcf.id"
+             " and gcf.clustering_id=?"
+             " and gcf_membership.rank=0"
+             " and gcf_membership.membership_value>?"),
+            (clustering_id, result["threshold"])
+        ).fetchall()[0][0]
 
     return result

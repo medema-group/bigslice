@@ -4,13 +4,15 @@
 		<!-- first row -->
 		<div class="row mt-4 list-group list-group-horizontal">
 			<div class="col-1"></div>
-			<div class="col-4 list-group-item d-flex justify-content-between align-items-center">
+			<div class="col-3 list-group-item d-flex justify-content-between align-items-center">
 				Threshold value (T):
-				<span>?</span>
+				<span id="run_stats_threshold" class="badge badge-secondary badge-pill">?</span>
 			</div>
-			<div class="col-6 list-group-item d-flex justify-content-between align-items-center">
+			<div class="col-7 list-group-item d-flex justify-content-between align-items-center">
 				Result:
-				<span>? BGCs assigned to ? GCFs <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="" title="Details">details</a></span>
+				<span>
+					<span id="run_stats_bgc_assigned" class="badge badge-secondary badge-pill">?</span> BGCs were assigned to <span id="run_stats_gcf_assigned" class="badge badge-secondary badge-pill">?</span> GCFs <a id="run_stats_gcf_assigned_popover" href="javascript:void();" class="badge badge-info badge-pill ml-2 d-none" data-trigger="hover" data-html="true" data-content="" title="Details">details</a></span>
+				</span>
 			</div>
 			<div class="col-1"></div>
 		</div>
@@ -35,3 +37,35 @@
 		</div>
 	</div>
 </div>
+<script type="text/javascript">
+	$(document).ready(function(){
+		// fetch and update tables
+		$.get({
+			url: "/api/run/get_statistics_summary",
+			data: {
+				"run_id": $("#run_id").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				$("#run_stats_threshold").text(response["threshold"]);
+				$("#run_stats_bgc_assigned").text(response["bgc_assigned_counts"]);
+				$("#run_stats_gcf_assigned").text(response["gcf_assigned_counts"]);
+
+				// popover-bgc_assigned
+				if (response["bgc_assigned_counts"] > 0) {
+					let content_popover = "<div class='list-group'>";
+					content_popover += "<div class='list-group-item'><span class='badge badge-secondary badge-pill'>" + response["bgc_not_assigned_counts"] + "</span> BGCs does not pass the threshold value (d > <span class='badge badge-secondary badge-pill'>" + response["threshold"] + "</span>).</div>";
+					content_popover += "<div class='list-group-item'><span class='badge badge-secondary badge-pill'>" + (response["gcf_total_counts"] - response["gcf_assigned_counts"]) + "</span> GCFs have no member (n=0).</div>";
+					content_popover += "<div class='list-group-item'><span class='badge badge-secondary badge-pill'>" + response["gcf_singleton_counts"] + "</span> GCFs were singletons (n=1).</div>";
+					content_popover += "</div>";
+					$("#run_stats_gcf_assigned_popover").removeClass("d-none");
+					$("#run_stats_gcf_assigned_popover").popover({
+						"content": content_popover
+					});
+				} else {
+					$("#run_stats_gcf_assigned_popover").addClass("d-none");
+				}
+			}
+		});
+	});
+</script>
