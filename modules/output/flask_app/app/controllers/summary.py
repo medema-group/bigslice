@@ -124,7 +124,7 @@ def fetch_runs_summary(db_path):
                     (run_id, )
                 ).fetchall()[0][0]
             except IndexError:
-                run_start = "-"
+                run_start = "n/a"
             # fetch end time
             try:
                 run_finished = cur.execute(
