@@ -5,7 +5,7 @@
 		<div class="row mt-4 list-group list-group-horizontal">
 			<div class="col-1"></div>
 			<div class="col-3 list-group-item d-flex justify-content-between align-items-center">
-				Threshold value (T):
+				Threshold (T):
 				<span id="run_stats_threshold" class="badge badge-secondary badge-pill">?</span>
 			</div>
 			<div class="col-7 list-group-item d-flex justify-content-between align-items-center">
@@ -47,7 +47,7 @@
 			},
 			dataType: "json",
 			success: function(response) {
-				$("#run_stats_threshold").text(response["threshold"]);
+				$("#run_stats_threshold").text(response["threshold"].toFixed(2));
 				$("#run_stats_bgc_assigned").text(response["bgc_assigned_counts"]);
 				$("#run_stats_gcf_assigned").text(response["gcf_assigned_counts"]);
 
