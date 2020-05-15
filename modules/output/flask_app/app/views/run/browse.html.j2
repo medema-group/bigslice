@@ -33,7 +33,58 @@
 	$(document).ready(function(){
 		$("#table_gcfs").DataTable({
 			searching: false,
-			ordering:  false
+			ordering:  false,
+			serverSide: true,
+			ajax: {
+				url: "/api/run/get_gcf_table",
+				type: "GET",
+				data: {
+					"run_id": $("#run_id").val()
+				}
+			},
+			"columnDefs": [
+				{
+					"targets": 3, // class
+					render: function(data, type, row, meta) {
+						let html_text = "";
+						let bgc_total = row[1];
+
+						if (data.length > 0) {
+							html_text += data[0][0] + " (" + (data[0][1] / bgc_total * 100).toFixed(0) + "%)";
+						} else {
+							html_text += "n/a";
+						}
+
+						return html_text;
+					}
+				},
+				{
+					"targets": 4, // taxon
+					render: function(data, type, row, meta) {
+						let html_text = "";
+						let bgc_total = row[1];
+
+						if (data.length > 0) {
+							html_text += "<i>" + data[0][0] + "</i>" + " (" + (data[0][1] / bgc_total * 100).toFixed(0) + "%)";
+						} else {
+							html_text += "n/a";
+						}
+
+						return html_text;
+					}
+				},
+				{
+					"targets": 5, // details
+					render: function(data, type, row, meta) {
+						return "<a href='/run/" + meta.settings.json.run_id + "/gcf/" + data + "'><button type='button' class='btn btn-sm btn-info'>view</button></a>";
+					}
+				},
+				{ className: "text-right", "targets": [1, 2] },
+				{ className: "text-center", "targets": [5] }
+			],
+			"drawCallback": function( settings ) {
+		        // --
+		    }
 		});
 	});
 </script>
