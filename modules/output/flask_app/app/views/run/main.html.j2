@@ -2,7 +2,7 @@
 {% block content %}
 	{% include "basic_header.html.j2" %}
 	<!-- for javascript -->
-	<input type="hidden" id="dataset_id" value="{{ dataset_id }}"/>
+	<input type="hidden" id="run_id" value="{{ run_id }}"/>
 	<!-- Overview -->
 	{% include "run/overview.html.j2" %}
 	{% if status_id >= 7 %}

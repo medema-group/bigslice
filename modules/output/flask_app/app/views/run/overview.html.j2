@@ -4,17 +4,20 @@
 		<!-- first row -->
 		<div class="row mt-4 list-group list-group-horizontal">
 			<div class="col-1"></div>
-			<div class="col-4 list-group-item d-flex justify-content-between align-items-center">
+			<div class="col-3 list-group-item d-flex justify-content-between align-items-center">
 				Status:
-				<span>?</span>
+				<span id="run_overview_status">?</span>
 			</div>
 			<div class="col-3 list-group-item d-flex justify-content-between align-items-center">
 				Started:
-				<span>?</span>
+				<span id="run_overview_started">?</span>
 			</div>
-			<div class="col-3 list-group-item d-flex justify-content-between align-items-center">
+			<div class="col-4 list-group-item d-flex justify-content-between align-items-center">
 				Finished:
-				<span>? <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="" title="Note">note</a></span>
+				<span>
+					<span id="run_overview_finished">?</span>
+					<a id="run_overview_finished_popover" href="javascript:void();" class="badge badge-info badge-pill ml-2 d-none" data-trigger="hover" data-html="true" data-content="" title="Note">note</a>
+				</span>
 			</div>
 			<div class="col-1"></div>
 		</div>
@@ -23,7 +26,9 @@
 			<div class="col-1 border-top-0 "></div>
 			<div class="col-10 border-top-0 list-group-item d-flex justify-content-between align-items-center">
 				Parameters:
-				<span>?</span>
+				<span>
+					<span id="run_overview_parameters">?</span>
+				</span>
 			</div>
 			<div class="col-1 border-top-0"></div>
 		</div>
@@ -32,13 +37,82 @@
 			<div class="col-1 border-top-0 "></div>
 			<div class="col-4 border-top-0 list-group-item d-flex justify-content-between align-items-center">
 				HMM models:
-				<span>? HMMs <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="" title="Details">details</a></span>
+				<span>
+					<span id="run_overview_hmm_total">?</span> HMMs <a id="run_overview_hmm_popover" href="javascript:void();" class="badge badge-info badge-pill ml-2 d-none" data-trigger="hover" data-html="true" data-content="" title="Details">details</a>
+				</span>
 			</div>
 			<div class="col-6 border-top-0 list-group-item d-flex justify-content-between align-items-center">
 				Input:
-				<span>? BGCs from ? datasets <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="" title="Details">details</a></span>
+				<span>
+					<span id="run_overview_bgc_total">?</span> BGCs from <span id="run_overview_dataset_count">?</span> datasets <a id="run_overview_bgc_popover" href="javascript:void();" class="badge badge-info badge-pill ml-2 d-none" data-trigger="hover" data-html="true" data-content="" title="Details">details</a>
+				</span>
 			</div>
 			<div class="col-1 border-top-0"></div>
 		</div>
 	</div>
 </div>
+<script type="text/javascript">
+	$(document).ready(function(){
+	// fetch and update tables
+	$.get({
+		url: "/api/run/get_overview",
+		data: {
+			"run_id": $("#run_id").val()
+		},
+		dataType: "json",
+		success: function(response) {
+			$("#run_overview_status").text(response["status"]);
+			$("#run_overview_started").text(response["started"]);
+			$("#run_overview_finished").text(response["finished"]);
+			$("#run_overview_parameters").text(response["parameters"]);
+			$("#run_overview_hmm_total").text(response["hmm_counts"]);
+			$("#run_overview_bgc_total").text(response["bgc_counts_total"]);
+			$("#run_overview_dataset_count").text(response["dataset_counts"]);
+
+			// popover-resumes
+			if (response["resumes"].length > 0) {
+				let content_popover = "This run was resumed " + response["resumes"].length + " time(s): <br/><ul>";
+				response["resumes"].forEach(function(value, index) {
+					content_popover += "<li>" + value + "</li>";
+				});
+				content_popover += "</ul>";
+				$("#run_overview_finished_popover").removeClass("d-none");
+				$("#run_overview_finished_popover").popover({
+					"content": content_popover
+				});
+			} else {
+				$("#run_overview_finished_popover").addClass("d-none");
+			}
+
+			// popover-hmm
+			if (response["hmm_counts"] > 0) {
+				let content_popover = "<div class='list-group'>";
+				content_popover += "<div class='list-group-item'><span class='badge badge-secondary badge-pill'>" + (response["hmm_counts"] - response["hmm_subpfam_counts"]) + "</span> <strong>biosyn_pfam HMMs</strong>, of which..</div>";
+				content_popover += "<div class='list-group-item'><span class='badge badge-secondary badge-pill'>" + response["hmm_core_counts"] + "</span> of them are assigned as <strong>core HMMs</strong>, producing..</div>";
+				content_popover += "<div class='list-group-item'><span class='badge badge-secondary badge-pill'>" + response["hmm_subpfam_counts"] + "</span> <strong>sub_pfam HMMs</strong></div>";
+				content_popover += "</div>";
+				$("#run_overview_hmm_popover").removeClass("d-none");
+				$("#run_overview_hmm_popover").popover({
+					"content": content_popover
+				});
+			} else {
+				$("#run_overview_hmm_popover").addClass("d-none");
+			}
+
+			// popover-bgc
+			if (response["bgc_counts_total"] > 0) {
+				let content_popover = "<div class='list-group'>";
+				for (let dataset_name in response["bgc_counts_per_dataset"]) {
+					let bgc_count = response["bgc_counts_per_dataset"][dataset_name];
+					content_popover += "<div class='list-group-item'><span class='badge badge-secondary badge-pill'>" + bgc_count + "</span> from <strong>" + dataset_name + "</strong></div>";
+				}
+				$("#run_overview_bgc_popover").removeClass("d-none");
+				$("#run_overview_bgc_popover").popover({
+					"content": content_popover
+				});
+			} else {
+				$("#run_overview_bgc_popover").addClass("d-none");
+			}
+		}})
+	});
+</script>
