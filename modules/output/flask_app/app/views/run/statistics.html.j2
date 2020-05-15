@@ -1,4 +1,4 @@
-<div class="row mt-2 mb-4">
+<div class="row mt-2">
 	<div class="col">
 		<h3>Statistics</h3>
 		<!-- first row -->
@@ -18,17 +18,17 @@
 		</div>
 		<!-- second row -->
 		<div class="row mt-2">
-			<!-- num BGCs per GCF -->
+			<!-- bgc length histogram -->
 			<div class="col-6" style="min-width: 480px;">
-				<div id="hist_bgc_counts" class="text-center">
+				<div id="hist_avg_dist" class="text-center">
 					<div class="spinner-border text-info" role="status">
 						<span class="sr-only">Loading...</span>
 					</div>
 				</div>
 			</div>
-			<!-- bgc length histogram -->
+			<!-- num BGCs per GCF -->
 			<div class="col-6" style="min-width: 480px;">
-				<div id="hist_avg_dist" class="text-center">
+				<div id="hist_bgc_counts" class="text-center">
 					<div class="spinner-border text-info" role="status">
 						<span class="sr-only">Loading...</span>
 					</div>
@@ -67,5 +67,114 @@
 				}
 			}
 		});
+		// fetch and render avg dists barplot
+		$.get({
+			url: "/api/run/get_statistics_dist",
+			data: {
+				"run_id": $("#run_id").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				let container_id = "hist_avg_dist";
+				
+				// hide spinner
+				$("#" + container_id + " .spinner-border").addClass("d-none");
+
+				// define traces
+				let trace_complete = {
+					x: response["labels"],
+					y: response["values_complete"],
+					marker: {
+				    	color: "#1F77B4"
+				    },
+					name: 'Complete',
+					type: 'bar'
+				};
+				let trace_fragmented = {
+					x: response["labels"],
+					y: response["values_fragmented"],
+					marker: {
+						color: "#FF7F0E"
+					},
+					name: 'Fragmented<br />(on_contig_edge)',
+					type: 'bar'
+				};
+				let trace_na = {
+					x: response["labels"],
+					y: response["values_unknown"],
+					marker: {
+				    	color: "#2CA02C"
+				    },
+					name: 'n/a<br />(antiSMASH < 4.2.0)',
+					type: 'bar'
+				};
+				let trace_threshold = {
+					x: [""] + response["labels"] + [""],
+					y: Array(response["labels"].length + 2).fill(response["threshold"]),
+				    line: {
+				    	color: "#000",
+				    	dash: 'dot'
+					},
+					name: 'Threshold (T)',
+					mode: 'lines'
+				};
+				let data = [trace_threshold, trace_complete, trace_fragmented, trace_na];
+				let layout = {
+					title: "Avg. dist to GCF models",
+					barmode: "group",
+					xaxis: {
+					    tickangle: -45
+					},
+					yaxis: {
+						title: "dist (euclidean)"
+					},
+					showlegend: true,
+					legend: {
+						font: {
+							size: 8
+						}
+					}
+				};
+				let config = {
+					responsive: false,
+					staticPlot: false
+				}
+				Plotly.newPlot(container_id, data, layout, config);
+		}})
+		// fetch and render bgc counts barplot
+		$.get({
+			url: "/api/run/get_statistics_bgc_counts",
+			data: {
+				"run_id": $("#run_id").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				let container_id = "hist_bgc_counts";
+				
+				// hide spinner
+				$("#" + container_id + " .spinner-border").addClass("d-none");
+
+				// define traces
+				let data = [{
+					x: response["labels"],
+					y: response["values"],
+					type: 'bar'
+				}];
+				let layout = {
+					title: "BGCs in GCFs<br>(n_min=" + response["min"] + "; n_avg=" + response["avg"] + "; n_max=" + response["max"] + ")",
+					xaxis: {
+					    tickangle: -45
+					},
+					yaxis: {
+						title: "count"
+					},
+					showlegend: false,
+				};
+				let config = {
+					responsive: false,
+					staticPlot: false
+				}
+				Plotly.newPlot(container_id, data, layout, config);
+		}})
 	});
 </script>

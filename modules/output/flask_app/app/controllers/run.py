@@ -2,6 +2,7 @@
 
 import sqlite3
 from flask import render_template, request
+import math
 
 # import global config
 from ..config import conf
@@ -195,5 +196,117 @@ def get_statistics_summary():
              " and gcf_membership.membership_value>?"),
             (clustering_id, result["threshold"])
         ).fetchall()[0][0]
+
+    return result
+
+
+@blueprint.route("/api/run/get_statistics_dist")
+def get_statistics_dist():
+    """ for bgc counts barplot """
+    run_id = request.args.get('run_id', type=int)
+    result = {}
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        # set clustering id
+        clustering_id, result["threshold"] = cur.execute(
+            ("select id, threshold"
+             " from clustering"
+             " where run_id=?"),
+            (run_id, )
+        ).fetchall()[0]
+
+        # get list of ranks
+        ranks = sorted([row[0] for row in cur.execute(
+            ("select distinct rank"
+                " from gcf, gcf_membership"
+                " where gcf_membership.gcf_id=gcf.id"
+                " and gcf.clustering_id=?"),
+            (clustering_id, )
+        ).fetchall()])
+
+        # get labels and values
+        result["labels"] = ["rank-{}".format(rank) for rank in ranks]
+        selector = ("select avg(membership_value)"
+                    " from bgc, gcf, gcf_membership"
+                    " where gcf_membership.bgc_id=bgc.id"
+                    " and gcf_membership.gcf_id=gcf.id"
+                    " and gcf.clustering_id=?"
+                    " and gcf_membership.rank=?")
+        result["values_complete"] = [float("{:.2f}".format(cur.execute(
+            ("{} and bgc.on_contig_edge is 0".format(selector)),
+            (clustering_id, rank)
+        ).fetchall()[0][0] or 0)) for rank in ranks]
+        result["values_fragmented"] = [float("{:.2f}".format(cur.execute(
+            ("{} and bgc.on_contig_edge is 1".format(selector)),
+            (clustering_id, rank)
+        ).fetchall()[0][0] or 0)) for rank in ranks]
+        result["values_unknown"] = [float("{:.2f}".format(cur.execute(
+            ("{} and bgc.on_contig_edge is null".format(selector)),
+            (clustering_id, rank)
+        ).fetchall()[0][0] or 0)) for rank in ranks]
+
+    return result
+
+
+@ blueprint.route("/api/run/get_statistics_bgc_counts")
+def get_statistics_bgc_counts():
+    """ for bgc counts barplot """
+    run_id = request.args.get('run_id', type=int)
+    result = {}
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        # set clustering id, get threshold
+        clustering_id, threshold = cur.execute(
+            ("select id, threshold"
+             " from clustering"
+             " where run_id=?"),
+            (run_id, )
+        ).fetchall()[0]
+
+        # general selector for bgc counts
+        selector = (" select gcf.id as gcf_id, count(bgc.id) as bgc_counts"
+                    " from bgc, gcf, gcf_membership"
+                    " where gcf_membership.bgc_id=bgc.id"
+                    " and gcf_membership.gcf_id=gcf.id"
+                    " and gcf.clustering_id=?"
+                    " and gcf_membership.rank=0"
+                    " and gcf_membership.membership_value<=?"
+                    " group by gcf.id")
+
+        # get bins and labels
+        bin_counts = request.args.get('bin_counts', default=10, type=int)
+        bins = [(1, 1)]
+        labels = ["singletons"]
+        min_counts, avg_counts, max_counts = cur.execute(
+            (
+                "select min(bgc_counts), avg(bgc_counts), max(bgc_counts)"
+                " from ({})".format(selector)
+            ), (clustering_id, threshold)).fetchall()[0]
+        bin_size = math.ceil(((avg_counts - min_counts) * 2) / bin_counts)
+        min_bin = 2
+        while min_bin < (avg_counts + bin_size):
+            max_bin = min_bin + bin_size
+            bins.append((min_bin, max_bin))
+            labels.append("{}-{} BGCs".format(min_bin, max_bin))
+            min_bin = max_bin
+        bins.append((bins[-1][1] + 1, math.ceil(max_counts)))
+        labels.append("> {} BGCs".format(bins[-1][0] - 1))
+        result["min"] = min_counts
+        result["avg"] = float("{:.2f}".format(avg_counts))
+        result["max"] = max_counts
+        result["bins"] = bins
+        result["labels"] = labels
+
+        # get values
+        result["values"] = [cur.execute((
+            "select count(bgc_counts)"
+            " from ({})"
+            " where bgc_counts >= ?"
+            " and bgc_counts <= ?".format(selector)
+        ), (clustering_id, threshold,
+            min_c, max_c)).fetchall()[0][0]
+            for min_c, max_c in bins]
 
     return result
