@@ -400,6 +400,8 @@ def main():
                         default=-1, type=float)
     parser.add_argument("--threshold_pct",
                         default=1.00, type=float)
+    parser.add_argument("--n_ranks",
+                        default=3, type=int)
     parser.add_argument("--scratch", action="store_true")
     parser.add_argument("--resume", action='store_true')
     parser.add_argument("--program_db_folder",
@@ -415,6 +417,7 @@ def main():
     subpfam_chunk_size = args.subpfam_chunk_size
     clustering_threshold = args.threshold
     clustering_threshold_percentile = args.threshold_pct
+    n_ranks = args.n_ranks
     output_folder = path.abspath(args.output_folder)
     result_folder = path.join(output_folder, "result")
     features_folder = path.join(result_folder, "features")
@@ -436,6 +439,9 @@ def main():
         if not path.exists(input_folder):
             print("Can't find {}!".format(input_folder))
             return 1
+    if n_ranks < 1:
+        print("--n_ranks can't be lower than 1.")
+        return 1
 
     # create output folder if not exists
     if not path.exists(output_folder):
@@ -943,7 +949,7 @@ def main():
                 features_folder,
                 centroids_folder,
                 output_db,
-                top_hits=3,
+                top_hits=n_ranks,
                 threshold=None
             ):
                 membership.save()
