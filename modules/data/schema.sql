@@ -265,10 +265,12 @@ CREATE INDEX IF NOT EXISTS clustering_run ON clustering(run_id);
 -- gcf
 CREATE TABLE IF NOT EXISTS gcf (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_in_run INTEGER NOT NULL,
     clustering_id INTEGER NOT NULL,
+    UNIQUE(id_in_run, clustering_id),
     FOREIGN KEY(clustering_id) REFERENCES clustering(id)
 );
-CREATE INDEX IF NOT EXISTS gcf_clustering ON gcf(clustering_id);
+CREATE INDEX IF NOT EXISTS gcf_clustering ON gcf(clustering_id, id_in_run);
 
 -- gcf_membership
 CREATE TABLE IF NOT EXISTS gcf_membership (

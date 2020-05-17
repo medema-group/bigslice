@@ -63,6 +63,7 @@ class BirchClustering:
                 gcf_ids.append(self.database.insert(
                     "gcf",
                     {
+                        "id_in_run": centroid_idx + 1,
                         "clustering_id": self.id
                     }
                 ))

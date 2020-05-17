@@ -354,16 +354,17 @@ def get_gcf_table():
         # fetch data for table
         result["data"] = []
         for row in cur.execute(
-            ("select id"
+            ("select id, id_in_run"
              " from gcf"
              " where clustering_id=?"
              " limit ? offset ?"),
                 (clustering_id, limit, offset)).fetchall():
-            gcf_id, = row
+            gcf_id, gcf_accession = row
 
             # todo: fetch directly from gcf.name (need schema update)
             gcf_name = "GCF_{:0{width}d}".format(
-                gcf_id, width=math.ceil(math.log10(result["recordsTotal"])))
+                gcf_accession, width=math.ceil(
+                    math.log10(result["recordsTotal"])))
 
             # fetch core members count
             core_members = cur.execute(
