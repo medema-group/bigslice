@@ -160,7 +160,8 @@ class BirchClustering:
             " AND run.id=run_bgc_status.run_id" +
             " AND run.hmm_db_id=hmm.db_id" +
             " AND bgc_features.bgc_id=bgc.id" +
-            " AND bgc_features.hmm_id=hmm.id",
+            " AND bgc_features.hmm_id=hmm.id" +
+            selector,
             parameters=(run_id, ),
             props=["bgc_features.bgc_id",
                    "bgc_features.hmm_id",
