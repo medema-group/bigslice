@@ -241,14 +241,17 @@ CREATE TABLE IF NOT EXISTS run_bgc_status (
 );
 CREATE INDEX IF NOT EXISTS runbgcstatus_run ON run_bgc_status(run_id, status);
 
--- features
-CREATE TABLE IF NOT EXISTS features (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    run_id INTEGER NOT NULL UNIQUE,
-    extraction_method VARCHAR(100) NOT NULL,
-    FOREIGN KEY(run_id) REFERENCES run(id)
+-- bgc_features
+CREATE TABLE IF NOT EXISTS bgc_features (
+    bgc_id INTEGER NOT NULL,
+    hmm_id INTEGER NOT NULL,
+    value INTEGER NOT NULL,
+    UNIQUE(bgc_id, hmm_id),
+    FOREIGN KEY(bgc_id) REFERENCES bgc(id),
+    FOREIGN KEY(hmm_id) REFERENCES hmm(id)
 );
-CREATE INDEX IF NOT EXISTS features_run ON features(run_id);
+CREATE INDEX IF NOT EXISTS bgc_features_bgc ON bgc_features(bgc_id, hmm_id);
+CREATE INDEX IF NOT EXISTS bgc_features_hmm ON bgc_features(hmm_id, bgc_id);
 
 -- clustering
 CREATE TABLE IF NOT EXISTS clustering (
@@ -271,6 +274,18 @@ CREATE TABLE IF NOT EXISTS gcf (
     FOREIGN KEY(clustering_id) REFERENCES clustering(id)
 );
 CREATE INDEX IF NOT EXISTS gcf_clustering ON gcf(clustering_id, id_in_run);
+
+-- gcf_models
+CREATE TABLE IF NOT EXISTS gcf_models (
+    gcf_id INTEGER NOT NULL,
+    hmm_id INTEGER NOT NULL,
+    value INTEGER NOT NULL,
+    UNIQUE(gcf_id, hmm_id),
+    FOREIGN KEY(gcf_id) REFERENCES gcf(id),
+    FOREIGN KEY(hmm_id) REFERENCES hmm(id)
+);
+CREATE INDEX IF NOT EXISTS gcf_models_gcf ON gcf_models(gcf_id, hmm_id);
+CREATE INDEX IF NOT EXISTS gcf_models_hmm ON gcf_models(hmm_id, gcf_id);
 
 -- gcf_membership
 CREATE TABLE IF NOT EXISTS gcf_membership (

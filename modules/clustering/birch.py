@@ -25,20 +25,19 @@ from sklearn.metrics import pairwise_distances
 class BirchClustering:
     """ handles clustering analysis of features in a run """
 
-    def __init__(self, properties: dict, database: Database):
-        self.database = database
+    def __init__(self, properties: dict):
         self.run_id = properties["run_id"]
         self.random_seed = properties["random_seed"]
         self.threshold = properties["threshold"]
         self.clustering_method = properties["method"]
         self.centroids = properties["centroids"]
 
-    def save(self, output_folder: str):
+    def save(self, database: Database):
         """commits clustering data"""
-        existing = self.database.select(
+        existing = database.select(
             "clustering",
-            "WHERE run_id=? AND clustering_method=?",
-            parameters=(self.run_id, self.clustering_method),
+            "WHERE run_id=?",
+            parameters=(self.run_id, ),
             props=["id"]
         )
         if existing:
@@ -46,7 +45,7 @@ class BirchClustering:
             raise Exception("not_implemented")
         else:
             # save to database
-            self.id = self.database.insert(
+            self.id = database.insert(
                 "clustering",
                 {
                     "run_id": self.run_id,
@@ -60,7 +59,7 @@ class BirchClustering:
             # save gcf entries
             gcf_ids = []
             for centroid_idx in range(self.centroids.shape[0]):
-                gcf_ids.append(self.database.insert(
+                gcf_ids.append(database.insert(
                     "gcf",
                     {
                         "id_in_run": centroid_idx + 1,
@@ -69,19 +68,20 @@ class BirchClustering:
                 ))
             self.centroids.index = gcf_ids
 
-            # immediately commits, don't want to have double pickled file
-            self.database.commit_inserts()
+            # save gcf features (only cells > 0)
+            for gcf_id, hmm_id in self.centroids[
+                    self.centroids > 0].stack().index:
+                database.insert(
+                    "gcf_models",
+                    {
+                        "gcf_id": gcf_id,
+                        "hmm_id": hmm_id,
+                        "value": int(self.centroids.at[gcf_id, hmm_id])
+                    }
+                )
 
-            # pickle data
-            pickle_path = path.join(output_folder, "{}.pkl".format(self.id))
-            with open(pickle_path, "wb") as pickle_file:
-                pickle.dump(self.centroids,
-                            pickle_file,
-                            protocol=4)
-
-    @staticmethod
+    @ staticmethod
     def run(run_id: int,
-            features_folder: str,
             database: Database,
             complete_only: bool=True,
             threshold: np.float=-1,
@@ -123,38 +123,51 @@ class BirchClustering:
             "method": "birch"
         }
 
-        # check if feature data exists
-        feature_ids = database.select(
-            "features",
-            "WHERE features.run_id = " + str(run_id),
-            props=["id"]
-        )
-        if len(feature_ids) < 1:
-            raise Exception("no features entry found for this run.")
-        elif len(feature_ids) > 1:
-            raise Exception(
-                "more than 1 features found, run is probably corrupted.")
-
-        # fetch pickled features
-        feature_path = path.join(
-            features_folder, "{}.pkl".format(feature_ids[0]["id"]))
-        features_df = pd.read_pickle(feature_path)
-
-        # check if complete-only
+        # prepare features_df
         if complete_only:
-            bgc_idx_complete = [row[0] for row in database.select(
-                "bgc,run_bgc_status",
-                "WHERE run_bgc_status.run_id=?" +
-                " AND run_bgc_status.bgc_id=bgc.id" +
-                " AND NOT bgc.on_contig_edge",
-                parameters=(run_id, ),
-                props=["bgc.id"],
-                as_tuples=True
-            )]
-            if len(bgc_idx_complete) < 1:
-                raise Exception("Empty clustering features")
-            # filter features_df, take only complete BGCs
-            features_df = features_df.loc[bgc_idx_complete]
+            selector = " AND bgc.on_contig_edge is FALSE"
+        else:
+            selector = ""
+        bgc_ids = [row[0] for row in database.select(
+            "bgc,run_bgc_status",
+            "WHERE run_bgc_status.run_id=?" +
+            " AND run_bgc_status.bgc_id=bgc.id" +
+            selector,
+            parameters=(run_id, ),
+            props=["bgc.id"],
+            as_tuples=True
+        )]
+        if len(bgc_ids) < 1:  # check if no bgc_ids
+            raise Exception("Not enough input for clustering.")
+        hmm_ids = [row[0] for row in database.select(
+            "hmm,run",
+            "WHERE hmm.db_id=run.hmm_db_id" +
+            " AND run.id=?",
+            parameters=(run_id, ),
+            props=["hmm.id"],
+            as_tuples=True
+        )]
+        features_df = pd.DataFrame(
+            np.zeros((len(bgc_ids), len(hmm_ids)), dtype=np.uint8),
+            index=bgc_ids, columns=hmm_ids)
+
+        # fetch feature values from db
+        for bgc_id, hmm_id, value in database.select(
+            "bgc,run_bgc_status,run,hmm,bgc_features",
+            "WHERE run_bgc_status.bgc_id=bgc.id" +
+            " AND run.id=?" +
+            " AND run_bgc_status.bgc_id=bgc.id" +
+            " AND run.id=run_bgc_status.run_id" +
+            " AND run.hmm_db_id=hmm.db_id" +
+            " AND bgc_features.bgc_id=bgc.id" +
+            " AND bgc_features.hmm_id=hmm.id",
+            parameters=(run_id, ),
+            props=["bgc_features.bgc_id",
+                   "bgc_features.hmm_id",
+                   "bgc_features.value"],
+            as_tuples=True
+        ):
+            features_df.at[bgc_id, hmm_id] = value
 
         # initiate birch object
         birch = Birch(
@@ -191,4 +204,4 @@ class BirchClustering:
             np.uint8(birch.subcluster_centers_),
             columns=features_df.columns)
 
-        return BirchClustering(properties, database)
+        return BirchClustering(properties)

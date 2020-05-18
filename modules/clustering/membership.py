@@ -11,6 +11,7 @@ Assign GCF memberships
 
 from os import path
 from ..data.database import Database
+import numpy as np
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
 
@@ -39,25 +40,11 @@ class Membership:
 
     @staticmethod
     def assign(run_id: int,
-               features_folder: str,
-               centroids_folder: str,
                database: Database,
                top_hits: int=3,
                threshold: int=None
                ):
         """ assign membership """
-
-        # check if feature data exists
-        feature_ids = database.select(
-            "features",
-            "WHERE features.run_id = " + str(run_id),
-            props=["id"]
-        )
-        if len(feature_ids) < 1:
-            raise Exception("no features entry found for this run.")
-        elif len(feature_ids) > 1:
-            raise Exception(
-                "more than 1 features found, run is probably corrupted.")
 
         # check if clustering data exists
         clustering_ids = database.select(
@@ -72,38 +59,88 @@ class Membership:
                 "more than 1 clustering entry found," +
                 " run is probably corrupted.")
 
-        # fetch pickled features
-        feature_path = path.join(
-            features_folder, "{}.pkl".format(feature_ids[0]["id"]))
-        features_df = pd.read_pickle(feature_path)
-        bgc_ids = features_df.index
+        # prepare data frames
+        # columns
+        hmm_ids = [row[0] for row in database.select(
+            "hmm,run",
+            "WHERE hmm.db_id=run.hmm_db_id" +
+            " AND run.id=?",
+            parameters=(run_id, ),
+            props=["hmm.id"],
+            as_tuples=True
+        )]
 
-        # fetch pickled centroids
-        centroid_path = path.join(
-            centroids_folder, "{}.pkl".format(clustering_ids[0]["id"]))
-        centroids_df = pd.read_pickle(centroid_path)
-        gcf_ids = centroids_df.index
+        # bgc_features
+        bgc_ids = [row[0] for row in database.select(
+            "bgc,run_bgc_status",
+            "WHERE run_bgc_status.run_id=?" +
+            " AND run_bgc_status.bgc_id=bgc.id",
+            parameters=(run_id, ),
+            props=["bgc.id"],
+            as_tuples=True
+        )]
+        bgc_features = pd.DataFrame(
+            np.zeros((len(bgc_ids), len(hmm_ids)), dtype=np.uint8),
+            index=bgc_ids, columns=hmm_ids)
+
+        # gcf_features
+        gcf_ids = [row[0] for row in database.select(
+            "gcf,clustering",
+            "WHERE clustering.run_id=?" +
+            " AND gcf.clustering_id=clustering.id",
+            parameters=(run_id, ),
+            props=["gcf.id"],
+            as_tuples=True
+        )]
+        gcf_features = pd.DataFrame(
+            np.zeros((len(gcf_ids), len(hmm_ids)), dtype=np.uint8),
+            index=gcf_ids, columns=hmm_ids)
+
+        # fill bgc_features
+        for bgc_id, hmm_id, value in database.select(
+            "bgc_features,run_bgc_status",
+            "WHERE run_bgc_status.run_id=?" +
+            " AND run_bgc_status.bgc_id=bgc_features.bgc_id",
+            parameters=(run_id, ),
+            props=["bgc_features.bgc_id",
+                   "bgc_features.hmm_id", "bgc_features.value"],
+            as_tuples=True
+        ):
+            bgc_features.at[bgc_id, hmm_id] = value
+
+        # fill gcf_features
+        for gcf_id, hmm_id, value in database.select(
+            "gcf_models,gcf,clustering",
+            "WHERE clustering.run_id=?" +
+            " AND gcf.clustering_id=clustering.id" +
+            " AND gcf_models.gcf_id=gcf.id",
+            parameters=(run_id, ),
+            props=["gcf_models.gcf_id",
+                   "gcf_models.hmm_id", "gcf_models.value"],
+            as_tuples=True
+        ):
+            gcf_features.at[gcf_id, hmm_id] = value
 
         # prepare nearest neighbor estimator
         nn = NearestNeighbors(
             metric='euclidean',
             algorithm='brute',
             n_jobs=1)
-        nn.fit(centroids_df.values)
+        nn.fit(gcf_features.values)
 
         # perform nearest neighbor search
         if top_hits is not None and threshold is None:
             if top_hits < 1:
                 raise Exception(
                     "top_hits cannot be < 1")
-            dists, centroids_idx = nn.kneighbors(X=features_df.values,
+            dists, centroids_idx = nn.kneighbors(X=bgc_features.values,
                                                  n_neighbors=top_hits,
                                                  return_distance=True)
         elif threshold is not None and top_hits is None:
             if threshold < 1:
                 raise Exception(
                     "threshold cannot be < 0")
-            dists, centroids_idx = nn.radius_neighbors(X=features_df.values,
+            dists, centroids_idx = nn.radius_neighbors(X=bgc_features.values,
                                                        radius=threshold,
                                                        return_distance=True,
                                                        sort_results=True)

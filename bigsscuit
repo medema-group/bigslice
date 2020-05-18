@@ -176,6 +176,20 @@ def check_subpfam_scanned_in_db(bgc_ids: List[int],
     return([row["bgc_id"] for row in rows])
 
 
+def check_features_extracted_in_db(bgc_ids: List[int],
+                                   hmm_db_id: int, database: Database):
+    rows = database.select(
+        "run_bgc_status,run,hmm_db",
+        "WHERE run_bgc_status.run_id=run.id AND " +
+        "run.hmm_db_id=? AND " +
+        "run_bgc_status.status>=4 AND " +
+        "bgc_id IN (" + ",".join(map(str, bgc_ids)) + ")",
+        parameters=(hmm_db_id,),
+        props=["bgc_id"])
+
+    return([row["bgc_id"] for row in rows])
+
+
 def check_gbk_exists(dataset_id: int, orig_gbk_path: str, database: Database):
     existing = database.select("bgc",
                                "WHERE dataset_id=? AND orig_folder=? AND orig_filename=?",
@@ -394,6 +408,8 @@ def main():
                         default=100, type=int)
     parser.add_argument("--subpfam_chunk_size",
                         default=100, type=int)
+    parser.add_argument("--extraction_chunk_size",
+                        default=100, type=int)
     parser.add_argument("-i", "--input_folder", type=str)
     parser.add_argument("--complete", action="store_true")
     parser.add_argument("--threshold",
@@ -415,13 +431,12 @@ def main():
     pool = fetch_pool(args.num_threads)
     hmmscan_chunk_size = args.hmmscan_chunk_size
     subpfam_chunk_size = args.subpfam_chunk_size
+    extraction_chunk_size = args.extraction_chunk_size
     clustering_threshold = args.threshold
     clustering_threshold_percentile = args.threshold_pct
     n_ranks = args.n_ranks
     output_folder = path.abspath(args.output_folder)
     result_folder = path.join(output_folder, "result")
-    features_folder = path.join(result_folder, "features")
-    centroids_folder = path.join(result_folder, "centroids")
     tmp_folder = path.join(result_folder, "tmp")
     data_db_path = path.join(result_folder, "data.db")
     program_db_folder = path.abspath(args.program_db_folder)
@@ -882,25 +897,76 @@ def main():
             run.log("features_extraction start " +
                     str(len(run.bgcs)) + " BGCs")
 
-            if not path.exists(features_folder):
-                makedirs(features_folder)
+            features_extracted = set()
 
-            features = Features.extract(
-                run.id, "default", output_db, pool
-            )
-            features.save(features_folder)
-            del features
+            # check if already features_extracted in previous run
+            for chunk, chunk_name in get_chunk(
+                    list(bgc_status_bin[3]),
+                    args.num_threads, extraction_chunk_size):
+                for bgc_id in check_features_extracted_in_db(
+                        chunk, hmm_db.id, output_db):
+                    if update_bgc_status(bgc_id, run.id, 4, output_db) == 1:
+                        features_extracted.add(bgc_id)
+                    else:
+                        print("Failed to update bgc status " +
+                              "(bgc_id: " + str(bgc_id) + ") " +
+                              "(run_id: " + str(run.id) + ")")
+                        return 1
+
+            print("{} BGCs are already extracted in previous run".format(
+                len(features_extracted)))
+
+            to_be_extracted = list(bgc_status_bin[3] - features_extracted)
+            if len(to_be_extracted) > 0:
+
+                print("Extracting features...")
+                run.log("features_extraction extract " +
+                        str(len(to_be_extracted)) + " BGCs")
+
+                for chunk, chunk_name in get_chunk(
+                        to_be_extracted,
+                        args.num_threads,
+                        extraction_chunk_size):
+
+                    for feature in Features.extract(
+                        chunk, hmm_db.id, output_db
+                    ):
+                        feature.save(output_db)
+                    output_db.commit_inserts()
+
+                    for bgc_id in chunk:
+                        if update_bgc_status(
+                                bgc_id, run.id, 4, output_db) == 1:
+                            features_extracted.add(bgc_id)
+                        else:
+                            print("Failed to update bgc status " +
+                                  "(bgc_id: " + str(bgc_id) + ") " +
+                                  "(run_id: " + str(run.id) + ")")
+
+            # update status bin
+            for bgc_id in features_extracted:
+                assert run.bgcs[bgc_id] == 3
+                run.bgcs[bgc_id] = 4
+            bgc_status_bin[3] = bgc_status_bin[2] - features_extracted
+            bgc_status_bin[4].update(features_extracted)
 
             print("[{}s] features extraction".format(get_elapsed()))
             run.log("features_extraction end")
-            update_bgcs_status = output_db.update("run_bgc_status",
-                                                  {"status": 4},
-                                                  "WHERE run_id=?",
-                                                  (run.id,))
-            if update_bgcs_status > 0 and run.update_status(4) > 0:
-                print("run_status is now FEATURES_EXTRACTED")
-            else:
-                print("failed to update run_status")
+
+            if len(to_be_extracted) > 0 and use_memory:
+                output_db.dump_db_file()
+
+        if len(bgc_status_bin[3]) == 0:
+            if run.status < 4:
+                if run.update_status(4) > 0:
+                    print("run_status is now FEATURES_EXTRACTED")
+                else:
+                    print("failed to update run_status")
+        else:
+            print("Encountered errors in feature_extraction, " +
+                  str(len(bgc_status_bin[3])) +
+                  " BGCs are not yet extracted.")
+            return 1
 
         # phase 5: Clustering
         if 3 < run.status < 5:
@@ -909,20 +975,19 @@ def main():
             run.log("clustering start " +
                     str(len(run.bgcs)) + " BGCs")
 
-            if not path.exists(centroids_folder):
-                makedirs(centroids_folder)
-
             # build GCF models
             run.log("BIRCH run start")
             clustering = BirchClustering.run(
                 run.id,
-                features_folder,
                 output_db,
                 complete_only=clustering_complete_only,
                 threshold=clustering_threshold,
                 threshold_percentile=clustering_threshold_percentile
             )
-            clustering.save(centroids_folder)
+            clustering.save(output_db)
+            output_db.commit_inserts()
+            if use_memory:
+                output_db.dump_db_file()
             del clustering
             run.log("BIRCH run end")
 
@@ -946,8 +1011,6 @@ def main():
 
             for membership in Membership.assign(
                 run.id,
-                features_folder,
-                centroids_folder,
                 output_db,
                 top_hits=n_ranks,
                 threshold=None
