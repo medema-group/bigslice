@@ -287,7 +287,7 @@ def get_bgclength_hist():
                     " where dataset_id{}?"
                     " and length_nt >= ?"
                     " and length_nt <= ?"
-                    " and on_contig_edge is false"
+                    " and on_contig_edge == 0"
                 ).format("=" if dataset_id > 0 else "!="),
                     (dataset_id, cur_min, cur_max)
                 ).fetchall()[0][0]
@@ -301,7 +301,7 @@ def get_bgclength_hist():
                     " where dataset_id{}?"
                     " and length_nt >= ?"
                     " and length_nt <= ?"
-                    " and on_contig_edge is true"
+                    " and on_contig_edge == 1"
                 ).format("=" if dataset_id > 0 else "!="),
                     (dataset_id, cur_min, cur_max)
                 ).fetchall()[0][0]
