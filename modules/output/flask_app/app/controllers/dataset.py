@@ -79,7 +79,7 @@ def get_bgc_table():
 
         # fetch taxonomy descriptor
         result["taxon_desc"] = cur.execute((
-            "select id, name"
+            "select level, name"
             " from taxon_class"
             " order by level asc"
         )).fetchall()
@@ -122,7 +122,7 @@ def get_bgc_table():
             # fetch taxonomy information
             data["taxonomy"] = {
                 row[0]: row[1] for row in cur.execute((
-                    "select taxon_id, taxon.name"
+                    "select taxon.level, taxon.name"
                     " from taxon, bgc_taxonomy"
                     " where taxon.id=bgc_taxonomy.taxon_id"
                     " and bgc_taxonomy.bgc_id=?"
