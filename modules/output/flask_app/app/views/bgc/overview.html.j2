@@ -1,0 +1,142 @@
+<div class="row mt-2 mb-4">
+	<div class="col">
+		<h3>Overview</h3>
+		<!-- first row -->
+		<div class="row mt-4 list-group list-group-horizontal">
+			<div class="col-1"></div>
+			<div class="col-7 list-group-item d-flex justify-content-between align-items-center">
+				Original file:
+				<a id="bgc_overview_orig_file" href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+			</div>
+			<div class="col-3 list-group-item d-flex justify-content-between align-items-center">
+				Fragmented?
+				<a id="bgc_overview_fragmented" href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+			</div>
+			<div class="col-1"></div>
+		</div>
+		<!-- second row -->
+		<div class="row list-group list-group-horizontal">
+			<div class="col-1 border-top-0"></div>
+			<div class="col-4 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Length (bp):
+				<a id="bgc_overview_bgc_length" href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+			</div>
+			<div class="col-3 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Number of genes:
+				<a id="bgc_overview_num_genes" href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+			</div>
+			<div class="col-3 border-top-0 list-group-item d-flex justify-content-between align-items-center">				File type:
+				<a id="bgc_overview_bgc_type" href="javascript:void();" class="badge badge-info badge-pill" data-trigger="hover" data-html="true" data-content="" title="Description">?</a>
+			</div>
+			<div class="col-1 border-top-0"></div>
+		</div>
+		<!-- third row -->
+		<div class="row list-group list-group-horizontal">
+			<div class="col-1 border-top-0"></div>
+			<div class="col-10 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Biosynthetic class:
+				<span id="bgc_overview_bgc_class">
+					<a href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+				</span>
+			</div>
+			<div class="col-1 border-top-0"></div>
+		</div>
+		<!-- fourth row -->
+		<div class="row list-group list-group-horizontal">
+			<div class="col-1 border-top-0"></div>
+			<div class="col-4 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Species:
+				<a id="bgc_overview_bgc_species" href="javascript:void();" class="bgc_overview_taxonomy badge badge-info badge-pill" data-trigger="hover" data-html="true" data-content="" title="Taxonomy">?</a>
+			</div>
+			<div class="col-3 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Genus:
+				<a id="bgc_overview_bgc_genus" href="javascript:void();" class="bgc_overview_taxonomy badge badge-info badge-pill" data-trigger="hover" data-html="true" data-content="" title="Taxonomy">?</a>
+			</div>
+			<div class="col-3 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Phylum:
+				<a id="bgc_overview_bgc_phylum" href="javascript:void();" class="bgc_overview_taxonomy badge badge-info badge-pill" data-trigger="hover" data-html="true" data-content="" title="Taxonomy">?</a>
+			</div>
+			<div class="col-1 border-top-0"></div>
+		</div>
+		<!-- run selector -->
+		<div class="row mt-4 mb-2 text-center">
+			<div class="col pt-2 pb-2 border-top border-bottom">
+				Showing data from:
+				<a class="btn btn-info dropdown-toggle" href="#" role="button" id="dropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					{{ "Run-{:04d}".format(run_id) }}
+				</a>
+				<div class="dropdown-menu" aria-labelledby="dropdownMenuLink">
+					{% for option in run_ids %}
+						<a class="dropdown-item {{ 'active' if option==run_id }}" href="/dataset/{{ dataset_id }}/bgc/{{ bgc_id }}/run/{{ option }}">{{ "Run-{:04d}".format(option) }}</a>
+					{% endfor %}
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	$(document).ready(function(){
+		// fetch and update tables
+		$.get({
+			url: "/api/bgc/get_overview",
+			data: {
+				"bgc_id": $("#bgc_id").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				$("#bgc_overview_orig_file").text(response["file_path"]);
+				$("#bgc_overview_fragmented").text(response["fragmented"]);
+				$("#bgc_overview_bgc_length").text(response["length"]);
+				$("#bgc_overview_num_genes").text(response["genes_count"]);
+				$("#bgc_overview_bgc_type").text(response["type"]);
+
+				// phylum
+				if (response["taxonomy"].hasOwnProperty("1")) {
+					$("#bgc_overview_bgc_phylum").html("<i>" + response["taxonomy"]["1"] + "</i>");
+				} else {
+					$("#bgc_overview_bgc_phylum").html("n/a");
+				}
+
+				// genus
+				if (response["taxonomy"].hasOwnProperty("5")) {
+					$("#bgc_overview_bgc_genus").html("<i>" + response["taxonomy"]["5"] + "</i>");
+				} else {
+					$("#bgc_overview_bgc_genus").html("n/a");
+				}
+
+				// species
+				if (response["taxonomy"].hasOwnProperty("6")) {
+					$("#bgc_overview_bgc_species").html("<i>" + response["taxonomy"]["6"] + "</i>");
+				} else {
+					$("#bgc_overview_bgc_species").html("n/a");
+				}
+
+				// biosynthetic classes
+				$("#bgc_overview_bgc_class").html("");
+				response["classes"].forEach(function(value, index) {
+					$("#bgc_overview_bgc_class").append("<span class='badge badge-secondary badge-pill'>" + value[0] + ":" + value[1] + "</span>")
+				});
+
+				// file_type popover
+				$("#bgc_overview_bgc_type").popover({
+					"content": response["type_desc"]
+				});
+
+				// taxonomy popover
+				let taxon_list = "<div>";
+				response["taxon_desc"].forEach(function(value, index) {
+					if (response["taxonomy"].hasOwnProperty(value[0])) {
+						taxon_list += "<div class=\"row\"><div class=\"col-4\"><strong>" + value[1] + "</strong></div><div class=\"col-8 text-right\"><i>" + response["taxonomy"][value[0]] + "</i></div></div>";
+					} else {
+						taxon_list += "<div class=\"row\"><div class=\"col-4\"><strong>" + value[1] + "</strong></div><div class=\"col-8 text-right\">n/a</div></div>";
+					}
+				});
+				taxon_list += "</ul>";
+				$(".bgc_overview_taxonomy").popover({
+		        	"template": '<div class="popover popover-taxonomy" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+		        	"content": taxon_list
+		        });
+			}
+		})
+	});
+</script>

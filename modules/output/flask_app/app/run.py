@@ -9,6 +9,7 @@ from .config import conf
 
 # import controllers
 from .controllers import root, summary, dataset, run
+from .controllers import bgc
 from .controllers import about, help_me
 
 
@@ -22,6 +23,7 @@ app = Flask(
 app.register_blueprint(root.blueprint)
 app.register_blueprint(summary.blueprint)
 app.register_blueprint(dataset.blueprint)
+app.register_blueprint(bgc.blueprint)
 app.register_blueprint(run.blueprint)
 app.register_blueprint(about.blueprint)
 app.register_blueprint(help_me.blueprint)

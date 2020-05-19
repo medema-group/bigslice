@@ -1,0 +1,58 @@
+<div class="row mt-2 mb-4">
+	<div class="col">
+		<h3>Annotations</h3>
+		{% if status_id >= 4 %}
+			<!-- arrower -->
+			<div class="row mt-4 mb-4">
+				<div class="col pl-2 pr-2 text-center">
+					<div id="annot_arrower">
+						<div class="spinner-border text-info" role="status">
+							<span class="sr-only">Loading...</span>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="row mt-2">
+				<!-- word cloud -->
+				<div class="col-4">
+					<h4>Features word cloud</h4>
+					<div id="annot_word_cloud" class="text-center">
+						<div class="spinner-border text-info" role="status">
+							<span class="sr-only">Loading...</span>
+						</div>
+					</div>
+				</div>
+				<!-- genes table -->
+				<div class="col-8">
+					<h4>Genes</h4>
+					<table id="annot_table_genes" class="table table-striped table-bordered table-hover nowrap">
+						<thead class="thead-light">
+							<tr>
+								<th>name</th>
+								<th>product</th>
+								<th>location</th>
+								<th>domains</th>
+								<th>sequence</th>
+							</tr>
+						</thead>
+						<tbody class="tbody">
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<!-- scripts -->
+			<script type="text/javascript">
+				$(document).ready(function(){
+					$("#annot_table_genes").DataTable({
+						searching: false,
+						ordering:  false
+					});
+				});
+			</script>
+		{% else %}
+			<div class="col mt-4 text-center text-secondary">
+				The run is not yet FEATURES_EXTRACTED. No annotation data to show for this BGC.
+			</div>
+		{% endif %}
+	</div>
+</div>

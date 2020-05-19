@@ -1,0 +1,15 @@
+{% extends "layout.html.j2" %}
+{% block content %}
+	{% include "basic_header.html.j2" %}
+	<!-- for javascript -->
+	<input type="hidden" id="bgc_id" value="{{ bgc_id }}"/>
+	<input type="hidden" id="run_id" value="{{ run_id }}"/>
+	<!-- Overview -->
+	{% include "bgc/overview.html.j2" %}
+	<!-- Annotations -->
+	{% include "bgc/annotations.html.j2" %}
+	<!-- GCF hits -->
+	{% include "bgc/gcfs.html.j2" %}
+	<!-- Similar BGCs -->
+	{% include "bgc/homologs.html.j2" %}
+{% endblock %}
