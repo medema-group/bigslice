@@ -168,6 +168,41 @@ def get_overview():
     return result
 
 
+@blueprint.route("/api/bgc/get_word_cloud")
+def get_word_cloud():
+    """ for bgc features word cloud """
+    result = {}
+    bgc_id = request.args.get('bgc_id', type=int)
+    limit = request.args.get('limit', default=20, type=int)
+
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        result["words"] = []
+        for name, weight in cur.execute((
+            "select hmm.name,"
+            " case"
+            " when subpfam.parent_hmm_id > 0"
+            " then sum(hsp.bitscore)"
+            " else count(hsp.bitscore)*255"
+            " end weight"
+            " from hsp, cds, hmm"
+            " left join subpfam on hmm.id=subpfam.hmm_id"
+            " where hsp.cds_id=cds.id"
+            " and cds.bgc_id=?"
+            " and hsp.hmm_id=hmm.id"
+            " group by hmm.name"
+            " order by weight desc"
+            " limit ?"
+        ), (bgc_id, limit)).fetchall():
+            result["words"].append({
+                "text": name,
+                "weight": weight
+            })
+
+    return result
+
+
 @blueprint.route("/api/bgc/get_genes_table")
 def get_genes_table():
     """ for genes datatable """

@@ -15,8 +15,8 @@
 			<div class="row mt-2">
 				<!-- word cloud -->
 				<div class="col-4">
-					<h4>Features word cloud</h4>
-					<div id="annot_word_cloud" class="text-center">
+					<h4>Features word cloud <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="<p>Word size is defined by the total pHMM hit counts for the entire BGC. <br />For the sub_pfam features (ends with '%_cN'), counts were weighted <br />based on their ranked bitscores (i.e. first will have 1x, second 0.75x, <br />and so on). Only top-30 abundant features are being shown in this <br />word cloud." title="What is this?">&nbsp;?&nbsp;</a></h4>
+					<div id="annot_word_cloud" class="text-center" style="height: 480px">
 						<div class="spinner-border text-info" role="status">
 							<span class="sr-only">Loading...</span>
 						</div>
@@ -43,6 +43,23 @@
 			<!-- scripts -->
 			<script type="text/javascript">
 				$(document).ready(function(){
+					// fetch and update word cloud
+					$.get({
+						url: "/api/bgc/get_word_cloud",
+						data: {
+							"bgc_id": $("#bgc_id").val(),
+							"limit": 30
+						},
+						dataType: "json",
+						success: function(response) {
+							$('#annot_word_cloud').html("");
+							$('#annot_word_cloud').jQCloud(response["words"], {
+								shape: "elliptic",
+								steps: 5
+							});							
+						}
+					});
+					// fetch and update gene tables
 					$("#annot_table_genes").DataTable({
 						searching: false,
 						ordering:  false,
