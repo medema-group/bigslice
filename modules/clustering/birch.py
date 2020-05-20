@@ -125,7 +125,7 @@ class BirchClustering:
 
         # prepare features_df
         if complete_only:
-            selector = " AND bgc.on_contig_edge is FALSE"
+            selector = " AND bgc.on_contig_edge is 0"
         else:
             selector = ""
         bgc_ids = [row[0] for row in database.select(
