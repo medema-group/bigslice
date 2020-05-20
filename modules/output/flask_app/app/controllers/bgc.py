@@ -109,8 +109,8 @@ def page_bgc(dataset_id, bgc_id, run_id):
 
 
 @blueprint.route("/api/bgc/get_overview")
-def get_bgc_table():
-    """ for bgc datatable """
+def get_overview():
+    """ for bgc overview tables """
     result = {}
     bgc_id = request.args.get('bgc_id', type=int)
 
@@ -165,4 +165,83 @@ def get_bgc_table():
             " and bgc.id=?"
         ), (bgc_id, )).fetchall()
 
+    return result
+
+
+@blueprint.route("/api/bgc/get_genes_table")
+def get_genes_table():
+    """ for genes datatable """
+    result = {}
+    result["draw"] = request.args.get('draw', type=int)
+
+    # translate request parameters
+    bgc_id = request.args.get('bgc_id', type=int)
+    run_id = request.args.get('run_id', type=int)
+    offset = request.args.get('start', type=int)
+    limit = request.args.get('length', type=int)
+
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        # fetch total records (all bgcs in the dataset)
+        result["recordsTotal"] = cur.execute((
+            "select count(id)"
+            " from cds"
+            " where bgc_id=?"
+        ), (bgc_id,)).fetchall()[0][0]
+
+        # fetch total records (filtered)
+        result["recordsFiltered"] = cur.execute((
+            "select count(id)"
+            " from cds"
+            " where bgc_id=?"
+        ), (bgc_id,)).fetchall()[0][0]
+
+        # fetch data for table
+        result["data"] = []
+        for cds_id, start, end, strand, locus_tag, \
+                protein_id, product, aa_seq in cur.execute((
+                    "select id, nt_start, nt_end, strand,"
+                    " locus_tag, protein_id, product, aa_seq"
+                    " from cds"
+                    " where bgc_id=?"
+                    " order by nt_start asc"
+                    " limit ? offset ?"
+                ), (bgc_id, limit, offset)).fetchall():
+            data = {}
+
+            # gene name
+            data["names"] = []
+            if locus_tag:
+                data["names"].append(locus_tag)
+            if protein_id:
+                data["names"].append(protein_id)
+            if len(data["names"]) < 1:
+                data["names"].append("n/a")
+
+            # product
+            data["product"] = product or "n/a"
+            data["locus"] = (start, end, strand)
+            data["aa_seq"] = aa_seq
+
+            # domain information
+            data["domains"] = cur.execute((
+                "select name, bitscore, cds_start, cds_end"
+                " from hmm, hsp, hsp_alignment, run"
+                " where hsp.cds_id=?"
+                " and hsp_alignment.hsp_id=hsp.id"
+                " and hmm.id=hsp.hmm_id"
+                " and hmm.db_id=run.hmm_db_id"
+                " and run.id=?"
+                " order by cds_start asc"
+            ), (cds_id, run_id)).fetchall()
+
+            result["data"].append([
+                data["names"],
+                data["product"],
+                data["locus"],
+                data["domains"],
+                (cds_id, data["aa_seq"])
+            ])
+    print(result)
     return result

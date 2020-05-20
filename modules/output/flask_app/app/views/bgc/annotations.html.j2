@@ -45,7 +45,67 @@
 				$(document).ready(function(){
 					$("#annot_table_genes").DataTable({
 						searching: false,
-						ordering:  false
+						ordering:  false,
+						serverSide: true,
+						ajax: {
+							url: "/api/bgc/get_genes_table",
+							type: "GET",
+							data: {
+								"bgc_id": $("#bgc_id").val(),
+								"run_id": $("#run_id").val()
+							}
+						},
+						lengthMenu: [[5, 10, 25, -1], [5, 10, 25, "All"]],
+						columnDefs: [
+							{
+								targets: 0, // gene name
+								render: function(data, type, row, meta) {
+									return data.join(" / ");
+								}
+							},
+							{
+								targets: 2, // locus
+								render: function(data, type, row, meta) {
+									let start = data[0];
+									let end = data[1];
+									let strand = data[2] > 0? "+" : data[2] < 0? "-" : "?";
+									let length = ((end - start) / 1000).toFixed(2);
+
+									return start + "-" + end + " [" + strand + "] (" + length + " kb)";
+								}
+							},
+							{
+								targets: 3, // domains
+								render: function(data, type, row, meta) {
+									let content_popover = "<div class=\"list-group\">";
+									data.forEach(function(value, index) {
+										content_popover += "<div class=\"list-group-item d-flex justify-content-between align-items-center\">" + value[2] + "-" + value[3] + ": <strong>" + value[0] + "</strong> (bitscore: " + value[1] + ")</div>";
+									});				
+									content_popover += "</div>";
+									return "<button class='btn btn-info gene_table_domains_viewbtn' data-content='" + content_popover + "'>view</button>"; // todo
+								}								
+							},
+							{
+								targets: 4, // aa_seq
+								render: function(data, type, row, meta) {
+									html_content = "<span value='" + data[1] + "' class='gene_table_copierbtn btn btn-info'>copy</span>";
+									return html_content; // todo
+								}								
+							},
+							{ className: "text-right", "targets": [] },
+							{ className: "text-center", "targets": [3, 4] }
+						],
+						drawCallback: function( settings ) {
+							$(".gene_table_domains_viewbtn").popover({
+								trigger: "focus",
+								html: true,
+								title: "Domains",
+								template: '<div class="popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+							});
+							$(".gene_table_copierbtn").click(function(){
+								copy_to_clipboard($(this).attr("value"));
+							});
+					    }
 					});
 				});
 			</script>
