@@ -4,6 +4,7 @@ import sqlite3
 from flask import render_template, request, redirect
 from flask import abort
 import json
+import math
 from os import path
 
 # import global config
@@ -278,5 +279,127 @@ def get_genes_table():
                 data["domains"],
                 (cds_id, data["aa_seq"])
             ])
-    print(result)
+
+    return result
+
+
+@blueprint.route("/api/bgc/get_gcf_hits_table")
+def get_gcf_hits_table():
+    """ for gcf hits datatable """
+    result = {}
+    result["draw"] = request.args.get('draw', type=int)
+
+    # translate request parameters
+    bgc_id = request.args.get('bgc_id', type=int)
+    run_id = request.args.get('run_id', type=int)
+    result["run_id"] = run_id
+    offset = request.args.get('start', type=int)
+    limit = request.args.get('length', type=int)
+
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        # set clustering id and threshold
+        clustering_id, threshold = cur.execute(
+            ("select id, threshold"
+             " from clustering"
+             " where run_id=?"),
+            (run_id, )
+        ).fetchall()[0]
+
+        # fetch total gcf count for this run
+        result["totalGCFrun"] = cur.execute((
+            "select count(id)"
+            " from gcf"
+            " where gcf.clustering_id=?"
+        ), (clustering_id,)).fetchall()[0][0]
+
+        # fetch total records (all gcf in bgc)
+        result["recordsTotal"] = cur.execute((
+            "select count(gcf_id)"
+            " from gcf, gcf_membership"
+            " where bgc_id=?"
+            " and gcf.id=gcf_membership.gcf_id"
+            " and gcf.clustering_id=?"
+        ), (bgc_id, clustering_id)).fetchall()[0][0]
+
+        # fetch total records (filtered)
+        result["recordsFiltered"] = cur.execute((
+            "select count(gcf_id)"
+            " from gcf, gcf_membership"
+            " where bgc_id=?"
+            " and gcf.id=gcf_membership.gcf_id"
+            " and gcf.clustering_id=?"
+        ), (bgc_id, clustering_id)).fetchall()[0][0]
+
+        # fetch data for table
+        result["data"] = []
+        for gcf_id, gcf_accession, membership_value in cur.execute((
+            "select gcf_id, id_in_run, membership_value"
+            " from gcf, gcf_membership"
+            " where bgc_id=?"
+            " and gcf.id=gcf_membership.gcf_id"
+            " and gcf.clustering_id=?"
+            " order by rank asc"
+            " limit ? offset ?"
+        ), (bgc_id, clustering_id, limit, offset)).fetchall():
+
+            # fetch gcf name
+            gcf_name = "GCF_{:0{width}d}".format(
+                gcf_accession, width=math.ceil(
+                    math.log10(result["totalGCFrun"])))
+
+            # fetch core members count
+            core_members = cur.execute(
+                (
+                    "select count(bgc_id)"
+                    " from gcf_membership"
+                    " where gcf_id=?"
+                    " and rank=0"
+                    " and membership_value <= ?"
+                ),
+                (gcf_id, threshold)).fetchall()[0][0]
+
+            # fetch classes counts
+            class_counts = cur.execute(
+                (
+                    "select chem_class.name || ':' || chem_subclass.name"
+                    " as chem_class,"
+                    " count(gcf_membership.bgc_id) as bgc"
+                    " from chem_class, chem_subclass,"
+                    " bgc_class, gcf_membership"
+                    " where gcf_membership.gcf_id=?"
+                    " and gcf_membership.bgc_id=bgc_class.bgc_id"
+                    " and bgc_class.chem_subclass_id=chem_subclass.id"
+                    " and chem_subclass.class_id=chem_class.id"
+                    " and rank=0"
+                    " and membership_value <= ?"
+                    " group by chem_class"
+                    " order by bgc desc"
+                ),
+                (gcf_id, threshold)).fetchall()
+
+            # fetch taxon counts
+            taxon_counts = cur.execute(
+                (
+                    "select taxon.name as taxon,"
+                    " count(gcf_membership.bgc_id) as bgc"
+                    " from taxon, bgc_taxonomy, gcf_membership"
+                    " where gcf_membership.gcf_id=?"
+                    " and gcf_membership.bgc_id=bgc_taxonomy.bgc_id"
+                    " and bgc_taxonomy.taxon_id=taxon.id"
+                    " and taxon.level=5"  # genus
+                    " and membership_value <= ?"
+                    " group by taxon"
+                    " order by bgc desc"
+                ),
+                (gcf_id, threshold)).fetchall()
+
+            result["data"].append([
+                membership_value,
+                (gcf_id, gcf_name),
+                core_members,
+                class_counts,
+                taxon_counts
+            ])
     return result

@@ -48,7 +48,59 @@
 				$(document).ready(function(){
 					$("#table_gcf_hits").DataTable({
 						searching: false,
-						ordering:  false
+						ordering:  false,
+						serverSide: true,
+						ajax: {
+							url: "/api/bgc/get_gcf_hits_table",
+							type: "GET",
+							data: {
+								"bgc_id": $("#bgc_id").val(),
+								"run_id": $("#run_id").val()
+							}
+						},
+						"columnDefs": [
+							{
+								"targets": 3, // class
+								render: function(data, type, row, meta) {
+									let html_text = "";
+									let bgc_total = row[2];
+
+									if (data.length > 0) {
+										html_text += data[0][0] + " (" + (data[0][1] / bgc_total * 100).toFixed(0) + "%)";
+									} else {
+										html_text += "n/a";
+									}
+
+									return html_text;
+								}
+							},
+							{
+								"targets": 4, // taxon
+								render: function(data, type, row, meta) {
+									let html_text = "";
+									let bgc_total = row[2];
+
+									if (data.length > 0) {
+										html_text += "<i>" + data[0][0] + "</i>" + " (" + (data[0][1] / bgc_total * 100).toFixed(0) + "%)";
+									} else {
+										html_text += "n/a";
+									}
+
+									return html_text;
+								}
+							},
+							{
+								"targets": 1, // name
+								render: function(data, type, row, meta) {
+									return "<a class='btn btn-info' href='/run/" + meta.settings.json.run_id + "/gcf/" + data[0] + "'>" + data[1] + "</a>";
+								}
+							},
+							{ className: "text-right", "targets": [0, 2] },
+							{ className: "text-center", "targets": [] }
+						],
+						"drawCallback": function( settings ) {
+					        // --
+					    }
 					});
 				});
 			</script>
