@@ -1,0 +1,30 @@
+<div id="copy_buffer_modal" class="modal fade" role="dialog">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h4 class="modal-title">Copy to clipboard</h4>
+      </div>
+      <div class="modal-body">
+        <textarea id="copy_buffer" class="w-100"></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" onclick="javascript:copy_clicked();" class="btn btn-info">Copy</button>
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+    function copy_to_clipboard(text) {
+        $("#copy_buffer").text(text);
+        $("#copy_buffer_modal").modal('show');
+    }
+    function copy_clicked() {
+      var copyText = document.getElementById("copy_buffer");
+      copyText.select();
+      copyText.setSelectionRange(0, 99999); /*For mobile devices*/
+      document.execCommand("copy");
+      alert("Copied to clipboard.");
+      $("#copy_buffer_modal").modal('hide');
+    }
+</script>

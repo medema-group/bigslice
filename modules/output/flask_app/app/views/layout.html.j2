@@ -42,12 +42,13 @@
         </div>
       </div>
     </div>
+    {% include "copier.html.j2" %}
     <script type="text/javascript">
-    $(function () {
-    $('[data-toggle="popover"]').popover({
-    container: 'body'
-    })
-    })
+      $(function () {
+        $('[data-toggle="popover"]').popover({
+          container: 'body'
+        });
+      });
     </script>
   </body>
 </html>
