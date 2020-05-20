@@ -79,7 +79,7 @@
 								render: function(data, type, row, meta) {
 									let content_popover = "<div class=\"list-group\">";
 									data.forEach(function(value, index) {
-										content_popover += "<div class=\"list-group-item d-flex justify-content-between align-items-center\">" + value[2] + "-" + value[3] + ": <strong>" + value[0] + "</strong> (bitscore: " + value[1] + ")</div>";
+										content_popover += "<div class=\"list-group-item\">" + value[2] + "-" + value[3] + ": <strong>" + value[0] + "</strong> (bitscore: " + value[1] + ")</div>";
 									});				
 									content_popover += "</div>";
 									return "<button class='btn btn-info gene_table_domains_viewbtn' data-content='" + content_popover + "'>view</button>"; // todo
