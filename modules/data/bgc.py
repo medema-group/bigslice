@@ -303,7 +303,7 @@ class BGC:
                         skips += 1
 
             results[hmm_id] += ">bgc:{}|cds:{}|{}-{}\n".format(
-                bgc_id, row["id"], row["hsp_id"],
+                bgc_id, row["id"],
                 row["cds_start"],
                 row["cds_end"])
             results[hmm_id] += "{}\n".format(aln)
