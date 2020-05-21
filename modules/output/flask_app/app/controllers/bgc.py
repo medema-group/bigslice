@@ -403,3 +403,202 @@ def get_gcf_hits_table():
                 taxon_counts
             ])
     return result
+
+
+@blueprint.route("/api/bgc/get_homologous_bgcs")
+def get_homologous_bgcs():
+    """ for homologous bgcs for the datatable """
+    result = {}
+    result["draw"] = request.args.get('draw', type=int)
+
+    # translate request parameters
+    bgc_id = request.args.get('bgc_id', type=int)
+    run_id = request.args.get('run_id', type=int)
+    result["run_id"] = run_id
+    offset = request.args.get('start', type=int)
+    limit = request.args.get('length', type=int)
+
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        # set clustering id and threshold
+        clustering_id, threshold = cur.execute(
+            ("select id, threshold"
+             " from clustering"
+             " where run_id=?"),
+            (run_id, )
+        ).fetchall()[0]
+        result["threshold"] = threshold
+
+        # fetch total gcf count for this run
+        result["totalGCFrun"] = cur.execute((
+            "select count(id)"
+            " from gcf"
+            " where gcf.clustering_id=?"
+        ), (clustering_id,)).fetchall()[0][0]
+
+        # fetch total records (all bgcs sharing gcfs)
+        result["recordsTotal"] = cur.execute((
+            "select count(distinct bgc_id)"
+            " from gcf_membership"
+            " where gcf_id in"
+            " ("
+            "    select gcf_id"
+            "    from gcf,gcf_membership"
+            "    where bgc_id=?"
+            "    and gcf_membership.gcf_id=gcf.id"
+            "    and gcf.clustering_id=?"
+            " )"
+            " and gcf_membership.membership_value <= ?"
+            " and gcf_membership.rank = 0"
+            " and bgc_id!=?"
+        ), (bgc_id, clustering_id, threshold, bgc_id)).fetchall()[0][0]
+
+        # fetch total records (filtered)
+        result["recordsFiltered"] = cur.execute((
+            "select count(distinct bgc_id)"
+            " from gcf_membership"
+            " where gcf_id in"
+            " ("
+            "    select gcf_id"
+            "    from gcf,gcf_membership"
+            "    where bgc_id=?"
+            "    and gcf_membership.gcf_id=gcf.id"
+            "    and gcf.clustering_id=?"
+            " )"
+            " and gcf_membership.membership_value <= ?"
+            " and gcf_membership.rank = 0"
+            " and bgc_id!=?"
+        ), (bgc_id, clustering_id, threshold, bgc_id)).fetchall()[0][0]
+
+        # fetch taxonomy descriptor
+        result["taxon_desc"] = cur.execute((
+            "select level, name"
+            " from taxon_class"
+            " order by level asc"
+        )).fetchall()
+
+        # fetch features count for query bgc
+        result["total_features"] = cur.execute((
+            "select count(distinct hmm.id)"
+            " from bgc_features, hmm, run"
+            " where bgc_features.bgc_id=?"
+            " and bgc_features.hmm_id=hmm.id"
+            " and hmm.db_id=run.hmm_db_id"
+            " and run.id=?"
+            " and bgc_features.value >= 255"
+        ), (bgc_id, run_id, )).fetchall()[0][0]
+
+        # fetch data for table
+        result["data"] = []
+
+        for target_bgc_id, gcf_id, gcf_accession, shared_count in cur.execute((
+            "select bgc_features.bgc_id, gcf.id,"
+            " gcf.id_in_run, count(distinct hmm_id) as counts"
+            " from bgc_features,gcf_membership,gcf"
+            " where gcf_membership.bgc_id=bgc_features.bgc_id"
+            " and gcf.id=gcf_membership.gcf_id"
+            " and gcf.clustering_id=?"
+            " and gcf_membership.rank=0"
+            " and gcf_membership.membership_value <= ?"
+            " and bgc_features.bgc_id"
+            " in ("
+            " select distinct bgc_id"
+            " from gcf_membership"
+            " where gcf_id in"
+            " ("
+            "   select gcf_id"
+            "   from gcf,gcf_membership"
+            "   where bgc_id=?"
+            "   and gcf_membership.gcf_id=gcf.id"
+            "   and gcf.clustering_id=?"
+            " )"
+            " and gcf_membership.membership_value <= ?"
+            " and gcf_membership.rank = 0"
+            " )"
+            " and bgc_features.hmm_id"
+            " in ("
+            " select hmm_id"
+            " from bgc_features, hmm, run"
+            " where bgc_id=?"
+            " and hmm_id=hmm.id"
+            " and hmm.db_id=run.hmm_db_id"
+            " and run.id=?"
+            " )"
+            " and bgc_features.value >= 255"
+            " and bgc_features.bgc_id!=?"
+            " group by bgc_features.bgc_id"
+            " order by counts desc"
+            " limit ? offset ?"
+        ),
+            (clustering_id, threshold, bgc_id, clustering_id,
+                threshold, bgc_id, run_id, bgc_id,
+                limit, offset)).fetchall():
+
+            # fetch basic information
+            bgc_name, bgc_length, dataset_id, dataset_name = cur.execute((
+                "select bgc.name, bgc.length_nt, dataset.id, dataset.name"
+                " from bgc,dataset"
+                " where bgc.dataset_id=dataset.id"
+                " and bgc.id=?"
+            ), (target_bgc_id, )).fetchall()[0]
+
+            # fetch distance
+            distance = int(math.sqrt(cur.execute((
+                "select sum(sqsum)"
+                " from"
+                " ("
+                " select case when count(value) > 1"
+                " then"
+                " (max(value)-min(value))*(max(value)-min(value))"
+                " else"
+                " max(value)*max(value)"
+                " end as sqsum"
+                " from bgc_features,hmm,run"
+                " where bgc_id in (?, ?)"
+                " and bgc_features.hmm_id=hmm.id"
+                " and hmm.db_id=run.hmm_db_id"
+                " and run.id=?"
+                " and bgc_features.value > 0"
+                " group by hmm_id"
+                " )"
+            ), (bgc_id, target_bgc_id, run_id)).fetchall()[0][0]))
+
+            # fetch gcf name
+            gcf_name = "GCF_{:0{width}d}".format(
+                gcf_accession, width=math.ceil(
+                    math.log10(result["totalGCFrun"])))
+
+            # fetch taxonomy information
+            taxonomy = {
+                row[0]: row[1] for row in cur.execute((
+                    "select taxon.level, taxon.name"
+                    " from taxon, bgc_taxonomy"
+                    " where taxon.id=bgc_taxonomy.taxon_id"
+                    " and bgc_taxonomy.bgc_id=?"
+                ), (target_bgc_id, )).fetchall()
+            }
+
+            # fetch class information
+            classes = cur.execute((
+                "select chem_class.name, chem_subclass.name"
+                " from bgc, bgc_class, chem_subclass, chem_class"
+                " where bgc.id=bgc_class.bgc_id"
+                " and bgc_class.chem_subclass_id=chem_subclass.id"
+                " and chem_subclass.class_id=chem_class.id"
+                " and bgc.id=?"
+            ), (target_bgc_id, )).fetchall()
+
+            result["data"].append([
+                (target_bgc_id, dataset_id, bgc_name),
+                (gcf_id, gcf_name),
+                shared_count,
+                distance,
+                "{:.02f}".format(bgc_length / 1000),
+                taxonomy,
+                classes,
+                (dataset_id, dataset_name),
+                (bgc_id, target_bgc_id)
+            ])
+
+    return result
