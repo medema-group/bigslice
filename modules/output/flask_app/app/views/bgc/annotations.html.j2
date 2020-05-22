@@ -5,7 +5,7 @@
 			<!-- arrower -->
 			<div class="row mt-4 mb-4">
 				<div class="col pl-2 pr-2 text-center">
-					<div id="annot_arrower">
+					<div id="annot_arrower" class="overflow-auto" style="height: 5em; max-width: 100vw;">
 						<div class="spinner-border text-info" role="status">
 							<span class="sr-only">Loading...</span>
 						</div>
@@ -42,7 +42,35 @@
 			</div>
 			<!-- scripts -->
 			<script type="text/javascript">
+				var domainColors = {} // for page-wide arrower coloring
+				function getRandomColor(alpha) {
+					let r = Math.floor(Math.random() * 256);
+					let g = Math.floor(Math.random() * 256);
+					let b = Math.floor(Math.random() * 256);
+					return ("rgba(" + [r, g, b, alpha].join(",") + ")");
+				}
 				$(document).ready(function(){
+					// fetch and update BGC arrower on annotation page
+					$.get({
+						url: "/api/bgc/get_arrower_objects",
+						data: {
+							"bgc_id": $("#bgc_id").val(),
+							"run_id": $("#run_id").val()
+						},
+						dataType: "json",
+						success: function(response) {
+							let bgcObject = response[$("#bgc_id").val()];
+							bgcObject["orfs"].forEach(function(cds) {
+								cds["domains"].forEach(function(domain) {
+									if (!domainColors.hasOwnProperty(domain.code)) {
+										domainColors[domain.code] = getRandomColor(0.5);
+									}
+									domain["color"] = domainColors[domain.code];
+								});
+							});
+							$("#annot_arrower").html(Arrower.drawClusterSVG(bgcObject, height=40));
+						}
+					});
 					// fetch and update word cloud
 					$.get({
 						url: "/api/bgc/get_word_cloud",

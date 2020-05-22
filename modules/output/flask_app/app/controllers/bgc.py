@@ -6,6 +6,7 @@ from flask import abort
 import json
 import math
 from os import path
+from typing import List
 
 # import global config
 from ..config import conf
@@ -165,6 +166,99 @@ def get_overview():
             " and chem_subclass.class_id=chem_class.id"
             " and bgc.id=?"
         ), (bgc_id, )).fetchall()
+
+    return result
+
+
+@blueprint.route("/api/bgc/get_arrower_objects")
+def get_arrower_objects():
+    """ for arrower js """
+    result = {}
+    bgc_ids = map(int, request.args.get('bgc_id', type=str).split(","))
+    run_id = request.args.get('run_id', type=int)
+
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        for bgc_id in bgc_ids:
+            data = {}
+
+            # get bgc name, length and description
+            bgc_name, bgc_length, dataset_name = cur.execute((
+                "select bgc.name, bgc.length_nt, dataset.name"
+                " from bgc, dataset"
+                " where bgc.id=?"
+                " and bgc.dataset_id=dataset.id"
+            ), (bgc_id, )).fetchall()[0]
+            bgc_taxon_name = cur.execute((
+                "select taxon.name"
+                " from bgc_taxonomy, taxon, bgc"
+                " where bgc.id=bgc_taxonomy.bgc_id"
+                " and taxon.id=bgc_taxonomy.taxon_id"
+                " and bgc.id=?"
+                " order by taxon.level desc"
+                " limit 1"
+            ), (bgc_id, )).fetchall()[:1]
+
+            data["id"] = "BGC: {}".format(bgc_name)
+            data["start"] = 0
+            data["end"] = bgc_length
+            if len(bgc_taxon_name) <= 0:
+                data["desc"] = ("From dataset: {}".format(dataset_name))
+            else:
+                data["desc"] = (
+                    "From <i>{}</i> (dataset: {})".format(
+                        bgc_taxon_name[0][0], dataset_name))
+
+            # get cds
+            data["orfs"] = []
+            for cds_id, locus_tag, protein_id, \
+                    cds_start, cds_end, cds_strand in cur.execute((
+                        "select id, locus_tag, protein_id,"
+                        " nt_start, nt_end, strand"
+                        " from cds"
+                        " where bgc_id=?"
+                        " order by nt_start asc"
+                    ), (bgc_id, )).fetchall():
+                orf = {
+                    "start": cds_start,
+                    "end": cds_end,
+                    "strand": cds_strand
+                }
+
+                orf_names = []
+                if locus_tag:
+                    orf_names.append(locus_tag)
+                if protein_id:
+                    orf_names.append(protein_id)
+                if len(orf_names) < 1:
+                    orf_names.append("n/a")
+                orf["id"] = " / ".join(orf_names)
+
+                orf["domains"] = []
+                # get hsps
+                for dom_name, bitscore, dom_start, dom_end in cur.execute((
+                    "select name, bitscore, cds_start, cds_end"
+                    " from hmm, hsp, hsp_alignment, run"
+                    " where hsp.cds_id=?"
+                    " and hsp_alignment.hsp_id=hsp.id"
+                    " and hmm.id=hsp.hmm_id"
+                    " and hmm.db_id=run.hmm_db_id"
+                    " and run.id=?"
+                    " order by cds_start asc"
+                ), (cds_id, run_id)).fetchall():  # hsps:
+                    hsp = {
+                        "code": dom_name,
+                        "bitscore": bitscore,
+                        "start": dom_start,
+                        "end": dom_end
+                    }
+
+                    orf["domains"].append(hsp)
+                data["orfs"].append(orf)
+
+            # append
+            result[bgc_id] = data
 
     return result
 
