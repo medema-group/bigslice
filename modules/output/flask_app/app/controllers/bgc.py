@@ -565,6 +565,14 @@ def get_homologous_bgcs():
             " and bgc_id!=?"
         ), (bgc_id, clustering_id, threshold, bgc_id)).fetchall()[0][0]
 
+        # fetch bgc_name, dataset_name
+        result["bgc_name"], result["dataset_name"] = cur.execute((
+            "select bgc.name, dataset.name"
+            " from bgc, dataset"
+            " where bgc.id=?"
+            " and bgc.dataset_id=dataset.id"
+        ), (bgc_id, )).fetchall()[0]
+
         # fetch taxonomy descriptor
         result["taxon_desc"] = cur.execute((
             "select level, name"

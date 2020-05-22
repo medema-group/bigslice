@@ -15,7 +15,7 @@
 								<th>taxon</th>
 								<th>class</th>
 								<th>dataset</th>
-								<th>alignment</th>
+								<th>compare</th>
 							</tr>
 						</thead>
 						<tbody class="tbody">
@@ -117,7 +117,15 @@
 							{
 								"targets": 8, // view alignment
 								render: function(data, type, row, meta) {
-									return "<span class='btn btn-info' onclick='javascript:alert(\"note yet implemented.\");'>view</span>";
+									let titles = "{";
+									titles += data[0] + ": \"[" + meta.settings.json.dataset_name + "] " + meta.settings.json.bgc_name +"\"";
+									if (row[3] <= meta.settings.json.threshold) {
+										titles += ", " + data[1] + ": \"[" + row[7][1] + "] " + row[0][2] + " <strong>(dist: " + row[3] + ")</strong>\"";
+									} else {
+										titles += ", " + data[1] + ": \"[" + row[7][1] + "] " + row[0][2] + " (dist: " + row[3] + ")\"";
+									}
+									titles += "}";
+									return "<span class='btn btn-info' onclick='javascript:openComparisonWindow(" + data[0] + ", [" + data[1] + "], " + titles + ");'>view</span>";
 								}
 							},
 							{ className: "text-right", "targets": [2, 3, 4] },

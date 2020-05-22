@@ -42,13 +42,6 @@
 			</div>
 			<!-- scripts -->
 			<script type="text/javascript">
-				var domainColors = {} // for page-wide arrower coloring
-				function getRandomColor(alpha) {
-					let r = Math.floor(Math.random() * 256);
-					let g = Math.floor(Math.random() * 256);
-					let b = Math.floor(Math.random() * 256);
-					return ("rgba(" + [r, g, b, alpha].join(",") + ")");
-				}
 				$(document).ready(function(){
 					// fetch and update BGC arrower on annotation page
 					$.get({

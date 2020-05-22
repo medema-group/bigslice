@@ -298,6 +298,7 @@ Arrower.showToolTip = (function(html, handler){
     divTooltip.css("padding", "0 5px");
     divTooltip.css("pointer-events", "none");
     divTooltip.css("position", "fixed");
+    divTooltip.css("z-index", "99999");
     divTooltip.appendTo($(document.body));
   }
   divTooltip.html(html);
