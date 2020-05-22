@@ -9,10 +9,10 @@
 							<tr>
 								<th>BGC</th>
 								<th>GCF</th>
-								<th>#shared features</th>
+								<th>#shared<br />features</th>
 								<th>distance</th>
 								<th>length (kb)</th>
-								<th>taxon</th>
+								<th style="max-width: 5em;">taxon</th>
 								<th>class</th>
 								<th>dataset</th>
 								<th>compare</th>
@@ -30,6 +30,7 @@
 						searching: false,
 						ordering:  false,
 						serverSide: true,
+						responsive: true,
 						ajax: {
 							url: "/api/bgc/get_homologous_bgcs",
 							type: "GET",

@@ -27,8 +27,9 @@
 	$(document).ready(function(){
 		$("#table_bgcs").DataTable({
 			searching: false,
-		ordering:  false,
+			ordering:  false,
 			serverSide: true,
+						responsive: true,
 			ajax: {
 				url: "/api/dataset/get_bgc_table",
 				type: "GET",
