@@ -1,5 +1,5 @@
 <div id="modal-window" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+  <div class="modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title"></h5>
@@ -24,9 +24,11 @@
   });
 
   // function to open modal window
-  function showModal(title, content) {
+  function showModal(title, content, on_show=function(){}, on_close=function(){}) {
     $("#modal-window").find(".modal-title").html(title);
     $("#modal-window").find(".modal-body").html(content);
+    $("#modal-window").on("show.bs.modal", on_show);
+    $("#modal-window").on("hide.bs.modal", on_close);
     $("#modal-window").modal("show");
   }
 
