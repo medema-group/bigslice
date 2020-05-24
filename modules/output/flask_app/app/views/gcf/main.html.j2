@@ -1,0 +1,9 @@
+{% extends "layout.html.j2" %}
+{% block content %}
+	{% include "basic_header.html.j2" %}
+	<!-- for javascript -->
+	<input type="hidden" id="gcf_id" value="{{ gcf_id }}"/>
+	<input type="hidden" id="run_id" value="{{ run_id }}"/>
+	<!-- for demo purpose -->
+	{% include "gcf/demo.html.j2" %}
+{% endblock %}

@@ -1,0 +1,59 @@
+<h5>"core"</h5>
+{% for bgc in core_bgcs %}
+<div>
+	<strong class="col-12">dist: {{ bgc["dist"]}} -- {{ bgc["name"] }} [dataset: {{ bgc["dataset"] }}]</strong>
+	<div class="col-12 arrower" data-bgc_id="{{ bgc['id'] }}">
+		<div class="spinner-border text-info" role="status">
+			<span class="sr-only">Loading...</span>
+		</div>
+	</div>
+</div>
+{% endfor %}
+<hr />
+<h5>"putative"</h5>
+{% for bgc in putative_bgcs %}
+<div>
+	<strong class="col-12">dist: {{ bgc["dist"]}} -- {{ bgc["name"] }} [dataset: {{ bgc["dataset"] }}]</strong>
+	<div class="col-12 arrower" data-bgc_id="{{ bgc['id'] }}">
+		<div class="spinner-border text-info" role="status">
+			<span class="sr-only">Loading...</span>
+		</div>
+	</div>
+</div>
+{% endfor %}
+<script type="text/javascript">
+	var domainColors = {} // for page-wide arrower coloring
+	function getRandomColor(alpha) {
+		let r = Math.floor(Math.random() * 256);
+		let g = Math.floor(Math.random() * 256);
+		let b = Math.floor(Math.random() * 256);
+		return ("rgba(" + [r, g, b, alpha].join(",") + ")");
+	}
+
+	$(document).ready(function(){
+		// fetch and update BGC arrower
+		$(".arrower").each(function(index, element) {
+			let bgc_id = $(element).attr("data-bgc_id");
+			$.get({
+				url: "/api/bgc/get_arrower_objects",
+				data: {
+					"bgc_id": bgc_id,
+					"run_id": $("#run_id").val()
+				},
+				dataType: "json",
+				success: function(response) {
+					let bgcObject = response[bgc_id];
+					bgcObject["orfs"].forEach(function(cds) {
+						cds["domains"].forEach(function(domain) {
+							if (!domainColors.hasOwnProperty(domain.code)) {
+								domainColors[domain.code] = getRandomColor(0.5);
+							}
+							domain["color"] = domainColors[domain.code];
+						});
+					});
+					$(element).html(Arrower.drawClusterSVG(bgcObject, height=40));
+				}
+			});
+		});
+	});
+</script>
