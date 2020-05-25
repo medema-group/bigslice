@@ -430,18 +430,11 @@ def main():
     # define variables
     prog_params = " ".join(argv[1:])
     pool = fetch_pool(args.num_threads)
-    hmmscan_chunk_size = args.hmmscan_chunk_size
-    subpfam_chunk_size = args.subpfam_chunk_size
-    extraction_chunk_size = args.extraction_chunk_size
-    clustering_threshold = args.threshold
-    clustering_threshold_percentile = args.threshold_pct
-    n_ranks = args.n_ranks
     output_folder = path.abspath(args.output_folder)
     result_folder = path.join(output_folder, "result")
     tmp_folder = path.join(result_folder, "tmp")
     data_db_path = path.join(result_folder, "data.db")
     program_db_folder = path.abspath(args.program_db_folder)
-    clustering_complete_only = args.complete
     resume = args.resume
     input_run_id = args.run_id
     use_memory = not args.scratch
@@ -456,9 +449,6 @@ def main():
         if not path.exists(input_folder):
             print("Can't find {}!".format(input_folder))
             return 1
-    if n_ranks < 1:
-        print("--n_ranks can't be lower than 1.")
-        return 1
 
     # create output folder if not exists
     if not path.exists(output_folder):
@@ -546,6 +536,47 @@ def main():
                 print("Resuming run #{}".format(
                     run.id
                 ))
+
+                # re-load old params
+                resumed_params = run.prog_params.split(" ")
+                for i, param in enumerate(resumed_params):
+                    if param == "--complete":
+                        print("using --complete" + " (from resumed run)")
+                        args.complete = True
+                    elif param == "--threshold":
+                        value = float(resumed_params[i + 1])
+                        print("using --threshold {}".format(value) +
+                              " (from resumed run)")
+                        args.threshold = value
+                    elif param == "--threshold_pct":
+                        value = float(resumed_params[i + 1])
+                        print("using --threshold_pct {}".format(value) +
+                              " (from resumed run)")
+                        args.threshold_pct = value
+                    elif param == "--n_ranks":
+                        value = int(resumed_params[i + 1])
+                        print("using --n_ranks {}".format(value) +
+                              " (from resumed run)")
+                        args.n_ranks = value
+                    elif param == "--hmmscan_chunk_size":
+                        value = int(resumed_params[i + 1])
+                        print(
+                            "using --hmmscan_chunk_size {}".format(value) +
+                            " (from resumed run)")
+                        args.hmmscan_chunk_size = value
+                    elif param == "--subpfam_chunk_size":
+                        value = int(resumed_params[i + 1])
+                        print(
+                            "using --subpfam_chunk_size {}".format(value) +
+                            " (from resumed run)")
+                        args.subpfam_chunk_size = value
+                    elif param == "--extraction_chunk_size":
+                        value = int(resumed_params[i + 1])
+                        print(
+                            "using --extraction_chunk_size {}".format(value) +
+                            " (from resumed run)")
+                        args.extraction_chunk_size = value
+
                 run.log("run resumed " + str(len(run.bgcs)) + " BGCs")
         else:
             # read input folder
@@ -567,6 +598,18 @@ def main():
 
             if use_memory:
                 output_db.dump_db_file()
+
+        # set up parameters (that are re-load-able from run if --resume is on)
+        hmmscan_chunk_size = args.hmmscan_chunk_size
+        subpfam_chunk_size = args.subpfam_chunk_size
+        extraction_chunk_size = args.extraction_chunk_size
+        clustering_threshold = args.threshold
+        clustering_threshold_percentile = args.threshold_pct
+        clustering_complete_only = args.complete
+        n_ranks = args.n_ranks
+        if n_ranks < 1:
+            print("--n_ranks can't be lower than 1.")
+            return 1
 
         # check run_bgc status, bin into a list of statuses
         get_elapsed()
