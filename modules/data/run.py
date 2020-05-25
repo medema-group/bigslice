@@ -116,6 +116,33 @@ class Run:
         return run
 
     @staticmethod
+    def fetch(run_id: int, database: Database):
+        """fetch the specific run in the database"""
+
+        try:
+            run_row = database.select(
+                "run",
+                "WHERE id=?",
+                parameters=(run_id,)
+            )[0]
+            bgcs = {bgc_row["bgc_id"]: bgc_row["status"]
+                    for bgc_row in database.select(
+                "run_bgc_status",
+                "WHERE run_id=? ORDER BY bgc_id ASC",
+                parameters=(run_row["id"],)
+            )}
+            properties = {
+                "id": run_row["id"],
+                "prog_params": run_row["prog_params"],
+                "status": run_row["status"],
+                "hmm_db_id": run_row["hmm_db_id"],
+                "bgcs": bgcs
+            }
+            return Run(properties, database)
+        except IndexError:
+            return None
+
+    @staticmethod
     def get_latest(hmm_db_id: int, database: Database):
         """fetch the last run in the database"""
 

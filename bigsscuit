@@ -424,6 +424,7 @@ def main():
                         default=path.join(path.dirname(
                             path.realpath(__file__)),
                             "db", "models"), type=str)
+    parser.add_argument("--run_id", default=-1, type=int)
     args = parser.parse_args()
 
     # define variables
@@ -442,6 +443,7 @@ def main():
     program_db_folder = path.abspath(args.program_db_folder)
     clustering_complete_only = args.complete
     resume = args.resume
+    input_run_id = args.run_id
     use_memory = not args.scratch
 
     # first gate keeping
@@ -527,8 +529,16 @@ def main():
         print("[{}s] loading hmm databases".format(get_elapsed()))
 
         if resume:
-            # fetch latest run data
-            run = Run.get_latest(hmm_db.id, output_db)
+            if input_run_id > -1:
+                # fetch specific run_id
+                run = Run.fetch(input_run_id, output_db)
+                if run.hmm_db_id != hmm_db.id:
+                    print("Resumed run used different " +
+                          "HMM database source! exiting..")
+                    return 1
+            else:
+                # fetch latest run data
+                run = Run.get_latest(hmm_db.id, output_db)
             if not run:
                 print("No run data to resume, exiting..")
                 return 1
