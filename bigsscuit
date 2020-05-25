@@ -576,7 +576,8 @@ def main():
             3: set(),  # SUBPFAM_SCANNED
             4: set(),  # FEATURES_EXTRACTED
             5: set(),  # CLUSTERING_FINISHED
-            6: set()   # RUN_FINISHED
+            6: set(),  # MEMBERSHIPS_ASSIGNED
+            7: set()   # RUN_FINISHED
         }
         print("Checking run status of {} BGCs...".format(len(run.bgcs)))
         for bgc_id, bgc_status in run.bgcs.items():
