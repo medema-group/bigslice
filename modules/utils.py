@@ -11,6 +11,7 @@ Utility functions and classes
 
 
 import os
+import pickle
 from hashlib import md5
 from typing import List
 
@@ -67,3 +68,18 @@ def get_chunk(list_of_ids: List, num_threads, chunk_size: int=100):
             map(str, chunk)).encode('utf-8')).hexdigest()
         yield (chunk, chunk_name)
         i += 1
+
+
+def store_pickle(stored_object: object, pickle_path: str):
+    """ save pickle """
+    with open(pickle_path, "wb") as fp:
+        pickle.dump(stored_object, fp)
+
+
+def load_pickle(pickle_path: str):
+    """ load pickle """
+    if os.path.exists(pickle_path):
+        with open(pickle_path, "rb") as fp:
+            return pickle.load(fp)
+    else:
+        return None

@@ -14,7 +14,7 @@ todo: assign reference by datasets
 
 from os import path
 from random import randint, seed
-import pickle
+from ..utils import store_pickle
 from ..data.database import Database
 import numpy as np
 import pandas as pd
@@ -32,7 +32,7 @@ class BirchClustering:
         self.clustering_method = properties["method"]
         self.centroids = properties["centroids"]
 
-    def save(self, database: Database):
+    def save(self, database: Database, cache_folder: str = None):
         """commits clustering data"""
         existing = database.select(
             "clustering",
@@ -79,6 +79,12 @@ class BirchClustering:
                         "value": int(self.centroids.at[gcf_id, hmm_id])
                     }
                 )
+
+            if cache_folder:
+                # save pickled cache for quick membership assignment
+                pickled_file_path = path.join(
+                    cache_folder, "clustering_{}.pkl".format(self.id))
+                store_pickle(self.centroids, pickled_file_path)
 
     @ staticmethod
     def run(run_id: int,

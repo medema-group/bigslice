@@ -400,7 +400,7 @@ def parse_input_gbk(arguments: tuple):
 
 def query_mode(report_name, input_folder, input_run_id, pool,
                program_db_folder, source_db_path,
-               query_folder, n_ranks, index_db_path):
+               query_folder, n_ranks, index_db_path, cache_folder):
     # !! this is just a quick prototype to meet the paper deadline
     # should be properly refactored later on !!
 
@@ -641,7 +641,8 @@ def query_mode(report_name, input_folder, input_run_id, pool,
                 source_db,
                 top_hits=n_ranks,
                 threshold=None,
-                bgc_database=query_db
+                bgc_database=query_db,
+                cache_folder=cache_folder
             ):
                 membership.save(query_db)
             query_db.commit_inserts()
@@ -707,6 +708,7 @@ def main():
     pool = fetch_pool(args.num_threads)
     output_folder = path.abspath(args.output_folder)
     result_folder = path.join(output_folder, "result")
+    cache_folder = path.join(result_folder, "cache")
     tmp_folder = path.join(result_folder, "tmp")
     data_db_path = path.join(result_folder, "data.db")
     program_db_folder = path.abspath(args.program_db_folder)
@@ -727,6 +729,13 @@ def main():
         print("--query is selected but --resume is also selected, " +
               "please select either!")
         return 1
+
+    if resume or args.query:
+        if not path.exists(result_folder):
+            print("Output folder didn't exists!")
+            return 1
+        if not path.exists(cache_folder):
+            makedirs(cache_folder)
 
     # check if query mode, goto its specific workflow
     if args.query:
@@ -749,7 +758,8 @@ def main():
                 cur.executescript(sql_schema)
         return query_mode(args.query_name, args.query, input_run_id,
                           pool, program_db_folder, data_db_path,
-                          query_folder, args.n_ranks, index_db_path)
+                          query_folder, args.n_ranks, index_db_path,
+                          cache_folder)
 
     # check if specified folders exist
     if args.input_folder:
@@ -764,6 +774,8 @@ def main():
         makedirs(output_folder)
         # make result folder
         makedirs(result_folder)
+        # make cache folder
+        makedirs(cache_folder)
         # copy template from output module
         template_dir = path.join(
             path.dirname(path.realpath(__file__)),
@@ -1346,7 +1358,7 @@ def main():
                 threshold=clustering_threshold,
                 threshold_percentile=clustering_threshold_percentile
             )
-            clustering.save(output_db)
+            clustering.save(output_db, cache_folder=cache_folder)
             output_db.commit_inserts()
             if use_memory:
                 output_db.dump_db_file()
@@ -1375,7 +1387,8 @@ def main():
                 run.id,
                 output_db,
                 top_hits=n_ranks,
-                threshold=None
+                threshold=None,
+                cache_folder=cache_folder
             ):
                 membership.save(output_db)
             output_db.commit_inserts()

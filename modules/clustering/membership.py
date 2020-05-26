@@ -11,6 +11,7 @@ Assign GCF memberships
 
 from os import path
 from ..data.database import Database
+from ..utils import store_pickle, load_pickle
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
@@ -42,7 +43,8 @@ class Membership:
                database: Database,
                top_hits: int = 3,
                threshold: int = None,
-               bgc_database: Database = None
+               bgc_database: Database = None,
+               cache_folder: str = None
                ):
         """ assign membership """
 
@@ -98,17 +100,49 @@ class Membership:
                 index=bgc_ids, columns=hmm_ids)
 
         # gcf_features
-        gcf_ids = [row[0] for row in database.select(
-            "gcf,clustering",
-            "WHERE clustering.run_id=?" +
-            " AND gcf.clustering_id=clustering.id",
+        gcf_features = None
+        clustering_id = database.select(
+            "clustering",
+            "WHERE run_id=?",
             parameters=(run_id, ),
-            props=["gcf.id"],
+            props=["id"],
             as_tuples=True
-        )]
-        gcf_features = pd.DataFrame(
-            np.zeros((len(gcf_ids), len(hmm_ids)), dtype=np.uint8),
-            index=gcf_ids, columns=hmm_ids)
+        )[0][0]
+        if cache_folder:
+            pickled_file_path = path.join(
+                cache_folder, "clustering_{}.pkl".format(clustering_id))
+            gcf_features = load_pickle(pickled_file_path)
+        if gcf_features is not None:
+            gcf_ids = gcf_features.index.astype(int)
+        else:
+            gcf_ids = [row[0] for row in database.select(
+                "gcf,clustering",
+                "WHERE clustering.run_id=?" +
+                " AND gcf.clustering_id=clustering.id",
+                parameters=(run_id, ),
+                props=["gcf.id"],
+                as_tuples=True
+            )]
+            gcf_features = pd.DataFrame(
+                np.zeros((len(gcf_ids), len(hmm_ids)), dtype=np.uint8),
+                index=gcf_ids, columns=hmm_ids)
+            # fill gcf_features
+            for gcf_id, hmm_id, value in database.select(
+                "gcf_models,gcf,clustering",
+                "WHERE clustering.run_id=?" +
+                " AND gcf.clustering_id=clustering.id" +
+                " AND gcf_models.gcf_id=gcf.id",
+                parameters=(run_id, ),
+                props=["gcf_models.gcf_id",
+                       "gcf_models.hmm_id", "gcf_models.value"],
+                as_tuples=True
+            ):
+                gcf_features.at[gcf_id, hmm_id] = value
+            if cache_folder:
+                # save pickled cache for quick membership assignment
+                pickled_file_path = path.join(
+                    cache_folder, "clustering_{}.pkl".format(clustering_id))
+                store_pickle(gcf_features, pickled_file_path)
 
         # fill bgc_features
         for bgc_id, hmm_id, value in bgc_database.select(
@@ -119,19 +153,6 @@ class Membership:
             as_tuples=True
         ):
             bgc_features.at[bgc_id, hmm_id] = value
-
-        # fill gcf_features
-        for gcf_id, hmm_id, value in database.select(
-            "gcf_models,gcf,clustering",
-            "WHERE clustering.run_id=?" +
-            " AND gcf.clustering_id=clustering.id" +
-            " AND gcf_models.gcf_id=gcf.id",
-            parameters=(run_id, ),
-            props=["gcf_models.gcf_id",
-                   "gcf_models.hmm_id", "gcf_models.value"],
-            as_tuples=True
-        ):
-            gcf_features.at[gcf_id, hmm_id] = value
 
         # prepare nearest neighbor estimator
         nn = NearestNeighbors(
