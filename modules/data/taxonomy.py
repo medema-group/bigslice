@@ -4,7 +4,7 @@
 # Copyright (C) 2020 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.data.taxonomy
+"""bigslice.modules.data.taxonomy
 
 Handle manipulation and storing of bgc taxonomy
 """

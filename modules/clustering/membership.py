@@ -4,7 +4,7 @@
 # Copyright (C) 2020 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.clustering.membership
+"""bigslice.modules.clustering.membership
 
 Assign GCF memberships
 """

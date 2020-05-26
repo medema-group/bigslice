@@ -4,7 +4,7 @@
 # Copyright (C) 2019 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.data.run
+"""bigslice.modules.data.run
 
 Handle manipulation and storage of run data
 """

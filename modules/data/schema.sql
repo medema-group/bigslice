@@ -1,4 +1,4 @@
--- SQLite3 schema for storage and manipulation of BiGSSCUIT data
+-- SQLite3 schema for storage and manipulation of bigslice data
 
 -- schema ver.: 1.0.0
 CREATE TABLE IF NOT EXISTS schema (

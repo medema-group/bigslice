@@ -4,7 +4,7 @@
 # Copyright (C) 2019 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.data.features
+"""bigslice.modules.data.features
 
 Handle manipulation and storage of features
 for now, also do feature extraction

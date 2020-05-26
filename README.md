@@ -1,1 +1,1 @@
-Biosynthetic Genes Semi Supervised Clustering and User Interactivity Tool
+Biosynthetic Genes Super Linear Clustering Engine

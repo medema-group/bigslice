@@ -4,7 +4,7 @@
 # Copyright (C) 2019 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.data.hmm
+"""bigslice.modules.data.hmm
 
 Handle registration of hmm tables and
 performing hmmscan of aa sequences

@@ -4,7 +4,7 @@
 # Copyright (C) 2019 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.data.hsp
+"""bigslice.modules.data.hsp
 
 Handle registration of hmmscan results
 """

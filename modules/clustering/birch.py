@@ -4,7 +4,7 @@
 # Copyright (C) 2020 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.clustering.birch
+"""bigslice.modules.clustering.birch
 
 Perform BIRCH clustering on features,
 produce dataframe of centroids

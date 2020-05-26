@@ -4,7 +4,7 @@
 # Copyright (C) 2019 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.utils
+"""bigslice.modules.utils
 
 Utility functions and classes
 """

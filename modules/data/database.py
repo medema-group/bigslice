@@ -4,7 +4,7 @@
 # Copyright (C) 2019 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.data.database
+"""bigslice.modules.data.database
 
 Common classes and functions to work with the SQLite3 database
 """

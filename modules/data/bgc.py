@@ -4,7 +4,7 @@
 # Copyright (C) 2019 Satria A. Kautsar
 # Wageningen University & Research
 # Bioinformatics Group
-"""bigsscuit.modules.data.bgc
+"""bigslice.modules.data.bgc
 
 Handle manipulation and storing of 'bgc' table
 """
