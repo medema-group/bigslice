@@ -59,6 +59,7 @@ def get_chunk(list_of_ids: List, num_threads, chunk_size: int=100):
     if chunk_size > divided_equally:
         chunk_size = divided_equally
     i = 0
+    chunk_size = max(1, chunk_size)
     while (i * chunk_size) < len(list_of_ids):
         chunk = list_of_ids[
             i * chunk_size:min(((i + 1) * chunk_size), len(list_of_ids))]
