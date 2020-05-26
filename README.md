@@ -43,7 +43,7 @@ User Interactive output
 ~~~console
 user@local:~$ pip install -r <output_folder>/requirements.txt
 ~~~
-2. Run the [flask server](https://flask.palletsprojects.com/en/1.1.x/):
+2. Run the [flask](https://flask.palletsprojects.com/en/1.1.x/) server:
 ~~~console
 user@local:~$ bash <output_folder>/start_server.sh <port(optional)>
 ~~~
