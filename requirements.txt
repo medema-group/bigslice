@@ -1,5 +1,0 @@
-numpy
-pandas
-biopython >= 1.69
-scikit-learn
-pysqlite3
