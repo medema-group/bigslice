@@ -46,6 +46,9 @@ class Membership:
                ):
         """ assign membership """
 
+        if not bgc_database:
+            bgc_database = database
+
         # check if clustering data exists
         clustering_ids = database.select(
             "clustering",
