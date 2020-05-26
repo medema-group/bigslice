@@ -88,6 +88,17 @@ class Membership:
             bgc_features = pd.DataFrame(
                 np.zeros((len(bgc_ids), len(hmm_ids)), dtype=np.uint8),
                 index=bgc_ids, columns=hmm_ids)
+            # fill bgc_features
+            for bgc_id, hmm_id, value in database.select(
+                "bgc_features,run_bgc_status",
+                "WHERE run_bgc_status.run_id=?" +
+                " AND run_bgc_status.bgc_id=bgc_features.bgc_id",
+                parameters=(run_id, ),
+                props=["bgc_features.bgc_id",
+                       "bgc_features.hmm_id", "bgc_features.value"],
+                as_tuples=True
+            ):
+                bgc_features.at[bgc_id, hmm_id] = value
         else:  # query run
             bgc_ids = [row[0] for row in bgc_database.select(
                 "bgc",
@@ -98,6 +109,15 @@ class Membership:
             bgc_features = pd.DataFrame(
                 np.zeros((len(bgc_ids), len(hmm_ids)), dtype=np.uint8),
                 index=bgc_ids, columns=hmm_ids)
+            # fill bgc_features
+            for bgc_id, hmm_id, value in bgc_database.select(
+                "bgc_features",
+                "WHERE 1",
+                props=["bgc_features.bgc_id",
+                       "bgc_features.hmm_id", "bgc_features.value"],
+                as_tuples=True
+            ):
+                bgc_features.at[bgc_id, hmm_id] = value
 
         # gcf_features
         gcf_features = None
@@ -143,16 +163,6 @@ class Membership:
                 pickled_file_path = path.join(
                     cache_folder, "clustering_{}.pkl".format(clustering_id))
                 store_pickle(gcf_features, pickled_file_path)
-
-        # fill bgc_features
-        for bgc_id, hmm_id, value in bgc_database.select(
-            "bgc_features",
-            "WHERE 1",
-            props=["bgc_features.bgc_id",
-                   "bgc_features.hmm_id", "bgc_features.value"],
-            as_tuples=True
-        ):
-            bgc_features.at[bgc_id, hmm_id] = value
 
         # prepare nearest neighbor estimator
         nn = NearestNeighbors(
