@@ -143,14 +143,16 @@ class Run:
             return None
 
     @staticmethod
-    def get_latest(hmm_db_id: int, database: Database):
+    def get_latest(hmm_db_id: int, database: Database,
+                   min_status: int = 1):
         """fetch the last run in the database"""
 
         try:
             run_row = database.select(
                 "run",
-                "WHERE hmm_db_id=? ORDER BY id DESC",
-                parameters=(hmm_db_id,)
+                "WHERE hmm_db_id=? AND status >= ?" +
+                " ORDER BY id DESC",
+                parameters=(hmm_db_id, min_status)
             )[0]
             bgcs = {bgc_row["bgc_id"]: bgc_row["status"]
                     for bgc_row in database.select(

@@ -53,11 +53,15 @@ class Features:
             )
 
     @staticmethod
-    def extract(bgc_ids: int, hmm_db_id: int, database: Database):
+    def extract(bgc_ids: int, hmm_db_id: int,
+                database: Database, hmm_db_source: Database = None):
+
+        if not hmm_db_source:
+            hmm_db_source = database
 
         # prepare features extraction
         hmm_ids, parent_hmm_ids, hmm_names = map(
-            tuple, list(zip(*database.select(
+            tuple, list(zip(*hmm_db_source.select(
                 "hmm,run LEFT JOIN subpfam ON hmm.id=subpfam.hmm_id",
                 "WHERE hmm.db_id=?",
                 parameters=(hmm_db_id, ),

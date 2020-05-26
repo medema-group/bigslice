@@ -25,7 +25,8 @@ class Database:
     def __exit__(self, exc_type, exc_value, traceback):
         self.close()
 
-    def __init__(self, db_path: str, use_memory: bool=False):
+    def __init__(self, db_path: str, use_memory: bool=False,
+                 for_query_mode: bool=False):
         """db_path: path to sqlite3 database file
         CAUTION: this should not be subjected to
         multiple processes (at least for the insert
@@ -37,6 +38,21 @@ class Database:
         self._last_indexes = {}
         self._connection = None
         self._use_memory = use_memory
+
+        if for_query_mode:
+            # truncated database object for query mode
+            sql_schema = open(path.join(path.dirname(
+                path.abspath(__file__)), "schema_query_mode.sql"), "r").read()
+            if path.exists(self._db_path):
+                print(("database file {} exists! this is not "
+                       "what it was made for.").format(self._db_path))
+            else:
+                self._connection = sqlite3.connect(self._db_path)
+                db_cur = self._connection.cursor()
+                db_cur.executescript(sql_schema)
+            for row in self.select("sqlite_sequence", "WHERE 1"):
+                self._last_indexes[row["name"]] = row["seq"]
+            return
 
         # get schema information
         sql_schema = open(path.join(path.dirname(

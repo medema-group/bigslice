@@ -9,6 +9,7 @@
 import argparse
 from os import getpid, path, makedirs, remove
 from sys import argv
+from tempfile import TemporaryDirectory
 import glob
 import re
 import shutil
@@ -24,8 +25,10 @@ from modules.clustering.birch import BirchClustering
 from modules.clustering.membership import Membership
 from modules.utils import reversed_fp_iter, get_chunk
 from time import time
+from datetime import datetime
 import subprocess
 from typing import List
+import sqlite3
 
 
 _last_timestamp = None
@@ -395,6 +398,274 @@ def parse_input_gbk(arguments: tuple):
     return (file_path, BGC.parse_gbk(file_path, orig_gbk_path=orig_gbk_path))
 
 
+def query_mode(report_name, input_folder, input_run_id, pool,
+               program_db_folder, source_db_path,
+               query_folder, n_ranks, index_db_path):
+    # !! this is just a quick prototype to meet the paper deadline
+    # should be properly refactored later on !!
+
+    # check index file
+    with sqlite3.connect(index_db_path) as con:
+        cur = con.cursor()
+        if cur.execute((
+            "SELECT count(id)"
+            " FROM reports"
+            " WHERE type LIKE 'query'"
+            " AND name LIKE ?"
+        ), (report_name, )).fetchall()[0][0] > 0:
+            print("report with this name exists! please use a different name.")
+            return 1
+
+    with TemporaryDirectory() as tmpdir:
+        with Database(source_db_path) as source_db:
+            tmp_db_path = path.join(tmpdir, "data.db")
+            final_db_path = path.join(query_folder, "data.db")
+
+            # create sqlite3 database
+            query_db = Database(tmp_db_path, for_query_mode=True)
+
+            # check schema versions
+            source_schema_ver = source_db.select("schema", "WHERE 1")[0]["ver"]
+            query_schema_ver = query_db.select("schema", "WHERE 1")[
+                0]["parent_schema_ver"]
+            if source_schema_ver != query_schema_ver:
+                print(
+                    ("BiG-SLiCE schema version did not match!"
+                     " please use schema ver. {}").format(query_schema_ver))
+                return 1
+
+            # fetch run details
+            print("Fetching run details...")
+            hmm_db = HMMDatabase.load_folder(program_db_folder, source_db)
+            if hmm_db.id < 1:
+                print("Can't find a matching hmm library in the database!")
+                return 1
+            if input_run_id < 0:
+                run = Run.get_latest(hmm_db.id, source_db, min_status=5)
+                if not run:
+                    print(("Can't find latest run with"
+                           " clustering data available!"))
+                    return 1
+                else:
+                    print(("--run_id not specified,"
+                           " using Run#{}...").format(run.id))
+            else:
+                run = Run.fetch(input_run_id, source_db)
+
+            # check run status
+            if run.status < 5:
+                print("Run does not have clustering data available yet!")
+                return 1
+
+            # parse input folder
+            file_paths = set()
+            eligible_regexes = [re.compile(rgx) for rgx in [
+                "^BGC[0-9]{7}$",  # MIBiG
+                "^.+\\.cluster[0-9]+$",  # antiSMASH4 clustergbks
+                "^.+\\.region[0-9]+$",  # antiSMASH5 clustergbks
+            ]]
+            for gbk_full_path in glob.iglob(path.join(
+                    input_folder,
+                    "**/*.gbk"),
+                    recursive=True):
+
+                # only take antiSMASH/MIBiG-derived GBKs
+                gbk_name = path.splitext(path.basename(gbk_full_path))[0]
+                for eligible_pattern in eligible_regexes:
+                    if eligible_pattern.match(gbk_name):
+                        file_paths.add(gbk_full_path)
+                        break
+            print("Parsing & inserting {} GBKs...".format(len(file_paths)))
+            bgc_ids = []
+            for bgcs in pool.map(BGC.parse_gbk, file_paths):
+                for bgc in bgcs:
+                    # insert bgc
+                    bgc.id = query_db.insert(
+                        "bgc",
+                        {
+                            "name": bgc.name,
+                            "type": bgc.type,
+                            "on_contig_edge": bgc.on_contig_edge,
+                            "length_nt": bgc.length_nt,
+                            "orig_folder": bgc.orig_folder,
+                            "orig_filename": bgc.orig_filename
+                        }
+                    )
+                    bgc_ids.append(bgc.id)
+                    # insert classes
+                    for cc in bgc.chem_subclasses:
+                        chem_subclass_object = BGC.ChemSubclass.search(
+                            source_db, cc, bgc.type)
+                        chem_subclass_object.bgc_id = bgc.id
+                        chem_subclass_object.__save__(query_db)
+                    # insert cds
+                    for cds in bgc.cds:
+                        cds.bgc_id = bgc.id
+                        cds.__save__(query_db)
+            query_db.commit_inserts()
+            print("Inserted {} BGCs!".format(len(bgc_ids)))
+
+            # perform biosyn_pfam scan
+            print("Preparing fasta files for hmmscans...")
+            hmmscan_queues = set()
+            hmm_path = path.join(program_db_folder,
+                                 "biosynthetic_pfams",
+                                 "Pfam-A.biosynthetic.hmm")
+            for chunk, chunk_name in get_chunk(
+                    bgc_ids,
+                    pool._processes,
+                    5):
+                pass
+                fasta_sequences = BGC.get_all_cds_fasta(
+                    chunk, query_db)
+                # write down all CDSes multifasta to be hmmscanned
+                in_fasta_path = path.join(tmpdir, "bio_" + chunk_name + ".fa")
+                out_result_path = path.join(
+                    tmpdir, "bio_" + chunk_name + ".hmmtxt")
+
+                if not path.exists(in_fasta_path):
+                    with open(in_fasta_path, "w") as fa:
+                        fa.write(fasta_sequences)
+                        hmmscan_queues.add(
+                            (in_fasta_path, hmm_path,
+                                out_result_path, "ga", True))
+
+            print("Running hmmscans in parallel...")
+            _ = pool.map(
+                run_hmmscan, hmmscan_queues)
+
+            print("Parsing hmmscans results...")
+            hmm_ids = {
+                hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
+
+            for chunk, chunk_name in get_chunk(
+                    bgc_ids,
+                    pool._processes,
+                    5):
+
+                in_fasta_path = path.join(tmpdir, "bio_" + chunk_name + ".fa")
+                out_result_path = path.join(
+                    tmpdir, "bio_" + chunk_name + ".hmmtxt")
+
+                for hsp_object in HSP.parse_hmmtext(
+                        out_result_path, hmm_ids):
+                    hsp_object.save(query_db)
+            query_db.commit_inserts()
+
+            # perform subpfam_scan
+            core_pfam_ids = {}
+            core_pfam_accs = {}
+            for parent_hmm_acc in hmm_db.sub_pfams:
+                for hmm_obj in hmm_db.biosyn_pfams:
+                    if hmm_obj.accession == parent_hmm_acc:
+                        core_pfam_ids[hmm_obj.accession] = hmm_obj.id
+                        core_pfam_accs[hmm_obj.id] = hmm_obj.accession
+                        break
+            chunks_and_pfam_ids = {}
+            print("Preparing fasta files for subpfam_scans...")
+            hmmscan_queues = set()
+            for chunk, chunk_name in get_chunk(
+                    bgc_ids,
+                    pool._processes,
+                    5):
+                fasta_sequences = BGC.get_all_aligned_hsp(
+                    chunk, core_pfam_ids.values(), query_db)
+                chunks_and_pfam_ids[chunk_name] = set(
+                    fasta_sequences.keys())
+                for parent_hmm_id in fasta_sequences:
+                    in_fasta_path = path.join(
+                        tmpdir, "sub_bgc_{}_hmm_{}.fa".format(
+                            chunk_name, parent_hmm_id))
+                    hmm_path = path.join(program_db_folder,
+                                         "sub_pfams",
+                                         "hmm",
+                                         core_pfam_accs[
+                                             parent_hmm_id] +
+                                         ".subpfams.hmm")
+                    out_result_path = path.join(
+                        tmpdir, "sub_bgc_{}_hmm_{}.hmmtxt".format(
+                            chunk_name, parent_hmm_id))
+                    if not path.exists(in_fasta_path):
+                        with open(in_fasta_path, "w") as fa:
+                            fa.write(fasta_sequences[parent_hmm_id])
+                    hmmscan_queues.add(
+                        (in_fasta_path,
+                            hmm_path,
+                            out_result_path,
+                            20,  # for subpfam_scan
+                            False
+                         ))
+            print("Running subpfam_scans in parallel...")
+            _ = pool.map(
+                run_hmmscan, hmmscan_queues)
+            print("Parsing subpfam_scans results...")
+            for chunk, chunk_name in get_chunk(
+                    bgc_ids,
+                    pool._processes,
+                    5):
+                chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
+                for parent_hmm_id in chunk_parent_pfams:
+                    out_result_path = path.join(
+                        tmpdir, "sub_bgc_{}_hmm_{}.hmmtxt".format(
+                            chunk_name, parent_hmm_id))
+                    sub_pfam_ids = {
+                        hmm_obj.name: hmm_obj.id
+                        for hmm_obj in
+                        hmm_db.sub_pfams[core_pfam_accs[parent_hmm_id]]
+                    }
+                    for hsp_object in HSP.parse_hmmtext(
+                            out_result_path, sub_pfam_ids,
+                            save_alignment=False,
+                            top_k=3,
+                            rank_normalize=True):
+                        hsp_object.save(query_db)
+            query_db.commit_inserts()
+
+            # perform features extraction
+            print("Extracting features...")
+            for chunk, chunk_name in get_chunk(
+                    bgc_ids,
+                    pool._processes,
+                    5):
+                for feature in Features.extract(
+                    chunk, hmm_db.id, query_db,
+                    hmm_db_source=source_db
+                ):
+                    feature.save(query_db)
+            query_db.commit_inserts()
+
+            # perform membership assignment
+            print("Assigning GCF membership...")
+            for membership in Membership.assign(
+                run.id,
+                source_db,
+                top_hits=n_ranks,
+                threshold=None,
+                bgc_database=query_db
+            ):
+                membership.save(query_db)
+            query_db.commit_inserts()
+
+            # move files to final output folder
+            if not path.exists(query_folder):
+                makedirs(query_folder)
+            shutil.copy(tmp_db_path, final_db_path)
+
+            with sqlite3.connect(index_db_path) as con:
+                cur = con.cursor()
+                cur.execute((
+                    "INSERT INTO reports"
+                    "(type, name, creation_date)"
+                    " VALUES(?, ?, ?)"
+                ), ("query", report_name, datetime.now()))
+                if cur.lastrowid > 0:
+                    print("Query success!")
+                    return 0
+                else:
+                    print("Failed to save reports index!")
+                    return 1
+    return 1
+
 def main():
 
     # TODO: check requirements
@@ -425,6 +696,10 @@ def main():
                             path.realpath(__file__)),
                             "db", "models"), type=str)
     parser.add_argument("--run_id", default=-1, type=int)
+    parser.add_argument("--query", type=str)
+    parser.add_argument("--query_name",
+                        default=datetime.now().strftime(
+                            "%Y-%m-%d %H:%M:%S"), type=str)
     args = parser.parse_args()
 
     # define variables
@@ -439,11 +714,44 @@ def main():
     input_run_id = args.run_id
     use_memory = not args.scratch
 
-    # first gate keeping
+    # first gate keeping -- conflicting modes
     if resume and args.input_folder:
         print("--resume is selected but --input_folder is specified, " +
               "please select either!")
         return 1
+    if args.query and args.input_folder:
+        print("--query is selected but --input_folder is specified, " +
+              "please select either!")
+        return 1
+    if args.query and resume:
+        print("--query is selected but --resume is also selected, " +
+              "please select either!")
+        return 1
+
+    # check if query mode, goto its specific workflow
+    if args.query:
+        query_name = args.query_name
+        query_folder = path.join(
+            output_folder, "queries", query_name)
+        index_db_path = path.join(
+            output_folder, "reports.db")
+        if path.exists(query_folder):
+            print("folder {} exists! please remove it or change the" +
+                  " --query_name".format(query_folder))
+            return 1
+        if not path.exists(index_db_path):  # prepare index db
+            with sqlite3.connect(index_db_path) as con:
+                cur = con.cursor()
+                sql_schema = open(path.join(path.dirname(
+                    path.abspath(__file__)),
+                    "modules", "data",
+                    "schema_reports_index.sql"), "r").read()
+                cur.executescript(sql_schema)
+        return query_mode(args.query_name, args.query, input_run_id,
+                          pool, program_db_folder, data_db_path,
+                          query_folder, args.n_ranks, index_db_path)
+
+    # check if specified folders exist
     if args.input_folder:
         input_folder = path.abspath(args.input_folder)
         if not path.exists(input_folder):
@@ -1069,7 +1377,7 @@ def main():
                 top_hits=n_ranks,
                 threshold=None
             ):
-                membership.save()
+                membership.save(output_db)
             output_db.commit_inserts()
 
             print("[{}s] membership_assignment".format(get_elapsed()))
