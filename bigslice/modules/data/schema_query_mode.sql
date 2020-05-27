@@ -71,6 +71,9 @@ CREATE TABLE IF NOT EXISTS hsp_alignment (
     cds_gaps TEXT NOT NULL,
     FOREIGN KEY(hsp_id) REFERENCES hsp(id)
 );
+CREATE INDEX IF NOT EXISTS hspalign_id ON hsp_alignment(hsp_id);
+CREATE INDEX IF NOT EXISTS hspalign_model ON hsp_alignment(model_start);
+CREATE INDEX IF NOT EXISTS hspalign_cds ON hsp_alignment(cds_start);
 
 -- bgc_features
 CREATE TABLE IF NOT EXISTS bgc_features (
