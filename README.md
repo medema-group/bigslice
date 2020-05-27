@@ -12,7 +12,7 @@ user@local:~$ pip install bigslice
 ~~~
 - from source (bleeding edge)
 ~~~console
-user@local:~$ git clone git@github.com:satriaphd/bigslice.git
+user@local:~$ git clone git@github.com:medema-group/bigslice.git
 user@local:~$ pip install ./bigslice/
 ~~~
 3. Fetch the latest HMM models:
