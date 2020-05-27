@@ -12,3 +12,5 @@ bigslice/modules/output/flask_app/result
 __pycache__/
 *.py[cod]
 *$py.class
+build/
+bigslice.egg-info/
