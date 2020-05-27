@@ -729,7 +729,7 @@ def main():
             md5_sub_pfam = open(path.join(
                 program_db_folder, "sub_pfams",
                 "corepfam.md5sum"), "r").readline().rstrip()
-        except Exception():
+        except FileNotFoundError:
             print("Can't find HMM model libraries!")
             return 1
         # print
