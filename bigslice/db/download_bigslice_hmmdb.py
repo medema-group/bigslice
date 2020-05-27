@@ -20,7 +20,7 @@ from hashlib import md5
 # static variables
 _SOURCE_PATH = "http://bioinformatics.nl/~kauts001/ltr/" + \
     "bigslice/bigslice-models.2020-04-27.tar.gz"
-_MD5_CHECKSUM = "dc303dc1a497cd55523fdb5091256970"
+_MD5_CHECKSUM = "d875dd0166f1c79167c53970314c3ac7"
 
 
 def main():
