@@ -14,6 +14,7 @@ import glob
 import re
 import shutil
 from multiprocessing import Pool, cpu_count
+import bigslice  # for referencing module folders
 from bigslice.modules.data.database import Database
 from bigslice.modules.data.bgc import BGC
 from bigslice.modules.data.taxonomy import Taxonomy
@@ -767,7 +768,7 @@ def main():
         if not path.exists(cache_folder):
             makedirs(cache_folder)
 
-    # prepare runs    
+    # prepare runs
     pool = fetch_pool(args.num_threads)
 
     # check if query mode, goto its specific workflow
@@ -785,7 +786,7 @@ def main():
             with sqlite3.connect(index_db_path) as con:
                 cur = con.cursor()
                 sql_schema = open(path.join(path.dirname(
-                    path.abspath(__file__)),
+                    path.abspath(bigslice.__file__)),
                     "modules", "data",
                     "schema_reports_index.sql"), "r").read()
                 cur.executescript(sql_schema)
