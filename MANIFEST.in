@@ -1,0 +1,7 @@
+include bigslice/modules/data/*.sql
+include bigslice/modules/data/*.tsv
+include bigslice/modules/output/flask_app/requirements.txt
+include bigslice/modules/output/flask_app/start_server.sh
+include bigslice/modules/output/flask_app/app/*
+include bigslice/modules/output/flask_app/app/static/*/*
+include bigslice/modules/output/flask_app/app/views/*/*

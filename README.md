@@ -1,4 +1,4 @@
-![BiG-SLiCE](https://github.com/satriaphd/bigslice/blob/master/modules/output/flask_app/app/static/img/bigslice_logo.png)
+![BiG-SLiCE](https://github.com/satriaphd/bigslice/blob/master/bigslice/modules/output/flask_app/app/static/img/bigslice_logo.png)
 ----------------------
 ***Bi**osynthetic **G**ene clusters - **S**uper **Li**near **C**lustering **E**ngine*
 

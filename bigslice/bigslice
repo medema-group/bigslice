@@ -14,16 +14,17 @@ import glob
 import re
 import shutil
 from multiprocessing import Pool, cpu_count
-from modules.data.database import Database
-from modules.data.bgc import BGC
-from modules.data.taxonomy import Taxonomy
-from modules.data.hmm import HMMDatabase
-from modules.data.run import Run
-from modules.data.hsp import HSP
-from modules.data.features import Features
-from modules.clustering.birch import BirchClustering
-from modules.clustering.membership import Membership
-from modules.utils import reversed_fp_iter, get_chunk
+from bigslice.modules.data.database import Database
+from bigslice.modules.data.bgc import BGC
+from bigslice.modules.data.taxonomy import Taxonomy
+from bigslice.modules.data.hmm import HMMDatabase
+from bigslice.modules.data.run import Run
+from bigslice.modules.data.hsp import HSP
+from bigslice.modules.data.features import Features
+from bigslice.modules.clustering.birch import BirchClustering
+from bigslice.modules.clustering.membership import Membership
+from bigslice.modules.utils import reversed_fp_iter, get_chunk
+from bigslice.modules.utils import copy_output_template
 from time import time
 from datetime import datetime
 import subprocess
@@ -695,7 +696,7 @@ def main():
     parser.add_argument("--program_db_folder",
                         default=path.join(path.dirname(
                             path.realpath(__file__)),
-                            "db", "models"), type=str)
+                            "bigslice-models"), type=str)
     parser.add_argument("--run_id", default=-1, type=int)
     parser.add_argument("--query", type=str)
     parser.add_argument("--query_name",
@@ -772,32 +773,12 @@ def main():
     if not path.exists(output_folder):
         print("creating output folder...")
         makedirs(output_folder)
+        # copy template from flask_app
+        copy_output_template(output_folder)
         # make result folder
         makedirs(result_folder)
         # make cache folder
         makedirs(cache_folder)
-        # copy template from output module
-        template_dir = path.join(
-            path.dirname(path.realpath(__file__)),
-            "modules", "output", "flask_app")
-        shutil.copytree(
-            path.join(template_dir, "app"),
-            path.join(output_folder, "app")
-        )
-        shutil.copy(
-            path.join(template_dir, "start_server.sh"),
-            path.join(output_folder, "start_server.sh")
-        )
-        shutil.copy(
-            path.join(template_dir, "requirements.txt"),
-            path.join(output_folder, "requirements.txt")
-        )
-        shutil.copy(
-            path.join(
-                path.dirname(path.realpath(__file__)),
-                "LICENSE.txt"),
-            path.join(output_folder, "LICENSE.txt")
-        )
     else:
         if not resume:
             user_input = input("Folder " + output_folder +

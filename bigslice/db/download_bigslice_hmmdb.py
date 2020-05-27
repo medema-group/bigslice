@@ -6,6 +6,8 @@
 # Bioinformatics Group
 """
 Download models from BiG-SLiCE's central server
+This file should not be called directly using python.
+Instead, it should be first installed via the setuptools
 """
 
 # python imports
@@ -24,7 +26,7 @@ _MD5_CHECKSUM = "faa7af2ac42b8fd458245503e4fdd1e8"
 def main():
 
     dir_path = path.abspath(path.dirname(__file__))
-    models_folder = path.join(dir_path, "models")
+    models_folder = path.join(dir_path, "bigslice-models")
 
     if not path.exists(models_folder):
         zipped_file = "bigslice_models.tar.gz"

@@ -11,6 +11,8 @@ Utility functions and classes
 
 
 import os
+from os import path
+import shutil
 import pickle
 from hashlib import md5
 from typing import List
@@ -83,3 +85,28 @@ def load_pickle(pickle_path: str):
             return pickle.load(fp)
     else:
         return None
+
+
+def copy_output_template(output_folder):
+    # copy template from output module
+    template_dir = path.join(
+        path.dirname(path.realpath(__file__)),
+        "output", "flask_app")
+    shutil.copytree(
+        path.join(template_dir, "app"),
+        path.join(output_folder, "app")
+    )
+    shutil.copy(
+        path.join(template_dir, "start_server.sh"),
+        path.join(output_folder, "start_server.sh")
+    )
+    shutil.copy(
+        path.join(template_dir, "requirements.txt"),
+        path.join(output_folder, "requirements.txt")
+    )
+    shutil.copy(
+        path.join(
+            path.dirname(path.realpath(__file__)),
+            "LICENSE.txt"),
+        path.join(output_folder, "LICENSE.txt")
+    )

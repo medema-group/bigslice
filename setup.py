@@ -4,8 +4,8 @@ setuptools.setup(
     name="bigslice",
     version="1.0.0",
     scripts=[
-        "bigslice",
-        "db/download_bigslice_hmmdb.py"
+        "bigslice/bigslice",
+        "bigslice/db/download_bigslice_hmmdb.py"
     ],
     author="Satria A. Kautsar",
     author_email="satriaphd@gmail.com",
@@ -14,6 +14,7 @@ setuptools.setup(
                  " Biosynthetic Gene Clusters data"),
     url="https://github.com/satriaphd/bigslice",
     packages=setuptools.find_packages(),
+    include_package_data=True,
     classifiers=[
         "Programming Language :: Python :: 3"
     ],
