@@ -237,18 +237,42 @@ def get_arrower_objects():
 
                 orf["domains"] = []
                 # get hsps
-                for dom_name, bitscore, dom_start, dom_end in cur.execute((
-                    "select name, bitscore, cds_start, cds_end"
-                    " from hmm, hsp, hsp_alignment, run"
-                    " where hsp.cds_id=?"
-                    " and hsp_alignment.hsp_id=hsp.id"
-                    " and hmm.id=hsp.hmm_id"
-                    " and hmm.db_id=run.hmm_db_id"
-                    " and run.id=?"
-                    " order by cds_start asc"
-                ), (cds_id, run_id)).fetchall():  # hsps:
+                for dom_id, dom_name, bitscore, dom_start, dom_end, \
+                        sub_ids, sub_names, sub_scores in cur.execute((
+                            "select hmm_id, hmm_name,"
+                            " bitscore, cds_start, cds_end,"
+                            " group_concat(sub_id),"
+                            " group_concat(sub_name),"
+                            " group_concat(sub_score)"
+                            " from"
+                            " (select hsp.id as hsp_id, hmm.id as hmm_id,"
+                            " hmm.name as hmm_name, hsp.bitscore as bitscore,"
+                            " hsp_alignment.cds_start as cds_start,"
+                            " hsp_alignment.cds_end as cds_end,"
+                            " hmmsub.id as sub_id,"
+                            " substr(hmmsub.name,"
+                            " instr(hmmsub.name, 'aligned_c')+8) as sub_name,"
+                            " hspsub.bitscore as sub_score"
+                            " from hmm, hsp, hsp_alignment, run"
+                            " left join hsp_subpfam"
+                            " on hsp_subpfam.hsp_parent_id=hsp.id"
+                            " left join hsp as hspsub"
+                            " on hspsub.id=hsp_subpfam.hsp_subpfam_id"
+                            " left join hmm as hmmsub"
+                            " on hmmsub.id=hspsub.hmm_id"
+                            " where hsp.cds_id=?"
+                            " and hsp_alignment.hsp_id=hsp.id"
+                            " and hmm.id=hsp.hmm_id"
+                            " and hmm.db_id=run.hmm_db_id"
+                            " and run.id=?"
+                            " order by cds_start, hspsub.bitscore asc"
+                            ") group by hsp_id"
+                        ), (cds_id, run_id)).fetchall():  # hsps:
+                    dom_code = dom_name
+                    if sub_ids:
+                        dom_code += " [{}]".format(sub_names)
                     hsp = {
-                        "code": dom_name,
+                        "code": dom_code,
                         "bitscore": bitscore,
                         "start": dom_start,
                         "end": dom_end
