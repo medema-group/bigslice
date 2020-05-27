@@ -13,14 +13,14 @@ Instead, it should be first installed via the setuptools
 # python imports
 import urllib.request
 import tarfile
-from os import path
+from os import path, makedirs
 from hashlib import md5
 
 
 # static variables
 _SOURCE_PATH = "http://bioinformatics.nl/~kauts001/ltr/" + \
     "bigslice/bigslice-models.2020-04-27.tar.gz"
-_MD5_CHECKSUM = "faa7af2ac42b8fd458245503e4fdd1e8"
+_MD5_CHECKSUM = "dc303dc1a497cd55523fdb5091256970"
 
 
 def main():
@@ -42,8 +42,9 @@ def main():
             return(1)
 
         print("Extracting bigslice_models.tar.gz...")
+        makedirs(models_folder)
         with tarfile.open(zipped_file, "r:gz") as fp:
-            fp.extractall(path=dir_path)
+            fp.extractall(path=models_folder)
 
         print("done! (please remove the downloaded tar.gz file manually)")
         return(0)
