@@ -255,7 +255,7 @@ class BGC:
 
         multifasta = ""
         for row in rows:
-            multifasta += ">bgc:{}|cds:{}|{}-{}\n".format(
+            multifasta += ">bgc:{}|cds:{}|hsp:0|{}-{}\n".format(
                 row["bgc_id"], row["id"],
                 0, len(row["aa_seq"]))
             multifasta += "{}\n".format(row["aa_seq"])
@@ -302,39 +302,11 @@ class BGC:
                     else:
                         skips += 1
 
-            results[hmm_id] += ">bgc:{}|cds:{}|{}-{}\n".format(
-                bgc_id, row["id"],
+            results[hmm_id] += ">bgc:{}|cds:{}|hsp:{}|{}-{}\n".format(
+                bgc_id, row["id"], row["hsp_id"],
                 row["cds_start"],
                 row["cds_end"])
             results[hmm_id] += "{}\n".format(aln)
-        return results
-
-    def get_all_cds_fasta_with_hits(bgc_ids: List[int], hmm_ids: List[int],
-                                    database: Database):
-        """query database, get all aa sequences
-        of CDS in BGCs with HSP hit to a list
-        of hmms into a multifasta string e.g. for
-        the purpose of doing subpfam_scan
-        split dict by hmm"""
-
-        rows = database.select(
-            "cds,hsp",
-            "WHERE cds.id=hsp.cds_id" +
-            " AND cds.bgc_id IN (" + ",".join(map(str, bgc_ids)) + ")" +
-            " AND hsp.hmm_id IN (" + ",".join(map(str, hmm_ids)) + ")",
-            props=["bgc_id", "hmm_id", "cds.id", "aa_seq"],
-            distinct=True
-        )
-
-        results = {}
-        for row in rows:
-            bgc_id = row["bgc_id"]
-            hmm_id = row["hmm_id"]
-            if hmm_id not in results:
-                results[hmm_id] = ""
-            results[hmm_id] += ">bgc:{}|cds:{}\n".format(
-                bgc_id, row["id"])
-            results[hmm_id] += "{}\n".format(row["aa_seq"])
         return results
 
     class ChemSubclass:

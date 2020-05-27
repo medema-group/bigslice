@@ -75,6 +75,17 @@ CREATE INDEX IF NOT EXISTS hspalign_id ON hsp_alignment(hsp_id);
 CREATE INDEX IF NOT EXISTS hspalign_model ON hsp_alignment(model_start);
 CREATE INDEX IF NOT EXISTS hspalign_cds ON hsp_alignment(cds_start);
 
+-- hsp_subpfam
+CREATE TABLE IF NOT EXISTS hsp_subpfam (
+    hsp_subpfam_id INTEGER NOT NULL,
+    hsp_parent_id INTEGER NOT NULL,
+    UNIQUE(hsp_subpfam_id, hsp_parent_id),
+    FOREIGN KEY(hsp_subpfam_id) REFERENCES hsp(id),
+    FOREIGN KEY(hsp_parent_id) REFERENCES hsp(id)
+);
+CREATE INDEX IF NOT EXISTS hspsubpfam_parent ON hsp_subpfam(hsp_parent_id, hsp_subpfam_id);
+CREATE INDEX IF NOT EXISTS hspsubpfam_sub ON hsp_subpfam(hsp_subpfam_id, hsp_parent_id);
+
 -- bgc_features
 CREATE TABLE IF NOT EXISTS bgc_features (
     bgc_id INTEGER NOT NULL,

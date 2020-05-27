@@ -21,6 +21,7 @@ class HSP:
         self.id = properties.get("id", -1)
         self.cds_id = properties["cds_id"]
         self.hmm_id = properties["hmm_id"]
+        self.parent_hsp_id = properties["parent_hsp_id"]
         self.bitscore = properties["bitscore"]
         self.alignment = properties.get("alignment", None)
 
@@ -37,6 +38,14 @@ class HSP:
                     "bitscore": self.bitscore
                 }
             )
+            if self.parent_hsp_id > 0:
+                database.insert(
+                    "hsp_subpfam",
+                    {
+                        "hsp_subpfam_id": self.id,
+                        "hsp_parent_id": self.parent_hsp_id
+                    }
+                )
             if self.alignment:
                 database.insert(
                     "hsp_alignment",
@@ -70,9 +79,10 @@ class HSP:
             # fetch query id
             try:
                 # accession format: "bgc:X|cds:Y|start-end"
-                bgc_id, cds_id, locs = run_result.id.split("|")
+                bgc_id, cds_id, parent_hsp_id, locs = run_result.id.split("|")
                 bgc_id = int(bgc_id.split("bgc:")[-1])
                 cds_id = int(cds_id.split("cds:")[-1])
+                parent_hsp_id = int(parent_hsp_id.split("hsp:")[-1])
                 locs = tuple(map(int, locs.split("-")))
             except IndexError:
                 raise Exception("couldn't parse {}".format(hmm_text_path))
@@ -115,6 +125,7 @@ class HSP:
                 results.append(HSP({
                     "cds_id": cds_id,
                     "hmm_id": hmm_id,
+                    "parent_hsp_id": parent_hsp_id,
                     "bitscore": bitscore,
                     "alignment": hsp_alignment
                 }))
