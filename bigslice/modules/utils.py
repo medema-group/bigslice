@@ -105,8 +105,6 @@ def copy_output_template(output_folder):
         path.join(output_folder, "requirements.txt")
     )
     shutil.copy(
-        path.join(
-            path.dirname(path.realpath(__file__)),
-            "LICENSE.txt"),
+        path.join(template_dir, "LICENSE.txt"),
         path.join(output_folder, "LICENSE.txt")
     )
