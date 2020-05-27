@@ -21,7 +21,7 @@ user@local:~$ download_bigslice_hmmdb.py
 ~~~
 4. Check your installation:
 ~~~console
-user@local:~$ bigslice --version
+user@local:~$ bigslice --version .
 ~~~
 5. Run **BiG-SLiCE** clustering analysis: (see [wiki:input_folder](https://github.com/medema-group/bigslice/wiki/input_folder) on how to prepare the input folder)
 ~~~console

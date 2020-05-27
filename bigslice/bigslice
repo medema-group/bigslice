@@ -702,11 +702,11 @@ def main():
     parser.add_argument("--query_name",
                         default=datetime.now().strftime(
                             "%Y-%m-%d %H:%M:%S"), type=str)
+    parser.add_argument("--version", action="store_true")
     args = parser.parse_args()
 
     # define variables
     prog_params = " ".join(argv[1:])
-    pool = fetch_pool(args.num_threads)
     output_folder = path.abspath(args.output_folder)
     result_folder = path.join(output_folder, "result")
     cache_folder = path.join(result_folder, "cache")
@@ -716,6 +716,35 @@ def main():
     resume = args.resume
     input_run_id = args.run_id
     use_memory = not args.scratch
+
+    # show --version
+    if args.version:
+        # fetch versions
+        version = "1.0.0"
+        # fetch hmm database md5s
+        try:
+            md5_biosyn_pfam = open(path.join(
+                program_db_folder, "biosynthetic_pfams",
+                "biopfam.md5sum"), "r").readline().rstrip()
+            md5_sub_pfam = open(path.join(
+                program_db_folder, "sub_pfams",
+                "corepfam.md5sum"), "r").readline().rstrip()
+        except Exception():
+            print("Can't find HMM model libraries!")
+            return 1
+        # print
+        print((
+            "==============\n"
+            "BiG-SLiCE version {}\n"
+            "Biosynthetic-pfam md5: {}\n"
+            "Sub-pfam md5: {}\n"
+            "==============\n"
+        ).format(
+            version,
+            md5_biosyn_pfam,
+            md5_sub_pfam
+        ))
+        return 0
 
     # first gate keeping -- conflicting modes
     if resume and args.input_folder:
@@ -737,6 +766,9 @@ def main():
             return 1
         if not path.exists(cache_folder):
             makedirs(cache_folder)
+
+    # prepare runs    
+    pool = fetch_pool(args.num_threads)
 
     # check if query mode, goto its specific workflow
     if args.query:
