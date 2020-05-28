@@ -6,7 +6,7 @@ Quick start
 ---------------------
 1. Make sure you have [HMMer](http://hmmer.org/) (version 3.2b1 or later) installed.
 2. Install **BiG-SLiCE** using pip:
-- from PyPI
+- from PyPI (not available yet, please use the 'from source' approach)
 ~~~console
 user@local:~$ pip install bigslice
 ~~~
