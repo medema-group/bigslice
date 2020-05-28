@@ -55,7 +55,7 @@ What kind of software is this, anyway?
 ---------------------
 <todo: insert brief description>
 
-This software was initially developed and is currently maintained by Satria Kautsar (twitter: [@satriaphd](https://twitter.com/satriaphd)). Contributions are very welcomed. Feel free to drop us an e-mail if you have any question regarding or related to **BiG-SLiCE**.
+This software was initially developed and is currently maintained by Satria Kautsar (twitter: [@satriaphd](https://twitter.com/satriaphd)). Contributions and feedbacks are very welcomed. Feel free to drop us an e-mail if you have any question regarding or related to **BiG-SLiCE**.
 
 Find our software useful? Please cite!
 ---------------------
