@@ -23,7 +23,7 @@ user@local:~$ download_bigslice_hmmdb.py
 ~~~console
 user@local:~$ bigslice --version .
 ~~~
-5. Run **BiG-SLiCE** clustering analysis: (see [wiki:input_folder](https://github.com/medema-group/bigslice/wiki/input_folder) on how to prepare the input folder)
+5. Run **BiG-SLiCE** clustering analysis: (see [wiki:Input folder](https://github.com/medema-group/bigslice/wiki/Input-folder) on how to prepare the input folder)
 ~~~console
 user@local:~$ bigslice -i <input_folder> <output_folder>
 ~~~
