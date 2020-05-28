@@ -49,7 +49,7 @@ user@local:~$ bash <output_folder>/start_server.sh <port(optional)>
 ~~~
 3. Open an internet browser, then go to the URL described by the previous step:
 - e.g. `* Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)`
-- then use `http://0.0.0.0:5000`
+- then go to `http://0.0.0.0:5000` in your browser
 
 What kind of software is this, anyway?
 ---------------------
