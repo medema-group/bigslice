@@ -1,0 +1,257 @@
+<div class="row mt-2 mb-4">
+	<div class="col">
+		<h3>
+			Members
+			<button id="table_arrowers-showbtn" type="button" class="btn btn-sm btn-info">view BGC arrowers</button>
+		</h3>
+	</div>
+	<div id="table_arrowers-hidden_container" class="d-none">
+		<table id="table_arrowers" class="table table-striped table-borderless table-hover nowrap">
+			<thead class="thead d-none">
+				<tr class="table-secondary">
+					<th>Dataset</th>
+					<th>BGC</th>
+					<th>dist</th>
+					<th>Arrower</th>
+				</tr>
+			</thead>
+			<tbody class="tbody">
+			</tbody>
+		</table>
+	</div>
+</div>
+<div class="row mt-2 mb-4">
+	<div class="col">
+		<h4>Core (dist <= {{ threshold }})</h4>
+		<div class="row mt-4">
+			<div class="col">
+				<table id="table_core_members" class="table table-striped table-bordered table-hover nowrap">
+					<thead class="thead-light">
+						<tr>
+							<th>dataset</th>
+							<th>genome</th>
+							<th>BGC</th>
+							<th>distance to<br />model</th>
+							<th>length (kb)</th>
+							<th style="max-width: 5em;">taxon</th>
+							<th>class</th>
+						</tr>
+					</thead>
+					<tbody class="tbody">
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+<div class="row mt-2 mb-4">
+	<div class="col">
+		<h4>Putative (dist > {{ threshold }})</h4>
+		<div class="row mt-4">
+			<div class="col">
+				<table id="table_putative_members" class="table table-striped table-bordered table-hover nowrap">
+					<thead class="thead-light">
+						<tr>
+							<th>dataset</th>
+							<th>genome</th>
+							<th>BGC</th>
+							<th>distance to<br />model</th>
+							<th>length (kb)</th>
+							<th style="max-width: 5em;">taxon</th>
+							<th>class</th>
+						</tr>
+					</thead>
+					<tbody class="tbody">
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- scripts -->
+<script type="text/javascript">
+	var domainColors = {} // for page-wide arrower coloring
+
+	function getRandomColor(alpha) {
+		let r = Math.floor(Math.random() * 256);
+		let g = Math.floor(Math.random() * 256);
+		let b = Math.floor(Math.random() * 256);
+		return ("rgba(" + [r, g, b, alpha].join(",") + ")");
+	}
+
+	function generateMembershipDT(div_id, type) {
+		$("#" + div_id).DataTable({
+			searching: false,
+			ordering:  false,
+			serverSide: true,
+			responsive: true,
+			ajax: {
+				url: "/api/gcf/get_members",
+				type: "GET",
+				data: {
+					"gcf_id": $("#gcf_id").val(),
+					"run_id": $("#run_id").val(),
+					"type": type
+				}
+			},
+			"columnDefs": [
+				{
+					"targets": 0, // dataset
+					render: function(data, type, row, meta) {
+						return "<a class='btn btn-info' href='/dataset/" + data[0] + "'>" + data[1] + "</a>";
+					}
+				},
+				{
+					"targets": 2, // bgc_name
+					render: function(data, type, row, meta) {
+						return "<a class='btn btn-info' href='/dataset/" + data[1] + "/bgc/" + data[0] + "/run/" + meta.settings.json.run_id + "'>" + data[2] + "</a>";
+					}
+				},
+				{
+					"targets": 5, // taxonomy
+					render: function(data, type, row, meta) {
+						let html_text = "";
+						let taxon_desc = meta.settings.json.taxon_desc;
+						for (let index = taxon_desc.length - 1; index >= 0; index--) {
+							let value = taxon_desc[index];
+							if (data.hasOwnProperty(value[0])) {
+								html_text += "<i>" + data[value[0]] + "</i> (" + value[1] + ")";
+								break;
+							}
+						}
+
+						let popover_content = "<div>";
+						taxon_desc.forEach(function(value, index) {
+							if (data.hasOwnProperty(value[0])) {
+								popover_content += "<div class=\"row\"><div class=\"col-4\"><strong>" + value[1] + "</strong></div><div class=\"col-8 text-right\"><i>" + data[value[0]] + "</i></div></div>";
+							} else {
+								popover_content += "<div class=\"row\"><div class=\"col-4\"><strong>" + value[1] + "</strong></div><div class=\"col-8 text-right\">n/a</div></div>";
+							}
+						});
+						popover_content += "</ul>";
+
+						if (html_text.length < 1) {
+							html_text = "n/a";
+						} else {
+							html_text += "<a href='javascript:void(0)' class='taxonomy_pops badge badge-info badge-pill ml-2' data-trigger='hover' data-html='true' data-content='" + popover_content + "' title='Taxonomy'>?</a>"
+						}
+						return html_text;
+					}
+				},
+				{
+					"targets": 6, // chem_class
+					render: function(data, type, row, meta) {
+						let html_text = "<ul class='list-unstyled'>";
+						data.forEach(function(value, index) {
+							html_text += "<li>" + value[0] + ":" + value[1] + "</li>";
+						});
+						html_text += "</ul>"
+						return html_text;
+					}
+				},
+				{ className: "text-right", "targets": [3, 4] },
+				{ className: "text-center", "targets": [] }
+			],
+			"createdRow": function( row, data, dataIndex ) {
+			    if (data[3] <= parseFloat($("#threshold").val())) {
+			    	$(row).addClass("table-success");
+			    } else {
+			    	$(row).addClass("table-danger");
+			    }
+			},
+			"drawCallback": function( settings ) {
+				$(".taxonomy_pops").popover({
+		        	"template": '<div class="popover popover-taxonomy" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
+		        });
+		    }
+		});
+	}
+
+	$(document).ready(function(){
+		generateMembershipDT("table_core_members", "core");
+		generateMembershipDT("table_putative_members", "putative");
+		// arrower on click button modal
+		$("#table_arrowers-showbtn").click(function(){			
+			showModal("Arrowers: " + $("#page_title").text() + " (all)", "",
+				on_show=function(){
+					$("#modal-window .modal-dialog").css("max-width", "90vw");
+					$("#table_arrowers").parents(".dataTables_wrapper").appendTo($("#modal-window").find(".modal-body"));
+				},
+				on_close=function(){
+					$("#modal-window .modal-dialog").css("max-width", null);
+					$("#table_arrowers").parents(".dataTables_wrapper").appendTo($("#table_arrowers-hidden_container"));
+				}
+			);
+		})
+		// arrower table
+		$("#table_arrowers").DataTable({
+			searching: false,
+			ordering:  false,
+			serverSide: true,
+			scrollX: true,
+			ajax: {
+				url: "/api/gcf/get_member_list_arower",
+				type: "GET",
+				data: {
+					"gcf_id": $("#gcf_id").val(),
+					"run_id": $("#run_id").val()
+				}
+			},
+			"columnDefs": [
+				{
+					"targets": 0, // dataset name
+					render: function(data, type, row, meta) {
+						return "<a class='btn btn-info' href='/dataset/" + data[0] + "'>" + data[1] + "</a>";
+					}
+				},
+				{
+					"targets": 1, // bgc name
+					render: function(data, type, row, meta) {
+						return "<a class='btn btn-info' href='/dataset/" + data[2] + "/bgc/" + data[0] + "/run/" + meta.settings.json.run_id + "'>" + data[1] + "</a>";
+					}
+				},
+				{
+					"targets": 2, // dist
+					render: function(data, type, row, meta) {
+						return "dist: " + data;
+					}
+				},
+				{
+					"targets": 3, // arrower
+					render: function(data, type, row, meta) {
+						return "<div class='arrower_container overflow-auto pl-4 pr-4 mt-2' data-bgc_id='" + data + "'><div class='spinner-border text-info' role='status'><span class='sr-only'>Loading...</span></div></div>";
+					}
+				}
+			],
+			"createdRow": function(row, data, dataIndex ) {
+			    if (data[2] <= parseFloat($("#threshold").val())) {
+			    	$(row).addClass("table-success");
+			    } else {
+			    	$(row).addClass("table-danger");
+			    }
+			    let arrower_container = $(row).find(".arrower_container")[0];
+			    let bgc_id = parseInt(arrower_container.dataset.bgc_id);
+			    $.get({
+					url: "/api/bgc/get_arrower_objects",
+					data: {
+						"bgc_id": bgc_id,
+						"run_id": $("#run_id").val()
+					},
+					dataType: "json",
+					success: function(response) {
+						let bgcObject = response[bgc_id];
+						bgcObject["orfs"].forEach(function(cds) {
+							cds["domains"].forEach(function(domain) {
+								if (!domainColors.hasOwnProperty(domain.code)) {
+									domainColors[domain.code] = getRandomColor(0.5);
+								}
+								domain["color"] = domainColors[domain.code];
+							});
+						});
+						$(arrower_container).html(Arrower.drawClusterSVG(bgcObject, height=30));
+					}
+				});
+			}
+		});
+	});
+</script>

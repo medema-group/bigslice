@@ -4,6 +4,11 @@
 	<!-- for javascript -->
 	<input type="hidden" id="gcf_id" value="{{ gcf_id }}"/>
 	<input type="hidden" id="run_id" value="{{ run_id }}"/>
-	<!-- for demo purpose -->
-	{% include "gcf/demo.html.j2" %}
+	<input type="hidden" id="threshold" value="{{ threshold }}"/>
+	<!-- Statistics -->
+	{% include "gcf/statistics.html.j2" %}
+	<!-- GCF model -->
+	{% include "gcf/model.html.j2" %}
+	<!-- Members -->
+	{% include "gcf/members.html.j2" %}
 {% endblock %}
