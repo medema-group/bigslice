@@ -34,7 +34,7 @@ Using the `--query` mode, you can perform a blazing-fast query of a putative BGC
 ~~~console
 user@local:~$ bigslice --query <antismash_output_folder> --n_ranks <int> <output_folder>
 ~~~
-Which will perform a query analysis on the latest clustering result contained inside the output folder (see the [wiki page](https://github.com/medema-group/bigslice/wiki/parameters) for more advanced options). Top-(n_ranks) matching GCFs will be returned along with their similarity measurements. You can then view the query results using the user interactive output (see below).
+Which will perform a query analysis on the latest clustering result contained inside the output folder (see [wiki: Program parameters](https://github.com/medema-group/bigslice/wiki/Program-parameters) for more advanced options). Top-(n_ranks) matching GCFs will be returned along with their similarity measurements. You can then view the query results using the user interactive output (see below).
 
 User Interactive output
 ---------------------
