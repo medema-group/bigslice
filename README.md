@@ -53,9 +53,9 @@ user@local:~$ bash <output_folder>/start_server.sh <port(optional)>
 
 What kind of software is this, anyway?
 ---------------------
-<todo: insert brief description>
-
 ![bgc_gcf_illustration](https://i.ibb.co/FmBfmHW/bgc-gcf-illustration.png)
+
+Bacteria and Fungi produce a vast array of bioactive compounds in nature, which can be useful for us as antibiotics (see [this list](https://dx.doi.org/10.1016%2Fj.mib.2009.07.002)), antivirals (see [this list](https://doi.org/10.1038/ja.2017.115)) and anticancer agents (see [Salinisporamide](https://doi.org/10.1016/j.bmc.2008.10.075)). 
 
 ![figure_1](https://i.ibb.co/0twfQ81/figure-1.png)
 
