@@ -10,7 +10,8 @@ from .config import conf
 # import controllers
 from .controllers import root, summary, dataset, run
 from .controllers import bgc, gcf
-from .controllers import about, help_me
+from .controllers import about, help_me, feedback
+from .controllers.reports import main as reports
 
 
 # initiate app
@@ -28,6 +29,8 @@ app.register_blueprint(run.blueprint)
 app.register_blueprint(gcf.blueprint)
 app.register_blueprint(about.blueprint)
 app.register_blueprint(help_me.blueprint)
+app.register_blueprint(feedback.blueprint)
+app.register_blueprint(reports.blueprint)
 
 # app-specific contexts #
 
@@ -63,9 +66,8 @@ def inject_global():
         ))
 
     nav_items.append(("Reports", [
-        ("Query results", "/report/view?filter='queries'"),
-        ("View all reports", "/report/view"),
-        ("Generate a new report", "/report/new")
+        ("View all reports", "/reports/view"),
+        ("Generate a new report", "/reports/new")
     ]))
     nav_items.append(("Help", "/help"))
     nav_items.append(("Feedback", "/feedback"))

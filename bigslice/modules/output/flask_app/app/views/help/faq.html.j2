@@ -1,0 +1,23 @@
+<div class="row mt-2 mb-4">
+	<div class="col">
+		<h3>
+			Frequently Asked Questions (FAQs)
+		</h3>
+		<div id="faq_accordion" class="mt-4 mb-4">
+			{% for question, answer in faqs %}
+				<div class="card mb-2">
+				    <div class="btn card-header text-left" id="headingOne" data-toggle="collapse" data-target="#faq_accordion-q{{loop.index}}" aria-expanded="true" aria-controls="collapseOne">
+				      <strong>
+				          {{ question }}
+				      </strong>
+				    </div>
+				    <div id="faq_accordion-q{{loop.index}}" class="collapse hide" aria-labelledby="headingOne" data-parent="#faq_accordion">
+				      <div class="card-body">
+				          {{ answer }}
+				      </div>
+				    </div>
+				  </div>
+			{% endfor %}
+		</div>
+	</div>
+</div>
