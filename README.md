@@ -1,4 +1,4 @@
-![BiG-SLiCE](https://github.com/satriaphd/bigslice/blob/master/bigslice/modules/output/flask_app/app/static/img/bigslice_logo.png)
+![BiG-SLiCE](https://raw.githubusercontent.com/medema-group/bigslice/master/misc/github_images/bigslice_logo.png)
 ----------------------
 ***Bi**osynthetic **G**ene clusters - **S**uper **Li**near **C**lustering **E**ngine*
 
@@ -54,6 +54,10 @@ user@local:~$ bash <output_folder>/start_server.sh <port(optional)>
 What kind of software is this, anyway?
 ---------------------
 <todo: insert brief description>
+
+![bgc_gcf_illustration](https://i.ibb.co/FmBfmHW/bgc-gcf-illustration.png)
+
+![figure_1](https://i.ibb.co/0twfQ81/figure-1.png)
 
 This software was initially developed and is currently maintained by Satria Kautsar (twitter: [@satriaphd](https://twitter.com/satriaphd)). Contributions and feedbacks are very welcomed. Feel free to drop us an e-mail if you have any question regarding or related to **BiG-SLiCE**.
 
