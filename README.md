@@ -1,4 +1,4 @@
-![BiG-SLiCE](https://github.com/satriaphd/bigslice/blob/master/bigslice/modules/output/flask_app/app/static/img/bigslice_logo.png)
+![BiG-SLiCE](https://raw.githubusercontent.com/medema-group/bigslice/master/misc/github_images/bigslice_logo.png)
 ----------------------
 ***Bi**osynthetic **G**ene clusters - **S**uper **Li**near **C**lustering **E**ngine*
 
@@ -28,7 +28,7 @@ user@local:~$ bigslice --version .
 user@local:~$ bigslice -i <input_folder> <output_folder>
 ~~~
 
-Querying [antiSMASH](https://github.com/antismash/antismash) BGCs
+Querying [antiSMASH](https://antismash.secondarymetabolites.org/) BGCs
 ---------------------
 Using the `--query` mode, you can perform a blazing-fast query of a putative BGC against the pre-processed set of Gene Cluster Family (GCF) models that **BiG-SLiCE** outputs (for example, you can use our [pre-processed result on ~1.2M microbial BGCs from the NCBI database](.)). You will get a ranked list of GCFs and BGCs similar to the BGC in question, which will help in determining the function and/or novelty of said BGC. To perform a GCF query, simply use:
 ~~~console
@@ -53,9 +53,15 @@ user@local:~$ bash <output_folder>/start_server.sh <port(optional)>
 
 What kind of software is this, anyway?
 ---------------------
-<todo: insert brief description>
+![bgc_gcf_illustration](https://i.ibb.co/FmBfmHW/bgc-gcf-illustration.png)
 
-This software was initially developed and is currently maintained by Satria Kautsar (twitter: [@satriaphd](https://twitter.com/satriaphd)). Contributions and feedbacks are very welcomed. Feel free to drop us an e-mail if you have any question regarding or related to **BiG-SLiCE**.
+Bacteria and fungi produce a vast array of bioactive compounds in nature, which can be useful for us as antibiotics (see [this list](https://dx.doi.org/10.1016%2Fj.mib.2009.07.002)), antivirals (see [this list](https://doi.org/10.1038/ja.2017.115)) and anticancer drugs (see [Salinisporamide](https://doi.org/10.1016/j.bmc.2008.10.075)). To optimize and retain the production of those complex chemical agents, microbes organize the responsible genes into genomic 'clumps' colloquially termed as **"Biosynthetic Gene Clusters (BGCs)"** (above picture, left panel). Using bioinformatics tools such as [antiSMASH](https://antismash.secondarymetabolites.org/), we can now take a genome sequence to identify BGCs and predict the secondary metabolites that the organism may produce (see [this example analysis for the _S. coelicolor_ genome](https://antismash.secondarymetabolites.org/upload/example/index.html)). Furthermore, by doing a large scale comparative analysis of homologous BGCs sharing similar domain architectures (we call them **"Gene Cluster Families (GCFs)"**), we can practically chart an atlas of biosynthetic diversity among all sequenced microbes (above picture, right panel).
+
+![figure_1](https://i.ibb.co/0twfQ81/figure-1.png)
+
+To enable such a large scale analysis, **BiG-SLiCE** was specifically designed with **scalability** and **speed** as the #1 priority (Figure 1A), as opposed to our previous tool, [BiG-SCAPE](https://git.wageningenur.nl/medema-group/BiG-SCAPE), which was able to sensitively capture the slightest difference of both domain architecture and sequence similarity between pairs of BGCs (see [our paper](https://www.nature.com/articles/s41589-019-0400-9) for the details). As a result, **BiG-SLiCE** can reliably take an **input data of more than > 1.2 million BGCs and process it in under a week runtime using 36-cores machine with 128GB RAM** (Figure 1B) while keeping enough sensitivity to delineate the essential biosynthetic 'signals' among the input BGCs (Figure 1C). Moreover, to facilitate exploration and investigation of the analysis results, **BiG-SLiCE** also produce an **interactive, easy-to-use output visualization** that can be run with minimal software / hardware requirements (check out our [demo page here](https://github.com/404)).
+
+This software was initially developed and is currently maintained by Satria Kautsar (twitter: [@satriaphd](https://twitter.com/satriaphd)) as part of a fully funded PhD project granted to Dr. Marnix Medema (website: [marnixmedema.nl](http://marnixmedema.nl), twitter: [@marnixmedema](https://twitter.com/marnixmedema)) by the [Graduate School of Experimental Plant Sciences, NL](https://www.graduateschool-eps.info/). Contributions and feedbacks are very welcomed. Feel free to drop us an e-mail if you have any question regarding or related to **BiG-SLiCE**. In the future, we aim to make **BiG-SLiCE** a comprehensive platform to do all sorts of downstream large scale BGC analysis, taking advantage of its portable and powerful [SQLite3](https://www.sqlite.org/index.html)-based data storage combined with the flexible [flask](https://flask.palletsprojects.com/en/1.1.x/)-based web app architecture as the foundation.
 
 Find our software useful? Please cite!
 ---------------------
