@@ -38,7 +38,7 @@ app.register_blueprint(reports.blueprint)
 @app.context_processor
 def inject_global():
     g = {
-        "version": "0.1"
+        "version": "1.0.0"
     }
 
     # for navigations
