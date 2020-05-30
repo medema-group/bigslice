@@ -28,7 +28,7 @@ user@local:~$ bigslice --version .
 user@local:~$ bigslice -i <input_folder> <output_folder>
 ~~~
 
-Querying [antiSMASH](https://github.com/antismash/antismash) BGCs
+Querying [antiSMASH](https://antismash.secondarymetabolites.org/) BGCs
 ---------------------
 Using the `--query` mode, you can perform a blazing-fast query of a putative BGC against the pre-processed set of Gene Cluster Family (GCF) models that **BiG-SLiCE** outputs (for example, you can use our [pre-processed result on ~1.2M microbial BGCs from the NCBI database](.)). You will get a ranked list of GCFs and BGCs similar to the BGC in question, which will help in determining the function and/or novelty of said BGC. To perform a GCF query, simply use:
 ~~~console
@@ -55,7 +55,7 @@ What kind of software is this, anyway?
 ---------------------
 ![bgc_gcf_illustration](https://i.ibb.co/FmBfmHW/bgc-gcf-illustration.png)
 
-Bacteria and Fungi produce a vast array of bioactive compounds in nature, which can be useful for us as antibiotics (see [this list](https://dx.doi.org/10.1016%2Fj.mib.2009.07.002)), antivirals (see [this list](https://doi.org/10.1038/ja.2017.115)) and anticancer agents (see [Salinisporamide](https://doi.org/10.1016/j.bmc.2008.10.075)). 
+Bacteria and fungi produce a vast array of bioactive compounds in nature, which can be useful for us as antibiotics (see [this list](https://dx.doi.org/10.1016%2Fj.mib.2009.07.002)), antivirals (see [this list](https://doi.org/10.1038/ja.2017.115)) and anticancer drugs (see [Salinisporamide](https://doi.org/10.1016/j.bmc.2008.10.075)). To optimize and retain the production of those complex chemical agents, microbes organize the responsible genes into genomic 'clumps' coloquially termed as **"Biosynthetic Gene Clusters (BGCs)"** (above picture, left panel). Using bioinformatics tools such as [antiSMASH](https://antismash.secondarymetabolites.org/), we can now take a genome sequence to identify the BGCs and predict the secondary metabolites that the organism may produce (see [this example analysis for the _S. coelicolor_ genome](https://antismash.secondarymetabolites.org/upload/example/index.html)). Furthermore, by doing a large scale comparative analysis of homologous BGCs sharing similar domain architectures (we call them **'Gene Cluster Families (GCFs)'**), we can practically chart an atlas of biosynthetic diversity among all sequenced microbes (above picture, right panel).
 
 ![figure_1](https://i.ibb.co/0twfQ81/figure-1.png)
 
