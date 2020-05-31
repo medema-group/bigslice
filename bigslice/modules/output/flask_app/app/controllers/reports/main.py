@@ -52,3 +52,46 @@ def page_reports_new():
         page_title=page_title,
         page_subtitle=page_subtitle
     )
+
+
+@blueprint.route("/api/reports/get_reports")
+def get_reports():
+    """ get report list for the datatable """
+    result = {}
+    result["draw"] = request.args.get('draw', type=int)
+
+    # translate request parameters
+    offset = request.args.get('start', type=int)
+    limit = request.args.get('length', type=int)
+
+    with sqlite3.connect(conf["reports_db_path"]) as con:
+        cur = con.cursor()
+
+        # fetch total records
+        result["recordsTotal"] = cur.execute((
+            "select count(id)"
+            " from reports"
+        ), ()).fetchall()[0][0]
+
+        # fetch total records (filtered)
+        result["recordsFiltered"] = cur.execute((
+            "select count(id)"
+            " from reports"
+            " limit ? offset ?"
+        ), (limit, offset)).fetchall()[0][0]
+
+        # fetch data
+        result["data"] = []
+        for r_type, r_date, r_name, r_id in cur.execute((
+            "select type, creation_date, name, id"
+            " from reports"
+            " order by creation_date desc"
+        )).fetchall():
+            result["data"].append([
+                r_type,
+                r_date,
+                r_name,
+                r_id
+            ])
+
+        return result

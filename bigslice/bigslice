@@ -402,9 +402,23 @@ def parse_input_gbk(arguments: tuple):
 
 def query_mode(report_name, input_folder, input_run_id, pool,
                program_db_folder, source_db_path,
-               query_folder, n_ranks, index_db_path, cache_folder):
+               n_ranks, reports_folder, cache_folder):
     # !! this is just a quick prototype to meet the paper deadline
     # should be properly refactored later on !!
+
+    if not path.exists(reports_folder):
+        makedirs(reports_folder)
+
+    index_db_path = path.join(
+        reports_folder, "reports.db")
+    if not path.exists(index_db_path):  # prepare index db
+        with sqlite3.connect(index_db_path) as con:
+            cur = con.cursor()
+            sql_schema = open(path.join(path.dirname(
+                path.abspath(bigslice.__file__)),
+                "modules", "data",
+                "schema_reports_index.sql"), "r").read()
+            cur.executescript(sql_schema)
 
     # check index file
     with sqlite3.connect(index_db_path) as con:
@@ -417,6 +431,18 @@ def query_mode(report_name, input_folder, input_run_id, pool,
         ), (report_name, )).fetchall()[0][0] > 0:
             print("report with this name exists! please use a different name.")
             return 1
+        else:
+            cur.execute((
+                "INSERT INTO reports"
+                "(type, name, creation_date)"
+                " VALUES(?, ?, ?)"
+            ), ("query", report_name, datetime.now()))
+            if cur.lastrowid > 0:
+                reports_id = cur.lastrowid
+                query_folder = path.join(reports_folder, str(reports_id))
+            else:
+                print("Failed to save reports index!")
+                return 1
 
     with TemporaryDirectory() as tmpdir:
         with Database(source_db_path) as source_db:
@@ -654,19 +680,11 @@ def query_mode(report_name, input_folder, input_run_id, pool,
                 makedirs(query_folder)
             shutil.copy(tmp_db_path, final_db_path)
 
-            with sqlite3.connect(index_db_path) as con:
-                cur = con.cursor()
-                cur.execute((
-                    "INSERT INTO reports"
-                    "(type, name, creation_date)"
-                    " VALUES(?, ?, ?)"
-                ), ("query", report_name, datetime.now()))
-                if cur.lastrowid > 0:
-                    print("Query success!")
-                    return 0
-                else:
-                    print("Failed to save reports index!")
-                    return 1
+            print(("Query success! please check results"
+                   " via the output visualization"
+                   " (under 'Reports->View all reports')"))
+            return 0
+
     return 1
 
 def main():
@@ -710,6 +728,7 @@ def main():
     prog_params = " ".join(argv[1:])
     output_folder = path.abspath(args.output_folder)
     result_folder = path.join(output_folder, "result")
+    reports_folder = path.join(output_folder, "reports")
     cache_folder = path.join(result_folder, "cache")
     tmp_folder = path.join(result_folder, "tmp")
     data_db_path = path.join(result_folder, "data.db")
@@ -773,26 +792,9 @@ def main():
 
     # check if query mode, goto its specific workflow
     if args.query:
-        query_name = args.query_name
-        query_folder = path.join(
-            output_folder, "queries", query_name)
-        index_db_path = path.join(
-            output_folder, "reports.db")
-        if path.exists(query_folder):
-            print("folder {} exists! please remove it or change the" +
-                  " --query_name".format(query_folder))
-            return 1
-        if not path.exists(index_db_path):  # prepare index db
-            with sqlite3.connect(index_db_path) as con:
-                cur = con.cursor()
-                sql_schema = open(path.join(path.dirname(
-                    path.abspath(bigslice.__file__)),
-                    "modules", "data",
-                    "schema_reports_index.sql"), "r").read()
-                cur.executescript(sql_schema)
         return query_mode(args.query_name, args.query, input_run_id,
                           pool, program_db_folder, data_db_path,
-                          query_folder, args.n_ranks, index_db_path,
+                          args.n_ranks, reports_folder,
                           cache_folder)
 
     # check if specified folders exist
