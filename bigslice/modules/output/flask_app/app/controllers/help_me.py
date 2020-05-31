@@ -26,8 +26,12 @@ def page_help():
         "drop us an e-mail</a> (please put <strong>"
         "[BiG-SLiCE HELP]</strong> on the subject)."
         " Be sure to first check these"
-        " <strong>Frequently Asked Questions</strong>"
+        " <strong><a href='#help_faq'>Frequently Asked Questions</a></strong>"
         " to see if your question is already answered there."
+        " Additionally, check out the <strong>"
+        "<a href='#help_howitworks'>How it works</a></strong> section"
+        " to understand the underlying algorithm and concept that"
+        " BiG-SLiCE uses."
     )
 
     # FAQs
