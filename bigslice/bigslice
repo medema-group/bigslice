@@ -730,14 +730,14 @@ def main():
               "(antiSMASH > 4.2 BGCs annotated with 'on_contig_edge'"
               " = False)."))
     arg_group_main.add_argument(
-        "--threshold", default=-1, type=float, metavar="T",
+        "--threshold", default=300, type=float, metavar="T",
         help=(
             "Clustering threshold (T) used in GCF models building"
             " (BIRCH algorithm) and membership assignment. Mutually"
             " exclusive with --threshold_pct, use '-1' to turn off"
             " this parameter (default: %(default)s)."))
     arg_group_main.add_argument(
-        "--threshold_pct", default=1.00, type=float, metavar="<N>",
+        "--threshold_pct", default=-1, type=float, metavar="<N>",
         help=("Calculate clustering threshold (T) based on a random"
               " sampling of pairwise distances between the data, taking"
               " the N-th percentile value as the threshold. Mutually"
