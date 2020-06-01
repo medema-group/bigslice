@@ -692,36 +692,142 @@ def main():
     # TODO: check requirements
 
     # program parameters
-    parser = argparse.ArgumentParser(description="tbd")
-    parser.add_argument("output_folder", type=str)
-    parser.add_argument("-t", "--num_threads",
-                        default=cpu_count(), type=int)
-    parser.add_argument("--hmmscan_chunk_size",
-                        default=100, type=int)
-    parser.add_argument("--subpfam_chunk_size",
-                        default=100, type=int)
-    parser.add_argument("--extraction_chunk_size",
-                        default=100, type=int)
-    parser.add_argument("-i", "--input_folder", type=str)
-    parser.add_argument("--complete", action="store_true")
-    parser.add_argument("--threshold",
-                        default=-1, type=float)
-    parser.add_argument("--threshold_pct",
-                        default=1.00, type=float)
-    parser.add_argument("--n_ranks",
-                        default=3, type=int)
-    parser.add_argument("--scratch", action="store_true")
-    parser.add_argument("--resume", action='store_true')
-    parser.add_argument("--program_db_folder",
-                        default=path.join(path.dirname(
-                            path.realpath(__file__)),
-                            "bigslice-models"), type=str)
-    parser.add_argument("--run_id", default=-1, type=int)
-    parser.add_argument("--query", type=str)
-    parser.add_argument("--query_name",
-                        default=datetime.now().strftime(
-                            "%Y-%m-%d %H:%M:%S"), type=str)
-    parser.add_argument("--version", action="store_true")
+    parser = argparse.ArgumentParser(
+        description=(
+            "BiG-SLiCE: Biosynthetic Gene clusters"
+            " - Super Linear Clustering Engine"
+            " (https://github.com/medema-group/bigslice)"
+        ),
+        epilog=("_"),
+        add_help=False
+    )
+    parser.add_argument(
+        "output_folder", type=str, metavar='<output_folder_path>',
+        help=(
+            "[Mandatory] the path to the (newly created"
+            " or existing) output folder."
+        ))
+
+    # [Mode 1] Clustering analysis
+    arg_group_main = parser.add_argument_group(
+        "[Mode 1] Clustering analysis", (
+            "Parse input datasets, then perform"
+            " GCF models building (BIRCH clustering)"
+            " and membership assignment according to"
+            " the specified threshold (T)"
+        ))
+    arg_group_main.add_argument(
+        "-i", "--input_folder", type=str, metavar='<folder_path>',
+        help=("[Mode-mandatory] Path to input folder containing 'datasets.tsv'"
+              " file and dataset subfolders."))
+    arg_group_main.add_argument(
+        "--resume", action='store_true',
+        help=("Continue the last clustering run (do not specifiy "
+              "--input_folder in combination with this parameter)."))
+    arg_group_main.add_argument(
+        "--complete", action="store_true",
+        help=("When building GCF models, use only complete BGCs "
+              "(antiSMASH > 4.2 BGCs annotated with 'on_contig_edge'"
+              " = False)."))
+    arg_group_main.add_argument(
+        "--threshold", default=-1, type=float, metavar="T",
+        help=(
+            "Clustering threshold (T) used in GCF models building"
+            " (BIRCH algorithm) and membership assignment. Mutually"
+            " exclusive with --threshold_pct, use '-1' to turn off"
+            " this parameter (default: %(default)s)."))
+    arg_group_main.add_argument(
+        "--threshold_pct", default=1.00, type=float, metavar="<N>",
+        help=("Calculate clustering threshold (T) based on a random"
+              " sampling of pairwise distances between the data, taking"
+              " the N-th percentile value as the threshold. Mutually"
+              " exclusive with --threshold, use '-1' to turn off"
+              " this parameter (default: %(default)s)."))
+
+    # [Mode 2] GCF queries
+    arg_group_query = parser.add_argument_group(
+        "[Mode 2] GCF queries", (
+            "Given existing GCF models from [Mode 1],"
+            " perform features extraction and membership"
+            " assignment from a set of BGC genbank files"
+            " in the input folder"
+        ))
+    arg_group_query.add_argument(
+        "--query", type=str, metavar='<folder_path>',
+        help=("[Mode-mandatory] Path to input folder containing all"
+              "cluster genbank files (needs to be either clusterXXX.gbk"
+              " of antiSMASH4, regionXXX.gbk of antiSMASH5, or"
+              " BGCXXXXXXX.gbk of MIBiG >= 2.0 files)."))
+    arg_group_query.add_argument(
+        "--query_name",
+        default=datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"), type=str, metavar="<name>",
+        help=("Give a unique name to the query run so that it will"
+              " be easier to trace within the output visualization."))
+
+    # [Mode 1 + Mode 2]
+    arg_group_combine = parser.add_argument_group(
+        "[Mode 1+2]", (
+            "Parameters relevant for both the Clustering"
+            " and Query mode"
+        ))
+    arg_group_combine.add_argument(
+        "--run_id", default=-1, type=int, metavar="<id>",
+        help=("Rather than taking the latest run, perform query"
+              " (or resume clustering) on the specific run id"
+              " (you can check the list of run ids in the output"
+              " visualization)."))
+    arg_group_combine.add_argument(
+        "--n_ranks", default=3, type=int,
+        help=("Takes N-best GCF hits for each BGC's membership assignment"
+              " procedure (default: %(default)s)."))
+
+    # [Misc] Resource management"
+    arg_group_perf = parser.add_argument_group(
+        "[Misc] Resource management", (
+            "CPU and RAM usage optimization parameters"
+        ))
+    arg_group_perf.add_argument(
+        "-t", "--num_threads",
+        default=cpu_count(), type=int, metavar="<N>",
+        help=("The number of parallel jobs to run (default: %(default)s)."))
+    arg_group_perf.add_argument(
+        "--hmmscan_chunk_size",
+        default=100, type=int, metavar="<N>",
+        help=("Split biosyn_pfam scanning into chunks of N BGCs"
+              " (default: %(default)s)"))
+    arg_group_perf.add_argument(
+        "--subpfam_chunk_size", metavar="<N>",
+        default=100, type=int,
+        help=("Split sub_pfam scanning into chunks of N BGCs"
+              " (default: %(default)s)"))
+    arg_group_perf.add_argument(
+        "--extraction_chunk_size",
+        default=100, type=int,
+        help=("Split features extraction into chunks of N BGCs"
+              " (default: %(default)s)"))
+    arg_group_perf.add_argument(
+        "--scratch", action="store_true",
+        help=("Don't load the Sqlite3 database into memory"
+              " (lower RAM usage, but potentially slower)."))
+
+    # [Misc] Other optional parameters
+    arg_group_misc = parser.add_argument_group(
+        "[Misc] Other optional parameters",
+        " ")
+    arg_group_misc.add_argument(
+        "-h", "--help", action="help",
+        help="Show this help message.")
+    arg_group_misc.add_argument(
+        "--program_db_folder",
+        default=path.join(path.dirname(
+            path.realpath(__file__)),
+            "bigslice-models"), type=str,
+        help=("Path to the HMM libraries (default: %(default)s)."))
+    arg_group_misc.add_argument(
+        "--version", action="store_true",
+        help=("Show BiG-SLiCE version."))
+
     args = parser.parse_args()
 
     # define variables
