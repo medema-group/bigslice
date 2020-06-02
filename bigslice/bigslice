@@ -485,6 +485,15 @@ def query_mode(report_name, input_folder, input_run_id, pool,
                 print("Run does not have clustering data available yet!")
                 return 1
 
+            # add run_report
+            with sqlite3.connect(index_db_path) as con:
+                cur = con.cursor()
+                cur.execute((
+                    "INSERT INTO reports_run"
+                    "(report_id, run_id)"
+                    " VALUES(?, ?)"
+                ), (reports_id, run.id))
+
             # parse input folder
             file_paths = set()
             eligible_regexes = [re.compile(rgx) for rgx in [
