@@ -1,0 +1,13 @@
+{% extends "layout.html.j2" %}
+{% block content %}
+	{% include "basic_header.html.j2" %}
+	<!-- for javascript -->
+	<input type="hidden" id="report_id" value="{{ report_id }}"/>
+	<input type="hidden" id="run_id" value="{{ run_id }}"/>
+	<input type="hidden" id="clustering_id" value="{{ clustering_id }}"/>
+	<input type="hidden" id="threshold" value="{{ threshold }}"/>
+	<!-- Overview -->
+	{% include "reports/query/overview.html.j2" %}
+	<!-- Browse -->
+	{% include "reports/query/browse.html.j2" %}
+{% endblock %}

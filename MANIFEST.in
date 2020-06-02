@@ -5,5 +5,6 @@ include bigslice/modules/output/flask_app/*.sh
 include bigslice/modules/output/flask_app/app/*
 include bigslice/modules/output/flask_app/app/static/*/*
 include bigslice/modules/output/flask_app/app/static/*
+include bigslice/modules/output/flask_app/app/views/*/*/*
 include bigslice/modules/output/flask_app/app/views/*/*
 include bigslice/modules/output/flask_app/app/views/*

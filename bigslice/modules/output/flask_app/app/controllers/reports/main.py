@@ -2,6 +2,7 @@
 
 import sqlite3
 from flask import render_template, request
+from importlib import import_module
 
 # import global config
 from ...config import conf
@@ -9,6 +10,22 @@ from ...config import conf
 # set blueprint object
 from flask import Blueprint
 blueprint = Blueprint('reports', __name__)
+
+# import report modules
+modules = {mod: import_module(
+    "." + mod, ".".join(__name__.split(".")[:-1])
+) for mod in [
+    "query"
+]}
+for mod, module in modules.items():
+    for route, func in getattr(module, "routes"):
+        blueprint.add_url_rule(
+            "/reports/view/" + mod + "/<int:report_id>/" + route,
+            view_func=func)
+    for route, func in getattr(module, "routes_api"):
+        blueprint.add_url_rule(
+            "/api/reports/module/" + mod + "/" + route,
+            view_func=func)
 
 
 @blueprint.route("/reports/view")
@@ -29,6 +46,12 @@ def page_reports_list():
         page_title=page_title,
         page_subtitle=page_subtitle
     )
+
+
+@blueprint.route("/reports/view/<module_name>/<int:report_id>")
+def page_reports_view(module_name, report_id):
+    func_detail = getattr(modules[module_name], "page_report_detail")
+    return func_detail(report_id)
 
 
 @blueprint.route("/reports/new")
