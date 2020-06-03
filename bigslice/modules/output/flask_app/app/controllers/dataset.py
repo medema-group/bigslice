@@ -247,7 +247,11 @@ def get_class_counts():
             (dataset_id, )).fetchall()[0][0]
         result["n/a"] = bgc_count - sum(result.values())
 
-    return json.dumps(result)
+    for key in list(result.keys()):
+        if result[key] < 1:
+            del result[key]
+
+    return result
 
 
 @blueprint.route("/api/dataset/get_bgclength_hist")
