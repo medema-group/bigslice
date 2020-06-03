@@ -1,0 +1,91 @@
+<div class="row mt-2 mb-4">
+	<div class="col">
+		<h3>Overview</h3>
+		<div class="row mt-4 list-group list-group-horizontal">
+			<div class="col-1"></div>
+			<div class="col-5 list-group-item d-flex justify-content-between align-items-center">
+				Run:
+				<span id="bgc_overview_run_id">
+					<span class="badge badge-secondary badge-pill">?</span>
+				</span>
+			</div>
+			<div class="col-5 list-group-item d-flex justify-content-between align-items-center">
+				Query created:
+				<span id="bgc_overview_run_created" class="badge badge-secondary badge-pill">?</span>
+			</div>
+			<div class="col-1"></div>
+		</div>
+		<div class="row list-group list-group-horizontal">
+			<div class="col-1 border-top-0"></div>
+			<div class="col-7 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Original file:
+				<a id="bgc_overview_orig_file" href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+			</div>
+			<div class="col-3 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Fragmented?
+				<a id="bgc_overview_fragmented" href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+			</div>
+			<div class="col-1 border-top-0"></div>
+		</div>
+		<div class="row list-group list-group-horizontal">
+			<div class="col-1 border-top-0"></div>
+			<div class="col-4 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Length (bp):
+				<a id="bgc_overview_bgc_length" href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+			</div>
+			<div class="col-3 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Number of genes:
+				<a id="bgc_overview_num_genes" href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+			</div>
+			<div class="col-3 border-top-0 list-group-item d-flex justify-content-between align-items-center">				File type:
+				<a id="bgc_overview_bgc_type" href="javascript:void();" class="badge badge-info badge-pill" data-trigger="hover" data-html="true" data-content="" title="Description">?</a>
+			</div>
+			<div class="col-1 border-top-0"></div>
+		</div>
+		<div class="row list-group list-group-horizontal">
+			<div class="col-1 border-top-0"></div>
+			<div class="col-10 border-top-0 list-group-item d-flex justify-content-between align-items-center">
+				Biosynthetic class:
+				<span id="bgc_overview_bgc_class">
+					<a href="javascript:void();" class="badge badge-secondary badge-pill">?</a>
+				</span>
+			</div>
+			<div class="col-1 border-top-0"></div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+	$(document).ready(function(){
+		// fetch and update tables
+		$.get({
+			url: "/api/reports/module/query/detail/overview",
+			data: {
+				"bgc_id": $("#bgc_id").val(),
+				"report_id": $("#report_id").val(),
+				"run_id": $("#run_id").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				$("#bgc_overview_run_id").html("<a href='/run/" + response["run_id"] + "'><button type='button' class='btn btn-sm btn-info'>" + response["run_name"] + "</button></a>");
+				$("#bgc_overview_run_created").text(response["run_created"]);
+				$("#bgc_overview_orig_file").text(response["file_path"]);
+				$("#bgc_overview_fragmented").text(response["fragmented"]);
+				$("#bgc_overview_bgc_length").text(response["length"]);
+				$("#bgc_overview_num_genes").text(response["genes_count"]);
+				$("#bgc_overview_bgc_type").text(response["type"]);
+
+				// biosynthetic classes
+				$("#bgc_overview_bgc_class").html("");
+				response["classes"].forEach(function(value, index) {
+					$("#bgc_overview_bgc_class").append("<span class='badge badge-secondary badge-pill ml-1 mr-1'>" + value[0] + ":" + value[1] + "</span>")
+				});
+
+				// file_type popover
+				$("#bgc_overview_bgc_type").popover({
+					"content": response["type_desc"]
+				});
+
+			}
+		})
+	});
+</script>

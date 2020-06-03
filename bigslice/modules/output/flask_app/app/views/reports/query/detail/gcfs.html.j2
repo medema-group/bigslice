@@ -1,0 +1,115 @@
+<div class="row mt-2 mb-4 d-none">
+	<div class="col">
+		<h3>GCF hits</h3>
+		<div class="row mt-4">
+			<!-- GCF hits distances -->
+			<!--div class="col-6 text-center" style="min-width: 480px;">
+				<div id="hist_gcf_dists">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
+			</div-->
+			<!-- features heatmap -->
+			<!--div class="col-6 text-center" style="min-width: 480px;">
+				<div id="features_heatmap">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
+			</div-->
+		</div>
+		<div class="row mt-2">
+			<div class="col">
+				<table id="table_gcf_hits" class="table table-striped table-bordered table-hover nowrap">
+					<thead class="thead-light">
+						<tr>
+							<th>distance</th>
+							<th>GCF</th>
+							<th>
+								size (#BGCs) <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="BGCs paired to the GCF model on a best-match basis (rank-0)<br />while satisfying the specified distance threshold <strong>(d <= T)</strong>." title="Explanation">&nbsp;?&nbsp;</a>
+							</th>
+							<th>
+								representative class
+							</th>
+							<th>
+								representative taxon <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="Genus having the most BGCs in a GCF" title="Explanation">&nbsp;?&nbsp;</a>
+							</th>
+						</tr>
+					</thead>
+					<tbody class="tbody">
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<!-- scripts -->
+		<script type="text/javascript">
+			$(document).ready(function(){
+				$("#table_gcf_hits").DataTable({
+					searching: false,
+					ordering:  false,
+					serverSide: true,
+					responsive: true,
+					ajax: {
+						url: "/api/bgc/get_gcf_hits_table",
+						type: "GET",
+						data: {
+							"bgc_id": $("#bgc_id").val(),
+							"run_id": $("#run_id").val()
+						}
+					},
+					"columnDefs": [
+						{
+							"targets": 3, // class
+							render: function(data, type, row, meta) {
+								let html_text = "";
+								let bgc_total = row[2];
+
+								if (data.length > 0) {
+									html_text += data[0][0] + " (" + (data[0][1] / bgc_total * 100).toFixed(0) + "%)";
+								} else {
+									html_text += "n/a";
+								}
+
+								return html_text;
+							}
+						},
+						{
+							"targets": 4, // taxon
+							render: function(data, type, row, meta) {
+								let html_text = "";
+								let bgc_total = row[2];
+
+								if (data.length > 0) {
+									html_text += "<i>" + data[0][0] + "</i>" + " (" + (data[0][1] / bgc_total * 100).toFixed(0) + "%)";
+								} else {
+									html_text += "n/a";
+								}
+
+								return html_text;
+							}
+						},
+						{
+							"targets": 1, // name
+							render: function(data, type, row, meta) {
+								return "<a class='btn btn-info' href='/run/" + meta.settings.json.run_id + "/gcf/" + data[0] + "'>" + data[1] + "</a>";
+							}
+						},
+						{ className: "text-right", "targets": [0, 2] },
+						{ className: "text-center", "targets": [] }
+					],
+					"drawCallback": function( settings ) {
+				        // --
+				    },
+					"createdRow": function( row, data, dataIndex ) {
+					    if (data[0] <= parseFloat($("#threshold").val())) {
+					    	$(row).addClass("table-success");
+					    } else {
+					    	$(row).addClass("table-danger");
+					    }
+					}
+				});
+			});
+		</script>
+	</div>
+</div>

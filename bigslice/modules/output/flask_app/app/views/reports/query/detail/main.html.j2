@@ -7,5 +7,13 @@
 	<input type="hidden" id="run_id" value="{{ run_id }}"/>
 	<input type="hidden" id="clustering_id" value="{{ clustering_id }}"/>
 	<input type="hidden" id="threshold" value="{{ threshold }}"/>
+	{% include "reports/query/detail/arrower.html.j2" %}
 	<!-- Overview -->
+	{% include "reports/query/detail/overview.html.j2" %}
+	<!-- Annotations -->
+	{% include "reports/query/detail/annotations.html.j2" %}
+	<!-- GCF hits -->
+	{% include "reports/query/detail/gcfs.html.j2" %}
+	<!-- Similar BGCs -->
+	{% include "reports/query/detail/homologs.html.j2" %}
 {% endblock %}
