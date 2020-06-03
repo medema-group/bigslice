@@ -19,7 +19,24 @@ def page_about():
     # page title
     page_title = "About BiG-SLiCE"
     page_subtitle = (
-        "under construction"
+        "This software was initially developed and is currently"
+        " maintained by Satria Kautsar (twitter:"
+        " <a href='https://twitter.com/satriaphd'>@satriaphd</a>)"
+        " as part of a fully funded PhD project granted to"
+        " Dr. Marnix Medema (website: <a href='http://marnixmedema.nl'>"
+        "marnixmedema.nl</a>, twitter: <a href='https://twitter.com/"
+        "marnixmedema'>@marnixmedema</a>) by the <a href='"
+        "https://www.graduateschool-eps.info/'>Graduate School of"
+        " Experimental Plant Sciences</a>, NL. Contributions and feedbacks"
+        " very welcomed. Feel free to <a href='mailto:satria.kautsar@wur.nl,"
+        "marnix.medema@wur.nl?subject=[BiG-SLiCE contribution]'>drop us"
+        " an e-mail</a> if you have any question regarding or related"
+        " to BiG-SLiCE."
+        "<br /> In the future, we aim to make BiG-SLiCE <strong>a"
+        " comprehensive platform to do all sorts of downstream <u>large"
+        " scale BGC analysis</u></strong>, taking advantage of its"
+        " portable yet powerful SQLite3-based data storage combined with the"
+        " flexible flask-based web app architecture as the foundation."
     )
 
     # render view
