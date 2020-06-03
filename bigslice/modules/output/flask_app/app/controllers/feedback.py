@@ -19,7 +19,16 @@ def page_feedback():
     # page title
     page_title = "Feedback"
     page_subtitle = (
-        "under construction"
+        "Found <strong>bugs/errors</strong> in the software?"
+        " Got some ideas on how to improve BiG-SLiCE? Please"
+        " send us your feedback via our GitHub's"
+        " <a href='https://github.com/medema-group/bigslice/issues'"
+        ">'Issues' page</a>. Want to contribute code to BiG-SLiCE?"
+        " feel free to <a href='mailto:satria.kautsar@wur.nl,"
+        "marnix.medema@wur.nl?subject=[BiG-SLiCE contribution]'>send us"
+        " an e-mail</a> or "
+        "<a href='https://github.com/medema-group/bigslice/pulls'>"
+        "do a pull request</a> at our GitHub page."
     )
 
     # render view
