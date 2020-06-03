@@ -1,4 +1,4 @@
-<div class="row mt-2 mb-4 d-none">
+<div class="row mt-2 mb-4">
 	<div class="col">
 		<h3>GCF hits</h3>
 		<div class="row mt-4">
@@ -51,10 +51,11 @@
 					serverSide: true,
 					responsive: true,
 					ajax: {
-						url: "/api/bgc/get_gcf_hits_table",
+						url: "/api/reports/module/query/detail/get_gcf_hits_table",
 						type: "GET",
 						data: {
 							"bgc_id": $("#bgc_id").val(),
+							"report_id": $("#report_id").val(),
 							"run_id": $("#run_id").val()
 						}
 					},
