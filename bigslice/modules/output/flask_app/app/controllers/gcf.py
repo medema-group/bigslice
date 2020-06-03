@@ -194,6 +194,10 @@ def get_class_counts():
             (gcf_id, threshold)).fetchall()[0][0]
         result["n/a"] = bgc_count - sum(result.values())
 
+    for key in list(result.keys()):
+        if result[key] < 1:
+            del result[key]
+
     return result
 
 
