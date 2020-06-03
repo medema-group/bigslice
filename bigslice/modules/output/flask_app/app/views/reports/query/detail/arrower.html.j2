@@ -26,7 +26,7 @@
 		target_bgc_ids.forEach(function(bgc_id, index) {			
 			content += "<div class='row'>";
 			content += "<span class='col-12'>" + titles[bgc_id] + "</span>";
-			content += "<div id='compare-arrower-" + bgc_id + "' class='overflow-auto col-12 pl-2 pr-2 pb-2 text-center'><div class='spinner-border text-info' role='status'><span class='sr-only'>Loading...</span></div></div>";
+			content += "<div id='compare-arrower-target-" + bgc_id + "' class='overflow-auto col-12 pl-2 pr-2 pb-2 text-center'><div class='spinner-border text-info' role='status'><span class='sr-only'>Loading...</span></div></div>";
 			content += "</div>";
 		});
 
@@ -34,12 +34,13 @@
 
 		showModal("BGCs comparison", $(content)[0],
 			on_show=function(){
+				// query
 				$("#modal-window .modal-dialog").css("max-width", "90vw");
 				$.get({
-					url: "/api/bgc/get_arrower_objects",
+					url: "/api/reports/module/query/detail/get_arrower_objects",
 					data: {
-						"bgc_id": target_bgc_ids.concat([query_bgc_id]).join(","),
-						"run_id": $("#run_id").val()
+						"bgc_id": $("#bgc_id").val(),
+						"report_id": $("#report_id").val()
 					},
 					dataType: "json",
 					success: function(response) {
@@ -54,6 +55,29 @@
 								});
 							});
 							$("#compare-arrower-" + bgc_id).html(Arrower.drawClusterSVG(bgcObject, height=30));
+						}
+					}
+				});
+				// targets
+				$.get({
+					url: "/api/bgc/get_arrower_objects",
+					data: {
+						"bgc_id": target_bgc_ids.join(","),
+						"run_id": $("#run_id").val()
+					},
+					dataType: "json",
+					success: function(response) {
+						for (let bgc_id in response) {
+							let bgcObject = response[bgc_id];
+							bgcObject["orfs"].forEach(function(cds) {
+								cds["domains"].forEach(function(domain) {
+									if (!domainColors.hasOwnProperty(domain.code)) {
+										domainColors[domain.code] = getRandomColor(0.5);
+									}
+									domain["color"] = domainColors[domain.code];
+								});
+							});
+							$("#compare-arrower-target-" + bgc_id).html(Arrower.drawClusterSVG(bgcObject, height=30));
 						}
 					}
 				});
