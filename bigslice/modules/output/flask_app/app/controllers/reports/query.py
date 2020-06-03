@@ -702,26 +702,34 @@ def detail_get_homologous_bgcs():
 
             # fetch total records (all bgcs sharing gcfs)
             result["recordsTotal"] = cur_source.execute((
-                "select count(distinct bgc_id)"
-                " from gcf_membership"
+                "select count(distinct gcf_membership.bgc_id)"
+                " from gcf_membership, bgc_features"
                 " where gcf_id in"
                 " ({})"
                 " and gcf_membership.membership_value <= ?"
                 " and gcf_membership.rank = 0"
+                " and bgc_features.bgc_id = gcf_membership.bgc_id"
+                " and bgc_features.hmm_id"
+                " in ({})"
             ).format(
-                ",".join(map(str, gcf_ids))
+                ",".join(map(str, gcf_ids)),
+                ",".join(map(str, hmm_ids))
             ), (threshold,)).fetchall()[0][0]
 
             # fetch total records (filtered)
             result["recordsFiltered"] = cur_source.execute((
-                "select count(distinct bgc_id)"
-                " from gcf_membership"
+                "select count(distinct gcf_membership.bgc_id)"
+                " from gcf_membership, bgc_features"
                 " where gcf_id in"
                 " ({})"
                 " and gcf_membership.membership_value <= ?"
                 " and gcf_membership.rank = 0"
+                " and bgc_features.bgc_id = gcf_membership.bgc_id"
+                " and bgc_features.hmm_id"
+                " in ({})"
             ).format(
-                ",".join(map(str, gcf_ids))
+                ",".join(map(str, gcf_ids)),
+                ",".join(map(str, hmm_ids))
             ), (threshold,)).fetchall()[0][0]
 
             # fetch bgc_name, dataset_name
