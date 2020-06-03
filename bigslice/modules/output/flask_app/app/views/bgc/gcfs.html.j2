@@ -101,7 +101,14 @@
 						],
 						"drawCallback": function( settings ) {
 					        // --
-					    }
+					    },
+						"createdRow": function( row, data, dataIndex ) {
+						    if (data[0] <= parseFloat($("#threshold").val())) {
+						    	$(row).addClass("table-success");
+						    } else {
+						    	$(row).addClass("table-danger");
+						    }
+						}
 					});
 				});
 			</script>

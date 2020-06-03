@@ -71,6 +71,13 @@ def page_bgc(dataset_id, bgc_id, run_id):
             " limit 1"
         ), (bgc_id, )).fetchall()[:1]
 
+        # fetch clustering threshold
+        threshold = cur.execute((
+            "select threshold"
+            " from clustering"
+            " where clustering.run_id=?"
+        ), (run_id, )).fetchall()[0][0]
+
         # set title and subtitle
         page_title = "BGC: {}".format(bgc_name)
         if len(bgc_taxon_name) <= 0:
@@ -102,6 +109,7 @@ def page_bgc(dataset_id, bgc_id, run_id):
         dataset_id=dataset_id,
         run_id=run_id,
         run_ids=run_ids,
+        threshold=threshold,
         status_id=status_id,
         page_title=page_title,
         page_subtitle=page_subtitle

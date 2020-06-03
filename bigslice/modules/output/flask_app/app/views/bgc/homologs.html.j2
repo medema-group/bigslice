@@ -59,16 +59,6 @@
 								}
 							},
 							{
-								"targets": 3, // distance
-								render: function(data, type, row, meta) {
-									if (data <= meta.settings.json.threshold) {
-										return "<strong>" + data + "</strong>";
-									} else {
-										return data;
-									}
-								}
-							},
-							{
 								"targets": 5, // taxonomy
 								render: function(data, type, row, meta) {
 									let html_text = "";
@@ -132,6 +122,13 @@
 							{ className: "text-right", "targets": [2, 3, 4] },
 							{ className: "text-center", "targets": [6, 7] }
 						],
+						"createdRow": function( row, data, dataIndex ) {
+						    if (data[3] <= parseFloat($("#threshold").val())) {
+						    	$(row).addClass("table-success");
+						    } else {
+						    	$(row).addClass("table-danger");
+						    }
+						},
 						"drawCallback": function( settings ) {
 					        $(".taxonomy_pops").popover({
 					        	"template": '<div class="popover popover-taxonomy" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>'
