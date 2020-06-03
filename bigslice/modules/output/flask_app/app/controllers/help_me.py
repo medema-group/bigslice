@@ -37,16 +37,11 @@ def page_help():
     # FAQs
     faqs = [
         (
-            "dummy-question#1?",
-            "dummy-answer#1"
-        ),
-        (
-            "dummy-question#2?",
-            "dummy-answer#2"
-        ),
-        (
-            "dummy-question#3?",
-            "dummy-answer#3"
+            "Please help us!",
+            (
+                "We're collecting questions from users to put in this FAQ"
+                " section. Feel free to send yours to our e-mail (see above)."
+            )
         )
     ]
 
