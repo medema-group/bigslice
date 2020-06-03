@@ -709,6 +709,7 @@ def detail_get_homologous_bgcs():
                 " and gcf_membership.membership_value <= ?"
                 " and gcf_membership.rank = 0"
                 " and bgc_features.bgc_id = gcf_membership.bgc_id"
+                " and bgc_features.value >= 255"
                 " and bgc_features.hmm_id"
                 " in ({})"
             ).format(
@@ -725,6 +726,7 @@ def detail_get_homologous_bgcs():
                 " and gcf_membership.membership_value <= ?"
                 " and gcf_membership.rank = 0"
                 " and bgc_features.bgc_id = gcf_membership.bgc_id"
+                " and bgc_features.value >= 255"
                 " and bgc_features.hmm_id"
                 " in ({})"
             ).format(
