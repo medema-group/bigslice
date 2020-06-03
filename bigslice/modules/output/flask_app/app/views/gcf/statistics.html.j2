@@ -1,9 +1,212 @@
 <div class="row mt-2 mb-4">
 	<div class="col">
 		<h3>Statistics</h3>
-		<div class="row mt-4">
-			<div class="col">
+		<!-- first row -->
+		<div class="row mt-4 list-group list-group-horizontal">
+			<div class="col-1"></div>
+			<div class="col-5 list-group-item d-flex justify-content-between align-items-center">
+				Members (core): <span class="badge badge-secondary badge-pill" id="stat_total_core">?</span>
+			</div>
+			<div class="col-5 list-group-item d-flex justify-content-between align-items-center">
+				Members (putative): <span class="badge badge-secondary badge-pill" id="stat_total_putative">?</span>
+			</div>
+			<div class="col-1"></div>
+		</div>
+		<!-- second row -->
+		<div class="row mt-2">
+			<!-- bgc class counts -->
+			<div class="col-4" style="min-width: 320px;">
+				<div id="pie_bgc_class" class="text-center">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
+			</div>
+			<!-- genus counts -->
+			<div class="col-4" style="min-width: 320px;">
+				<div id="pie_bgc_taxon" class="text-center">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
+			</div>
+			<!-- bgc length histogram -->
+			<div class="col-4" style="min-width: 320px;">
+				<div id="hist_bgc_length" class="text-center">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
 </div>
+<script type="text/javascript">
+	$(document).ready(function(){
+		// fetch and update statistics
+		$.get({
+			url: "/api/gcf/get_stats",
+			data: {
+				"gcf_id": $("#gcf_id").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				$("#stat_total_core").text(response["core_count"]);
+				$("#stat_total_putative").text(response["putative_count"]);
+			}
+		});
+		// fetch and render bgc class pie chart
+		$.get({
+			url: "/api/gcf/get_class_counts",
+			data: {
+				"gcf_id": $("#gcf_id").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				let container_id = "pie_bgc_class";
+				
+				// hide spinner
+				$("#" + container_id + " .spinner-border").addClass("d-none");
+				// set values
+				let values = [];
+				let labels = [];
+				for (let key in response) {
+					values.push(response[key]);
+					labels.push(key);
+				}
+									let data = [{
+				values: values,
+				labels: labels,
+				type: 'pie',
+				hoverinfo: 'label+value+percent',
+				hole: .2,
+				sort: false,
+				automargin: true
+				}];
+				let layout = {
+					title: "BGC class (core only)",
+					showlegend: true
+				};
+				let config = {
+					responsive: false,
+					staticPlot: false
+				}
+				Plotly.newPlot(container_id, data, layout, config);
+			}
+		});
+		// fetch and render bgc taxon pie chart
+		$.get({
+			url: "/api/gcf/get_taxon_counts",
+			data: {
+				"gcf_id": $("#gcf_id").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				let container_id = "pie_bgc_taxon";
+				
+				// hide spinner
+				$("#" + container_id + " .spinner-border").addClass("d-none");
+				// set values
+				let values = [];
+				let labels = [];
+				for (let key in response) {
+					values.push(response[key]);
+					labels.push(key);
+				}
+									let data = [{
+				values: values,
+				labels: labels,
+				type: 'pie',
+				hoverinfo: 'label+value+percent',
+				hole: .2,
+				sort: false,
+				automargin: true
+				}];
+				let layout = {
+					title: "BGC genus (core only)",
+					showlegend: true
+				};
+				let config = {
+					responsive: false,
+					staticPlot: false
+				}
+				Plotly.newPlot(container_id, data, layout, config);
+			}
+		});
+		let bin_size = 10000; // base pairs
+		let max_bgc_length = 100000; // only show detailed bars for bgc < this length
+		$.get({
+			url: "/api/gcf/get_bgclength_hist",
+			data: {
+				"gcf_id": $("#gcf_id").val(),
+				"bin_size": bin_size
+			},
+			dataType: "json",
+			success: function(response) {
+				let container_id = "hist_bgc_length";
+				
+				// hide spinner
+				$("#" + container_id + " .spinner-border").addClass("d-none");
+				// collapse data > max_bgc_length
+				let labels = ["> " + Math.floor(max_bgc_length / 1000) + " kb"];
+				let values = {
+					"core": [0],
+					"putative": [0]
+				};
+				response["labels"].forEach(function(min_max, idx) {
+					if (min_max[1] <= max_bgc_length) {
+						labels.push(Math.floor(min_max[0] / 1000) + "-" + Math.floor(min_max[1] / 1000) + " kb");
+						for (let key in values) {
+							values[key].push(response[key][idx]);
+						}
+					} else {
+						for (let key in values) {
+							values[key][0] += response[key][idx];
+						}
+					}
+				});
+				labels.push(labels.shift());
+				for (let key in values) {
+					values[key].push(values[key].shift());
+				}
+				// define traces
+				let trace_core = {
+					x: labels,
+					y: values["core"],
+					name: 'Core',
+					type: 'bar',
+					marker: {color: '#B1DFBB'}
+				};
+				let trace_putative = {
+					x: labels,
+					y: values["putative"],
+					name: 'Putative',
+					type: 'bar',
+					marker: {color: '#F1B0B7'}
+				};
+				let data = [trace_core, trace_putative];
+				let layout = {
+					title: "BGC length",
+					barmode: "group",
+					xaxis: {
+					    tickangle: -45
+					},
+					yaxis: {
+						title: "count"
+					},
+					showlegend: true,
+					legend: {
+						font: {
+							size: 8
+						}
+					}
+				};
+				let config = {
+					responsive: false,
+					staticPlot: false
+				}
+				Plotly.newPlot(container_id, data, layout, config);
+			}
+		});
+	});
+</script>

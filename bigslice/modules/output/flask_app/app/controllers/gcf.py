@@ -91,6 +91,249 @@ def get_word_cloud():
     return result
 
 
+@blueprint.route("/api/gcf/get_stats")
+def get_stats():
+    """ for gcf features word cloud """
+    result = {}
+    gcf_id = request.args.get('gcf_id', type=int)
+
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        threshold = cur.execute((
+            "select threshold"
+            " from clustering,gcf"
+            " where clustering.id=gcf.clustering_id"
+            " and gcf.id=?"
+        ), (gcf_id, )).fetchall()[0][0]
+
+        result["core_count"] = cur.execute((
+            "select count(bgc_id)"
+            " from gcf_membership,gcf"
+            " where gcf_membership.gcf_id=gcf.id"
+            " and gcf.id=?"
+            " and rank=0"
+            " and membership_value <= ?"
+        ), (gcf_id, threshold)).fetchall()[0][0]
+
+        result["putative_count"] = cur.execute((
+            "select count(bgc_id)"
+            " from gcf_membership,gcf"
+            " where gcf_membership.gcf_id=gcf.id"
+            " and gcf.id=?"
+            " and rank=0"
+            " and membership_value > ?"
+        ), (gcf_id, threshold)).fetchall()[0][0]
+
+        return result
+
+
+@blueprint.route("/api/gcf/get_class_counts")
+def get_class_counts():
+    """ for dataset pie chart """
+    gcf_id = request.args.get('gcf_id', default=0, type=int)
+    result = {}
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        threshold = cur.execute((
+            "select threshold"
+            " from clustering,gcf"
+            " where clustering.id=gcf.clustering_id"
+            " and gcf.id=?"
+        ), (gcf_id, )).fetchall()[0][0]
+
+        # get distinct class counts
+        for class_id, class_name in cur.execute((
+            "select id, name"
+            " from chem_class")
+        ).fetchall():
+            result[class_name] = cur.execute((
+                "select count(distinct bgc_id) from ("
+                "select bgc.id as bgc_id"
+                " from bgc, gcf_membership,"
+                " bgc_class, chem_subclass"
+                " where bgc.id=gcf_membership.bgc_id"
+                " and gcf_membership.gcf_id=?"
+                " and gcf_membership.rank=0"
+                " and gcf_membership.membership_value <= ?"
+                " and bgc.id=bgc_class.bgc_id"
+                " and chem_subclass.id=bgc_class.chem_subclass_id"
+                " group by bgc.id"
+                " having count(chem_subclass_id) == 1"
+                " and chem_subclass.class_id=?"
+                ")"
+            ),
+                (gcf_id, threshold, class_id)).fetchall()[0][0]
+
+        # get hybrid counts
+        result["Hybrid"] = cur.execute((
+            "select count(distinct bgc_id) from"
+            " (select bgc.id as bgc_id"
+            " from bgc, gcf_membership, bgc_class"
+            " where bgc.id=gcf_membership.bgc_id"
+            " and gcf_membership.gcf_id=?"
+            " and gcf_membership.rank=0"
+            " and gcf_membership.membership_value <= ?"
+            " and bgc.id=bgc_class.bgc_id"
+            " group by bgc.id"
+            " having count(chem_subclass_id) > 1"
+            ")"
+        ),
+            (gcf_id, threshold)).fetchall()[0][0]
+
+        # get n/a counts
+        bgc_count = cur.execute((
+            "select count(distinct bgc.id)"
+            " from bgc, gcf_membership"
+            " where bgc.id=gcf_membership.bgc_id"
+            " and gcf_membership.gcf_id=?"
+            " and gcf_membership.rank=0"
+            " and gcf_membership.membership_value <= ?"
+        ),
+            (gcf_id, threshold)).fetchall()[0][0]
+        result["n/a"] = bgc_count - sum(result.values())
+
+    return result
+
+
+@blueprint.route("/api/gcf/get_taxon_counts")
+def get_taxon_counts():
+    """ for dataset pie chart """
+    gcf_id = request.args.get('gcf_id', default=0, type=int)
+    limit = request.args.get('limit', default=10, type=int)
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        threshold = cur.execute((
+            "select threshold"
+            " from clustering,gcf"
+            " where clustering.id=gcf.clustering_id"
+            " and gcf.id=?"
+        ), (gcf_id, )).fetchall()[0][0]
+
+        # fetch taxon counts
+        result = {
+            "other": 0
+        }
+        i = 0
+        total_with_taxonomy = 0
+        for taxon, count in cur.execute(
+            (
+                "select taxon.name as taxon,"
+                " count(gcf_membership.bgc_id) as bgc"
+                " from taxon, bgc_taxonomy, gcf_membership"
+                " where gcf_membership.gcf_id=?"
+                " and gcf_membership.bgc_id=bgc_taxonomy.bgc_id"
+                " and bgc_taxonomy.taxon_id=taxon.id"
+                " and taxon.level=5"  # genus
+                " and membership_value <= ?"
+                " group by taxon"
+                " order by bgc desc"
+            ),
+                (gcf_id, threshold)).fetchall():
+            if i < limit:
+                result[taxon] = count
+            else:
+                result["other"] += count
+            total_with_taxonomy += count
+            i += 1
+
+        # fetch n/a
+        members_count = cur.execute((
+            "select count(bgc_id)"
+            " from gcf_membership,gcf"
+            " where gcf_membership.gcf_id=gcf.id"
+            " and gcf.id=?"
+            " and rank=0"
+            " and membership_value <= ?"
+        ), (gcf_id, threshold)).fetchall()[0][0]
+        result["n/a"] = members_count - total_with_taxonomy
+
+        if result["other"] < 1:
+            del result["other"]
+
+        if result["n/a"] < 1:
+            del result["n/a"]
+
+    return result
+
+
+@blueprint.route("/api/gcf/get_bgclength_hist")
+def get_bgclength_hist():
+    """ for dataset histogram of lengths """
+    gcf_id = request.args.get('gcf_id', default=0, type=int)
+    bin_size = request.args.get('bin_size', default=1000, type=int)
+    result = {
+        "labels": [],
+        "core": [],
+        "putative": []
+    }
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        threshold = cur.execute((
+            "select threshold"
+            " from clustering,gcf"
+            " where clustering.id=gcf.clustering_id"
+            " and gcf.id=?"
+        ), (gcf_id, )).fetchall()[0][0]
+
+        # get min and max length_nt to calculate step-ups
+        min_nt, max_nt = cur.execute((
+            "select min(length_nt), max(length_nt)"
+            " from bgc, gcf_membership"
+            " where bgc.id=gcf_membership.bgc_id"
+            " and rank=0"
+            " and gcf_membership.gcf_id=?"
+        ), (gcf_id, )
+        ).fetchall()[0]
+
+        # fetch counts per bin
+        cur_min = 1
+        while cur_min < max_nt:
+            cur_max = cur_min + bin_size - 1
+
+            # fetch labels
+            result["labels"].append((cur_min, cur_max))
+
+            # fetch core bgcs count
+            result["core"].append(
+                cur.execute((
+                    "select count(id)"
+                    " from bgc, gcf_membership"
+                    " where bgc.id=gcf_membership.bgc_id"
+                    " and rank=0"
+                    " and gcf_membership.gcf_id=?"
+                    " and gcf_membership.membership_value <= ?"
+                    " and length_nt >= ?"
+                    " and length_nt <= ?"
+                ),
+                    (gcf_id, threshold, cur_min, cur_max)
+                ).fetchall()[0][0]
+            )
+
+            # fetch putative bgcs count
+            result["putative"].append(
+                cur.execute((
+                    "select count(id)"
+                    " from bgc, gcf_membership"
+                    " where bgc.id=gcf_membership.bgc_id"
+                    " and rank=0"
+                    " and gcf_membership.gcf_id=?"
+                    " and gcf_membership.membership_value > ?"
+                    " and length_nt >= ?"
+                    " and length_nt <= ?"
+                ),
+                    (gcf_id, threshold, cur_min, cur_max)
+                ).fetchall()[0][0]
+            )
+
+            cur_min = cur_max + 1
+
+    return result
+
+
 @blueprint.route("/api/gcf/get_dist_stats")
 def get_dist_stats():
     """ for gcf distance statistics """
