@@ -104,6 +104,12 @@ def fetch_runs_summary(db_path):
                     " where run_id=?"),
                 (run_id, )
             ).fetchall()[0][0]
+            # fetch threshold
+            threshold = cur.execute((
+                "select threshold"
+                " from clustering"
+                " where run_id=?"
+            ), (run_id, )).fetchall()[0][0]
             # fetch gcf counts
             if run_status >= 5:  # CLUSTERING_FINISHED
                 gcf_count = cur.execute(
@@ -152,6 +158,7 @@ def fetch_runs_summary(db_path):
                 "resumes": run_resumes,
                 "status": run_status_enum[run_status],
                 "count_bgcs": bgc_count,
-                "count_gcfs": gcf_count
+                "count_gcfs": gcf_count,
+                "threshold": float("{:.2f}".format(threshold))
             })
         return runs

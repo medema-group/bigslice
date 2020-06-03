@@ -8,56 +8,62 @@
 			Datasets
 			<a href="/dataset/0"><button type="button" class="btn btn-sm btn-info">view all</button></a>
 			</h3>
-			<table id="table_datasets" class="table container-fluid text-center">
+			<table id="table_datasets" class="table table-striped container-fluid">
 				<thead class="thead-light">
 					<tr>
 						<th rowspan="2">name</th>
-						<th rowspan="2">#genomes</th>
-						<th colspan="2">#BGCs</th>
+						<th rowspan="2" class="text-right">#genomes</th>
+						<th colspan="2" class="text-center">#BGCs</th>
 						<th rowspan="2">description</th>
-						<th rowspan="2">details</th>
 					</tr>
 					<tr>
-						<th>total</th>
-						<th>with taxonomy</th>
+						<th class="text-right">total</th>
+						<th class="text-right">with taxonomy</th>
 					</tr>
 				</thead>
 				<tbody class="tbody">
 					{% for ds in datasets %}
 						<tr>
-							<td>{{ ds["name"] }}</td>
-							<td class="numbers">{{ ds["count_genomes"] }}</td>
-							<td class="numbers">{{ ds["count_bgcs"] }}</td>
-							<td class="numbers">{{ ds["count_bgcs_with_taxonomy"] }}</td>
+							<td><a href="/dataset/{{ ds['id'] }}"><button type="button" class="btn btn-sm btn-info">{{ ds["name"] }}</button></a></td>
+							<td class="text-right">{{ ds["count_genomes"] }}</td>
+							<td class="text-right">{{ ds["count_bgcs"] }}</td>
+							<td class="text-right">{{ ds["count_bgcs_with_taxonomy"] }}</td>
 							<td>{{ ds["desc"] }}</td>
-							<td><a href="/dataset/{{ ds['id'] }}"><button type="button" class="btn btn-sm btn-info">view</button></a></td>
 						</tr>
 					{% endfor %}
 				</tbody>
 			</table>
 		</div>
 	</div>
+	<script type="text/javascript">
+		$(document).ready(function(){
+			$("#table_datasets").DataTable({
+				searching: false,
+				ordering:  false
+			});
+		});
+	</script>
 	<!-------------->
 	<!-- Runs -->
 	<div class="row mt-5">
 		<div class="col">
 			<h3>Runs</h3>
-			<table id="table_runs" class="table container-fluid text-center">
+			<table id="table_runs" class="table table-striped container-fluid">
 				<thead class="thead-light">
 					<tr>
 						<th>name</th>
 						<th>started</th>
 						<th>finished</th>
 						<th>status</th>
-						<th>#BGCs</th>
-						<th>#GCFs</th>
-						<th>details</th>
+						<th class="text-right">threshold</th>
+						<th class="text-right">#BGCs</th>
+						<th class="text-right">#GCFs</th>
 					</tr>
 				</thead>
 				<tbody class="tbody">
 					{% for rn in runs %}
 						<tr>
-							<td>{{ rn["name"] }}</td>
+							<td><a href="/run/{{ rn['id'] }}"><button type="button" class="btn btn-sm btn-info">{{ rn["name"] }}</button></a></td>
 							<td>{{ rn["start"] }}</td>
 							<td>
 								{{ rn["finished"] }}
@@ -75,14 +81,22 @@
 								{% endif %}
 							</td>
 							<td>{{ rn["status"] }}</td>
-							<td class="numbers">{{ rn["count_bgcs"] }}</td>
-							<td class="numbers">{{ rn["count_gcfs"] }}</td>
-							<td><a href="/run/{{ rn['id'] }}"><button type="button" class="btn btn-sm btn-info">view</button></a></td>
+							<td class="text-right">{{ rn["threshold"] }}</td>
+							<td class="text-right">{{ rn["count_bgcs"] }}</td>
+							<td class="text-right">{{ rn["count_gcfs"] }}</td>
 						</tr>
 					{% endfor %}
 				</tbody>
 			</table>
 		</div>
 	</div>
+	<script type="text/javascript">
+		$(document).ready(function(){
+			$("#table_runs").DataTable({
+				searching: false,
+				ordering:  false
+			});
+		});
+	</script>
 	<!-------------->
 {% endblock %}
