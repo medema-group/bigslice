@@ -28,10 +28,10 @@ def page_help():
         " Be sure to first check these"
         " <strong><a href='#help_faq'>Frequently Asked Questions</a></strong>"
         " to see if your question is already answered there."
-        " Additionally, check out the <strong>"
+        " <!--Additionally, check out the <strong>"
         "<a href='#help_howitworks'>How it works</a></strong> section"
         " to understand the underlying algorithm and concept that"
-        " BiG-SLiCE uses."
+        " BiG-SLiCE uses.-->"
     )
 
     # FAQs
