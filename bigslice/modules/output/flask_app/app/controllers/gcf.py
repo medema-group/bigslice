@@ -63,6 +63,94 @@ def page_gcf(gcf_id, run_id):
     )
 
 
+@blueprint.route("/api/gcf/get_word_cloud")
+def get_word_cloud():
+    """ for gcf features word cloud """
+    result = {}
+    gcf_id = request.args.get('gcf_id', type=int)
+    limit = request.args.get('limit', default=20, type=int)
+
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        result["words"] = []
+        for name, weight in cur.execute((
+            "select hmm.name,"
+            " gcf_models.value"
+            " from gcf_models, hmm"
+            " where hmm.id=gcf_models.hmm_id"
+            " and gcf_models.gcf_id=?"
+            " order by gcf_models.value desc"
+            " limit ?"
+        ), (gcf_id, limit)).fetchall():
+            result["words"].append({
+                "text": name,
+                "weight": weight
+            })
+
+    return result
+
+
+@blueprint.route("/api/gcf/get_dist_stats")
+def get_dist_stats():
+    """ for gcf distance statistics """
+    result = {}
+    gcf_id = request.args.get('gcf_id', type=int)
+    bin_size = request.args.get('bin_size', default=100, type=int)
+    threshold = request.args.get('threshold', type=float)
+    result = {
+        "labels": [],
+        "core": [],
+        "putative": []
+    }
+
+    with sqlite3.connect(conf["db_path"]) as con:
+        cur = con.cursor()
+
+        # get min and max length_nt to calculate step-ups
+        min_dist, max_dist = cur.execute((
+            "select min(membership_value), max(membership_value)"
+            " from gcf_membership"
+            " where gcf_id=?"
+            " and rank=0"
+        ), (gcf_id, )
+        ).fetchall()[0]
+
+        # fetch counts per bin
+        cur_min = 1
+        while cur_min < max_dist:
+            cur_max = cur_min + bin_size - 1
+
+            # fetch labels
+            result["labels"].append((cur_min, cur_max))
+
+            # fetch values
+            result["core"].append(cur.execute((
+                "select count(bgc_id)"
+                " from gcf_membership"
+                " where gcf_id=?"
+                " and rank=0"
+                " and membership_value >= ?"
+                " and membership_value <= ?"
+                " and membership_value <= ?"
+            ), (gcf_id, cur_min, cur_max, threshold)
+            ).fetchall()[0][0])
+            result["putative"].append(cur.execute((
+                "select count(bgc_id)"
+                " from gcf_membership"
+                " where gcf_id=?"
+                " and rank=0"
+                " and membership_value >= ?"
+                " and membership_value <= ?"
+                " and membership_value > ?"
+            ), (gcf_id, cur_min, cur_max, threshold)
+            ).fetchall()[0][0])
+
+            cur_min = cur_max + 1
+
+    return result
+
+
 @blueprint.route("/api/gcf/get_members")
 def get_members():
     """ get members for the datatable """

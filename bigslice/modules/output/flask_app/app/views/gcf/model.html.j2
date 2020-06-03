@@ -2,8 +2,129 @@
 	<div class="col">
 		<h3>GCF model</h3>
 		<div class="row mt-4">
-			<div class="col">
+			<!-- word cloud -->
+			<div class="col-6">
+				<h4>Features word cloud <a href="javascript:void();" class="badge badge-info badge-pill ml-2" data-toggle="popover" data-trigger="hover" data-html="true" data-content="<p>Unlike the BGC counterpart, this word cloud is directly derived from the<br /> GCF model feature matrix. Thus, each value represents an 'averaging' of<br /> a specific pHMM within the original BGCs used to construct this GCF model.</p>" title="What is this?">&nbsp;?&nbsp;</a></h4>
+				<div id="gcf_word_cloud" class="text-center" style="height: 480px">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
+			</div>
+			<!-- bgc distances histogram -->
+			<div class="col-6" style="min-width: 480px;">
+				<div id="hist_bgc_dists" class="text-center">
+					<div class="spinner-border text-info" role="status">
+						<span class="sr-only">Loading...</span>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
 </div>
+<!-- scripts -->
+<script type="text/javascript">
+	$(document).ready(function(){
+		// fetch and update word cloud
+		$.get({
+			url: "/api/gcf/get_word_cloud",
+			data: {
+				"gcf_id": $("#gcf_id").val(),
+				"limit": 30
+			},
+			dataType: "json",
+			success: function(response) {
+				$('#gcf_word_cloud').html("");
+				$('#gcf_word_cloud').jQCloud(response["words"], {
+					shape: "elliptic",
+					steps: 5
+				});							
+			}
+		});
+		// fetch and render avg dists barplot
+		let bin_size = 50; // dists
+		let max_dist_show = 1000; // only show detailed bars for dist < this value
+		$.get({
+			url: "/api/gcf/get_dist_stats",
+			data: {
+				"gcf_id": $("#gcf_id").val(),
+				"bin_size": bin_size,
+				"threshold": $("#threshold").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				let container_id = "hist_bgc_dists";
+				
+				// hide spinner
+				$("#" + container_id + " .spinner-border").addClass("d-none");
+
+				// collapse data > max_dist_show
+				max_dist_show = Math.min(response["labels"][response["labels"].length - 1][1]);
+				let labels = ["> " + max_dist_show];
+				let values = {
+					"core": [0],
+					"putative": [0]
+				};
+				response["labels"].forEach(function(min_max, idx) {
+					if (min_max[1] <= max_dist_show) {
+						labels.push(min_max[0] + "-" + min_max[1]);						
+						for (let key in values) {
+							values[key].push(response[key][idx]);
+						}
+					} else {
+						for (let key in values) {
+							values[key][0] += response[key][idx];
+						}
+					}
+				});
+				labels.push(labels.shift());
+				for (let key in values) {
+					values[key].push(values[key].shift());
+				}
+
+				// define traces
+				let trace_core = {
+					x: labels,
+					y: values["core"],
+					marker: {
+				    	color: "#B1DFBB"
+				    },
+					name: 'Core',
+					type: 'bar'
+				};
+				let trace_putative = {
+					x: labels,
+					y: values["putative"],
+					marker: {
+				    	color: "#F1B0B7"
+				    },
+					name: 'Putative',
+					type: 'bar'
+				};
+
+				let data = [trace_core, trace_putative];
+				let layout = {
+					title: "Dist. to GCF model",
+					barmode: "group",
+					xaxis: {
+					    tickangle: -45,
+						title: "dist (euclidean)"
+					},
+					yaxis: {
+						title: "count (BGCs)"
+					},
+					showlegend: true,
+					legend: {
+						font: {
+							size: 8
+						}
+					}
+				};
+				let config = {
+					responsive: false,
+					staticPlot: false
+				}
+				Plotly.newPlot(container_id, data, layout, config);
+		}})
+	});
+</script>
