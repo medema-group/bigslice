@@ -23,7 +23,8 @@ def page_feedback():
         " Got some ideas on how to improve BiG-SLiCE? Please"
         " send us your feedback via our GitHub's"
         " <a href='https://github.com/medema-group/bigslice/issues'"
-        ">'Issues' page</a>. Want to contribute code to BiG-SLiCE?"
+        ">'Issues' page</a>."
+        "<br />Want to contribute code to BiG-SLiCE?"
         " feel free to <a href='mailto:satria.kautsar@wur.nl,"
         "marnix.medema@wur.nl?subject=[BiG-SLiCE contribution]'>send us"
         " an e-mail</a> or "
@@ -33,7 +34,7 @@ def page_feedback():
 
     # render view
     return render_template(
-        "about/main.html.j2",
+        "feedback/main.html.j2",
         page_title=page_title,
         page_subtitle=page_subtitle
     )
