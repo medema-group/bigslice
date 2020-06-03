@@ -61,13 +61,21 @@ def page_reports_new():
 
     # page title
     page_title = "Generate reports"
-    page_subtitle = ("Feature is not yet available."
-                     " We're working hard to extend the software's"
-                     " functionalities to make it even more useful to you."
-                     " Check out the <a href='/feedback'>'Feedback' page</a>"
-                     " to see how you can contribute by submitting ideas,"
-                     " bug reports, feature requests and actual codes to"
-                     " improve BiG-SLiCE.")
+    page_subtitle = (
+        "Feature is not yet available."
+        " We're working hard to extend the software's"
+        " functionalities to make it even more useful to you."
+        " Check out the <a href='/feedback'>'Feedback' page</a>"
+        " to see how you can contribute by submitting ideas,"
+        " bug reports, feature requests and actual codes to"
+        " improve BiG-SLiCE."
+        "<br /> If you want to query a new set of antiSMASH BGCs "
+        "against your precalculated GCF models, you can use "
+        "BiG-SLiCE main program's <kbd>--query</kbd> mode to do so ("
+        "<a href='https://github.com/medema-group/bigslice/"
+        "blob/master/README.md#querying-antismash-bgcs'>refer to this page</a>"
+        " for the details)."
+    )
 
     # render view
     return render_template(
