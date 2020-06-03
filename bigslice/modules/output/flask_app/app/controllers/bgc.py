@@ -597,8 +597,8 @@ def get_homologous_bgcs():
 
         # fetch total records (all bgcs sharing gcfs)
         result["recordsTotal"] = cur.execute((
-            "select count(distinct bgc_id)"
-            " from gcf_membership"
+            "select count(distinct bgc_features.bgc_id)"
+            " from gcf_membership, bgc_features"
             " where gcf_id in"
             " ("
             "    select gcf_id"
@@ -609,13 +609,25 @@ def get_homologous_bgcs():
             " )"
             " and gcf_membership.membership_value <= ?"
             " and gcf_membership.rank = 0"
-            " and bgc_id!=?"
-        ), (bgc_id, clustering_id, threshold, bgc_id)).fetchall()[0][0]
+            " and bgc_features.hmm_id"
+            " in ("
+            " select hmm_id"
+            " from bgc_features, hmm, run"
+            " where bgc_id=?"
+            " and hmm_id=hmm.id"
+            " and hmm.db_id=run.hmm_db_id"
+            " and run.id=?"
+            " )"
+            " and bgc_features.bgc_id=gcf_membership.bgc_id"
+            " and bgc_features.value >= 255"
+            " and bgc_features.bgc_id!=?"
+        ), (bgc_id, clustering_id,
+            threshold, bgc_id, run_id, bgc_id)).fetchall()[0][0]
 
         # fetch total records (filtered)
         result["recordsFiltered"] = cur.execute((
-            "select count(distinct bgc_id)"
-            " from gcf_membership"
+            "select count(distinct bgc_features.bgc_id)"
+            " from gcf_membership, bgc_features"
             " where gcf_id in"
             " ("
             "    select gcf_id"
@@ -626,8 +638,20 @@ def get_homologous_bgcs():
             " )"
             " and gcf_membership.membership_value <= ?"
             " and gcf_membership.rank = 0"
-            " and bgc_id!=?"
-        ), (bgc_id, clustering_id, threshold, bgc_id)).fetchall()[0][0]
+            " and bgc_features.hmm_id"
+            " in ("
+            " select hmm_id"
+            " from bgc_features, hmm, run"
+            " where bgc_id=?"
+            " and hmm_id=hmm.id"
+            " and hmm.db_id=run.hmm_db_id"
+            " and run.id=?"
+            " )"
+            " and bgc_features.bgc_id=gcf_membership.bgc_id"
+            " and bgc_features.value >= 255"
+            " and bgc_features.bgc_id!=?"
+        ), (bgc_id, clustering_id,
+            threshold, bgc_id, run_id, bgc_id)).fetchall()[0][0]
 
         # fetch bgc_name, dataset_name
         result["bgc_name"], result["dataset_name"] = cur.execute((
