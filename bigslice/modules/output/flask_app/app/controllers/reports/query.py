@@ -137,6 +137,14 @@ def detail_get_overview():
                     " where id=?"
                 ), (report_id, )).fetchall()[0][0]
 
+                # fetch threshold
+                result["threshold"] = cur_source.execute(
+                    ("select threshold"
+                     " from clustering"
+                     " where run_id=?"),
+                    (run_id, )
+                ).fetchall()[0][0]
+
                 # fetch direct properties
                 (folder_path, file_path, on_contig_edge,
                  result["length"], result["type"]) = cur_query.execute((
@@ -848,45 +856,54 @@ def get_overview():
     result = {}
     with sqlite3.connect(conf["reports_db_path"]) as con:
         cur = con.cursor()
+        with sqlite3.connect(conf["db_path"]) as con_source:
+            cur_source = con_source.cursor()
 
-        # validate report id & run id
-        if len(cur.execute((
-            "select id"
-            " from reports"
-            " where id=?"
-            " and type=?"
-        ), (report_id, "query")).fetchall()) < 1:
-            return "500: data not available"
+            # validate report id & run id
+            if len(cur.execute((
+                "select id"
+                " from reports"
+                " where id=?"
+                " and type=?"
+            ), (report_id, "query")).fetchall()) < 1:
+                return "500: data not available"
 
-        if len(cur.execute((
-            "select run_id"
-            " from reports_run"
-            " where report_id=?"
-            " and run_id=?"
-        ), (report_id, run_id)).fetchall()) < 1:
-            return "500: data not available"
+            if len(cur.execute((
+                "select run_id"
+                " from reports_run"
+                " where report_id=?"
+                " and run_id=?"
+            ), (report_id, run_id)).fetchall()) < 1:
+                return "500: data not available"
 
-        result["created"] = cur.execute((
-            "select strftime('%Y-%m-%d %H:%M:%S', creation_date)"
-            " from reports"
-            " where id=?"
-        ), (report_id,)).fetchall()[0][0]
+            result["threshold"] = cur_source.execute(
+                ("select threshold"
+                 " from clustering"
+                 " where run_id=?"),
+                (run_id, )
+            ).fetchall()[0][0]
 
-        # run name
-        result["run_id"] = run_id
-        result["run_name"] = "run-{:04d}".format(run_id)
+            result["created"] = cur.execute((
+                "select strftime('%Y-%m-%d %H:%M:%S', creation_date)"
+                " from reports"
+                " where id=?"
+            ), (report_id,)).fetchall()[0][0]
 
-        # bgc counts
-        db_query_path = path.join(
-            conf["reports_folder"], str(report_id), "data.db")
-        with sqlite3.connect(db_query_path) as query_con:
-            query_cur = query_con.cursor()
-            result["bgc_counts"] = query_cur.execute((
-                "select count(id)"
-                " from bgc"
-            )).fetchall()[0][0]
+            # run name
+            result["run_id"] = run_id
+            result["run_name"] = "run-{:04d}".format(run_id)
 
-        return result
+            # bgc counts
+            db_query_path = path.join(
+                conf["reports_folder"], str(report_id), "data.db")
+            with sqlite3.connect(db_query_path) as query_con:
+                query_cur = query_con.cursor()
+                result["bgc_counts"] = query_cur.execute((
+                    "select count(id)"
+                    " from bgc"
+                )).fetchall()[0][0]
+
+            return result
 
 
 def get_bgc_table():
