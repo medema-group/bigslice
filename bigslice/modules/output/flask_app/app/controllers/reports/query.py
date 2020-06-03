@@ -63,7 +63,7 @@ def page_query_detail(report_id, bgc_id):
             cur_source = con_source.cursor()
 
             name, created = cur.execute((
-                "select name, creation_date"
+                "select name, strftime('%Y-%m-%d %H:%M:%S', creation_date)"
                 " from reports"
                 " where id=?"
                 " and type=?"
@@ -100,6 +100,55 @@ def page_query_detail(report_id, bgc_id):
     )
 
 
+def get_overview():
+    """ for overview summary """
+    report_id = request.args.get('report_id', default=0, type=int)
+    run_id = request.args.get('run_id', type=int)
+
+    result = {}
+    with sqlite3.connect(conf["reports_db_path"]) as con:
+        cur = con.cursor()
+
+        # validate report id & run id
+        if len(cur.execute((
+            "select id"
+            " from reports"
+            " where id=?"
+            " and type=?"
+        ), (report_id, "query")).fetchall()) < 1:
+            return "500: data not available"
+
+        if len(cur.execute((
+            "select run_id"
+            " from reports_run"
+            " where report_id=?"
+            " and run_id=?"
+        ), (report_id, run_id)).fetchall()) < 1:
+            return "500: data not available"
+
+        result["created"] = cur.execute((
+            "select strftime('%Y-%m-%d %H:%M:%S', creation_date)"
+            " from reports"
+            " where id=?"
+        ), (report_id,)).fetchall()[0][0]
+
+        # run name
+        result["run_id"] = run_id
+        result["run_name"] = "run-{:04d}".format(run_id)
+
+        # bgc counts
+        db_query_path = path.join(
+            conf["reports_folder"], str(report_id), "data.db")
+        with sqlite3.connect(db_query_path) as query_con:
+            query_cur = query_con.cursor()
+            result["bgc_counts"] = query_cur.execute((
+                "select count(id)"
+                " from bgc"
+            )).fetchall()[0][0]
+
+        return result
+
+
 def get_bgc_table():
     """ for bgc datatable """
     result = {}
@@ -125,7 +174,6 @@ def get_bgc_table():
         ), (report_id, "query")).fetchall()) < 1:
             return "500: data not available"
 
-        # set run_id
         if len(cur.execute((
             "select run_id"
             " from reports_run"
@@ -206,7 +254,6 @@ def get_bgc_table():
                     " and chem_subclass.id in ({})".format(
                         ",".join(subclass_ids))
                 )).fetchall()
-                print(",".join(subclass_ids))
 
                 # fetch gcf information
                 gcf_accession = cur_source.execute((
@@ -238,5 +285,6 @@ routes = [
 
 # register api routes
 routes_api = [
-    ("bgc_list", get_bgc_table)
+    ("bgc_list", get_bgc_table),
+    ("overview", get_overview)
 ]

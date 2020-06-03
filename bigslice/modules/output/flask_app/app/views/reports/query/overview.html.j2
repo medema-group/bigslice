@@ -6,7 +6,9 @@
 			<div class="col-1"></div>
 			<div class="col-3 list-group-item d-flex justify-content-between align-items-center">
 				Run:
-				<span id="query_overview_run_id" class="badge badge-secondary badge-pill">?</span>
+				<span id="query_overview_run_id">
+					<span class="badge badge-secondary badge-pill">?</span>
+				</span>
 			</div>
 			<div class="col-3 list-group-item d-flex justify-content-between align-items-center">
 				Query created:
@@ -20,3 +22,21 @@
 		</div>
 	</div>
 </div>
+<script type="text/javascript">
+	$(document).ready(function(){
+		// fetch and update tables
+		$.get({
+			url: "/api/reports/module/query/overview",
+			data: {
+				"report_id": $("#report_id").val(),
+				"run_id": $("#run_id").val()
+			},
+			dataType: "json",
+			success: function(response) {
+				$("#query_overview_run_id").html("<a href='/run/" + response["run_id"] + "'><button type='button' class='btn btn-sm btn-info'>" + response["run_name"] + "</button></a>");
+				$("#query_overview_created").text(response["created"]);
+				$("#query_overview_total_bgcs").text(response["bgc_counts"]);
+			}
+		})
+	});
+</script>
