@@ -1,10 +1,10 @@
 -- SQLite3 schema for storage and manipulation of bigslice data
 
--- schema ver.: 1.0.0
+-- schema ver.: 1.0.1
 CREATE TABLE IF NOT EXISTS schema (
     ver VARCHAR(10) PRIMARY KEY
 );
-INSERT OR IGNORE INTO schema VALUES('1.0.0');
+INSERT OR IGNORE INTO schema VALUES('1.0.1');
 
 -- dataset
 CREATE TABLE IF NOT EXISTS dataset (
@@ -188,7 +188,7 @@ CREATE TABLE IF NOT EXISTS chem_subclass (
     name VARCHAR(100) NOT NULL,
     FOREIGN KEY(class_id) REFERENCES chem_class(id)
 );
-CREATE INDEX IF NOT EXISTS chemsubclass_name ON chem_subclass(name);
+CREATE INDEX IF NOT EXISTS chemsubclass_name ON chem_subclass(name, class_id);
 CREATE INDEX IF NOT EXISTS chemsubclass_class ON chem_subclass(class_id, name);
 
 
@@ -209,7 +209,8 @@ CREATE TABLE IF NOT EXISTS bgc_class (
     FOREIGN KEY(bgc_id) REFERENCES bgc(id),
     FOREIGN KEY(chem_subclass_id) REFERENCES chem_subclass(id)
 );
-CREATE INDEX IF NOT EXISTS bgcclass_chemsubclass ON bgc_class(chem_subclass_id);
+CREATE INDEX IF NOT EXISTS bgcclass_chemsubclass ON bgc_class(chem_subclass_id, bgc_id);
+CREATE INDEX IF NOT EXISTS bgcclass_bgc ON bgc_class(bgc_id, chem_subclass_id);
 
 -- enum_run_status
 CREATE TABLE IF NOT EXISTS enum_run_status (
@@ -253,7 +254,8 @@ CREATE TABLE IF NOT EXISTS run_bgc_status (
     FOREIGN KEY(run_id) REFERENCES run(id),
     FOREIGN KEY(status) REFERENCES enum_run_status(id)
 );
-CREATE INDEX IF NOT EXISTS runbgcstatus_run ON run_bgc_status(run_id, status);
+CREATE INDEX IF NOT EXISTS runbgcstatus_run_status ON run_bgc_status(run_id, status, bgc_id);
+CREATE INDEX IF NOT EXISTS runbgcstatus_run_bgc ON run_bgc_status(run_id, bgc_id, status);
 
 -- bgc_features
 CREATE TABLE IF NOT EXISTS bgc_features (
@@ -264,8 +266,10 @@ CREATE TABLE IF NOT EXISTS bgc_features (
     FOREIGN KEY(bgc_id) REFERENCES bgc(id),
     FOREIGN KEY(hmm_id) REFERENCES hmm(id)
 );
-CREATE INDEX IF NOT EXISTS bgc_features_bgc ON bgc_features(bgc_id, hmm_id);
-CREATE INDEX IF NOT EXISTS bgc_features_hmm ON bgc_features(hmm_id, bgc_id);
+CREATE INDEX IF NOT EXISTS bgc_features_bgc ON bgc_features(bgc_id, hmm_id, value);
+CREATE INDEX IF NOT EXISTS bgc_features_bgc_value ON bgc_features(value, bgc_id, hmm_id);
+CREATE INDEX IF NOT EXISTS bgc_features_hmm ON bgc_features(hmm_id, bgc_id, value);
+CREATE INDEX IF NOT EXISTS bgc_features_hmm_value ON bgc_features(value, hmm_id, bgc_id);
 
 -- clustering
 CREATE TABLE IF NOT EXISTS clustering (
@@ -298,8 +302,10 @@ CREATE TABLE IF NOT EXISTS gcf_models (
     FOREIGN KEY(gcf_id) REFERENCES gcf(id),
     FOREIGN KEY(hmm_id) REFERENCES hmm(id)
 );
-CREATE INDEX IF NOT EXISTS gcf_models_gcf ON gcf_models(gcf_id, hmm_id);
+CREATE INDEX IF NOT EXISTS gcf_models_gcf ON gcf_models(gcf_id, hmm_id, value);
+CREATE INDEX IF NOT EXISTS gcf_models_gcf_value ON gcf_models(value, gcf_id, hmm_id);
 CREATE INDEX IF NOT EXISTS gcf_models_hmm ON gcf_models(hmm_id, gcf_id);
+CREATE INDEX IF NOT EXISTS gcf_models_hmm_value ON gcf_models(value, hmm_id, gcf_id);
 
 -- gcf_membership
 CREATE TABLE IF NOT EXISTS gcf_membership (
