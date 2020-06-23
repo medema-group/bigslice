@@ -28,6 +28,8 @@ user@local:~$ bigslice --version .
 user@local:~$ bigslice -i <input_folder> <output_folder>
 ~~~
 
+**!Important!** Please read [this note](https://github.com/medema-group/bigslice/issues/19) before taking results from **BiG-SLiCE** for your analysis.
+
 Querying [antiSMASH](https://antismash.secondarymetabolites.org/) BGCs
 ---------------------
 Using the `--query` mode, you can perform a blazing-fast query of a putative BGC against the pre-processed set of Gene Cluster Family (GCF) models that **BiG-SLiCE** outputs (for example, you can use our [pre-processed result on ~1.2M microbial BGCs from the NCBI database](.)). You will get a ranked list of GCFs and BGCs similar to the BGC in question, which will help in determining the function and/or novelty of said BGC. To perform a GCF query, simply use:
