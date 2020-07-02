@@ -58,7 +58,7 @@ class Database:
         sql_schema = open(path.join(path.dirname(
             path.abspath(__file__)), "schema.sql"), "r").read()
         self.schema_ver = re.search(
-            r"\n-- schema ver\.: (?P<ver>1\.0\.0)", sql_schema).group("ver")
+            r"\n-- schema ver\.: (?P<ver>\d+\.\d+\.\d+)", sql_schema).group("ver")
 
         if path.exists(self._db_path):
             if (self._use_memory):
