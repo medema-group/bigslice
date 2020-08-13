@@ -7,6 +7,7 @@
 """the main script of bigslice"""
 
 import argparse
+from argparse import RawTextHelpFormatter
 from os import getpid, path, makedirs, remove
 from sys import argv
 from tempfile import TemporaryDirectory
@@ -696,17 +697,29 @@ def query_mode(report_name, input_folder, input_run_id, pool,
 
     return 1
 
+
 def main():
+    # bigscape version
+    version = "1.0.0"
 
     # TODO: check requirements
 
     # program parameters
     parser = argparse.ArgumentParser(
         description=(
-            "BiG-SLiCE: Biosynthetic Gene clusters"
-            " - Super Linear Clustering Engine"
-            " (https://github.com/medema-group/bigslice)"
+            "                            _________\n"
+            " ___    _____|\\____|\\____|\\ \\____    \\\n"
+            "|   \\  |       }     }     }  ___)_ _/__\n"
+            "| >  | _--/--|/----|/----|/__/  __||  __|\n"
+            "|   < | ||  __/ (  (| | \\___/  /__/|  _|\n"
+            "| >  || || |_ | _)  ) |_ | |\\  \\__ | |__\n"
+            "|____/|_| \\___/|___/|___||_| \\____||____|"
+            " [ Version " + version + " ]\n"
+            "\n"
+            "Biosynthetic Gene clusters - Super Linear Clustering Engine\n"
+            "(https://github.com/medema-group/bigslice)"
         ),
+        formatter_class=RawTextHelpFormatter,
         epilog=("_"),
         add_help=False
     )
@@ -854,8 +867,6 @@ def main():
 
     # show --version
     if args.version:
-        # fetch versions
-        version = "1.0.0"
         # fetch hmm database md5s
         try:
             md5_biosyn_pfam = open(path.join(
