@@ -18,8 +18,7 @@ from hashlib import md5
 
 
 # static variables
-_SOURCE_PATH = "http://bioinformatics.nl/~kauts001/ltr/" + \
-    "bigslice/bigslice-models.2020-04-27.tar.gz"
+_SOURCE_PATH = "https://github.com/medema-group/bigslice/releases/download/v1.0.0/bigslice-models.2020-04-27.tar.gz"
 _MD5_CHECKSUM = "d875dd0166f1c79167c53970314c3ac7"
 
 
