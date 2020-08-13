@@ -1,11 +1,11 @@
 -- SQLite3 schema for the query results
 
--- query_schema ver.: 1.0.0, parent schema ver.: 1.0.0
+-- query_schema ver.: 1.0.1, parent schema ver.: 1.0.1
 CREATE TABLE IF NOT EXISTS schema (
     ver VARCHAR(10) PRIMARY KEY,
     parent_schema_ver VARCHAR(10)
 );
-INSERT OR IGNORE INTO schema VALUES('1.0.0', '1.0.0');
+INSERT OR IGNORE INTO schema VALUES('1.0.1', '1.0.1');
 
 -- bgc
 CREATE TABLE IF NOT EXISTS bgc (
@@ -47,7 +47,8 @@ CREATE TABLE IF NOT EXISTS bgc_class (
     FOREIGN KEY(bgc_id) REFERENCES bgc(id),
     FOREIGN KEY(chem_subclass_id) REFERENCES chem_subclass(id)
 );
-CREATE INDEX IF NOT EXISTS bgcclass_chemsubclass ON bgc_class(chem_subclass_id);
+CREATE INDEX IF NOT EXISTS bgcclass_chemsubclass ON bgc_class(chem_subclass_id, bgc_id);
+CREATE INDEX IF NOT EXISTS bgcclass_bgc ON bgc_class(bgc_id, chem_subclass_id);
 
 -- hsp
 CREATE TABLE IF NOT EXISTS hsp (
@@ -94,8 +95,10 @@ CREATE TABLE IF NOT EXISTS bgc_features (
     UNIQUE(bgc_id, hmm_id),
     FOREIGN KEY(bgc_id) REFERENCES bgc(id)
 );
-CREATE INDEX IF NOT EXISTS bgc_features_bgc ON bgc_features(bgc_id, hmm_id);
-CREATE INDEX IF NOT EXISTS bgc_features_hmm ON bgc_features(hmm_id, bgc_id);
+CREATE INDEX IF NOT EXISTS bgc_features_bgc ON bgc_features(bgc_id, hmm_id, value);
+CREATE INDEX IF NOT EXISTS bgc_features_bgc_value ON bgc_features(value, bgc_id, hmm_id);
+CREATE INDEX IF NOT EXISTS bgc_features_hmm ON bgc_features(hmm_id, bgc_id, value);
+CREATE INDEX IF NOT EXISTS bgc_features_hmm_value ON bgc_features(value, hmm_id, bgc_id);
 
 -- gcf_membership
 CREATE TABLE IF NOT EXISTS gcf_membership (
