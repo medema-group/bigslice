@@ -2,6 +2,7 @@ bigslice/db/advanced/tmp
 bigslice/db/advanced/biosynthetic_pfams
 bigslice/db/advanced/sub_pfams
 bigslice/db/models
+bigslice/bigslice-models
 bigslice/db/*.hmm
 bigslice/db/*.h3i
 bigslice/db/*.h3f

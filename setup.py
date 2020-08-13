@@ -5,7 +5,7 @@ setuptools.setup(
     version="1.0.0",
     scripts=[
         "bigslice/bigslice",
-        "bigslice/db/download_bigslice_hmmdb.py"
+        "bigslice/download_bigslice_hmmdb"
     ],
     author="Satria A. Kautsar",
     author_email="satriaphd@gmail.com",
