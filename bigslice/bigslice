@@ -700,7 +700,7 @@ def query_mode(report_name, input_folder, input_run_id, pool,
 
 def main():
     # bigscape version
-    version = "1.0.0"
+    version = "1.1.0"
 
     # TODO: check requirements
 

@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="bigslice",
-    version="1.0.0",
+    version="1.1.0",
     scripts=[
         "bigslice/bigslice",
         "bigslice/download_bigslice_hmmdb"
