@@ -1046,7 +1046,7 @@ def main():
             datasets_count = 0
 
             for dataset_name, dataset_bgc_ids in process_input_folder(
-                    input_folder, output_db, pool).items():
+                    args.input_folder, output_db, pool).items():
                 datasets_count += 1
                 all_bgc_ids.update(dataset_bgc_ids)
             print("Found {} BGC(s) from {} dataset(s)".format(
