@@ -67,5 +67,5 @@ This software was initially developed and is currently maintained by **Satria Ka
 
 Find our software useful? Please cite!
 ---------------------
-We are yet to publish our paper and pre-print. For now, feel free to refer to this poster doi on [figshare](https://figshare.com/):
-> [https://doi.org/10.6084/m9.figshare.12206747.v1](https://doi.org/10.6084/m9.figshare.12206747.v1)
+Kautsar, Satria A., Justin J.J. van der Hooft, Dick De Ridder, and Marnix H. Medema. "BiG-SLiCE: A Highly Scalable Tool Maps the Diversity of 1.2 Million Biosynthetic Gene Clusters." BioRxiv (2020).
+[https://doi.org/10.1101/2020.08.17.240838](https://doi.org/10.1101/2020.08.17.240838)
