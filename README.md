@@ -17,7 +17,7 @@ user@local:~$ pip install ./bigslice/
 ~~~
 3. Fetch the latest HMM models (± 470MB gzipped):
 ~~~console
-user@local:~$ download_bigslice_hmmdb.py
+user@local:~$ download_bigslice_hmmdb
 ~~~
 4. Check your installation:
 ~~~console
