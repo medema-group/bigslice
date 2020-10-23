@@ -32,7 +32,7 @@ user@local:~$ bigslice -i <input_folder> <output_folder>
 
 Querying [antiSMASH](https://antismash.secondarymetabolites.org/) BGCs
 ---------------------
-Using the `--query` mode, you can perform a blazing-fast query of a putative BGC against the pre-processed set of Gene Cluster Family (GCF) models that **BiG-SLiCE** outputs (for example, you can use our [pre-processed result on ~1.2M microbial BGCs from the NCBI database](.)). You will get a ranked list of GCFs and BGCs similar to the BGC in question, which will help in determining the function and/or novelty of said BGC. To perform a GCF query, simply use:
+Using the `--query` mode, you can perform a blazing-fast query of a putative BGC against the pre-processed set of Gene Cluster Family (GCF) models that **BiG-SLiCE** outputs (for example, you can use our [pre-processed result on ~1.2M microbial BGCs from the NCBI database](http://bioinformatics.nl/~kauts001/ltr/bigslice/paper_data/data/full_run_result.zip)). You will get a ranked list of GCFs and BGCs similar to the BGC in question, which will help in determining the function and/or novelty of said BGC. To perform a GCF query, simply use:
 ~~~console
 user@local:~$ bigslice --query <antismash_output_folder> --n_ranks <int> <output_folder>
 ~~~
