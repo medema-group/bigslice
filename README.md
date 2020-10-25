@@ -54,6 +54,10 @@ user@local:~$ bash <output_folder>/start_server.sh <port(optional)>
 - e.g. `* Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)`
 - then go to `http://0.0.0.0:5000` in your browser
 
+Programmatic Access and Postprocessing
+---------------------
+To access **BiG-SLiCE**'s preprocessed data, (advanced) users need to be able to [run SQL(ite) queries](https://www.sqlitetutorial.net/sqlite-select/). Although the learning curve might be steeper compared to the conventional tabular-formatted output files, once familiarized, the SQL database can provide an easy-to-use yet very powerful data wrangling experience. Please refer to [our publication manuscript](https://doi.org/10.1101/2020.08.17.240838) to get an idea of what kind of things are able to be done with the output data. Additionally, you can also [download and reuse some jupyter notebook scripts](https://bioinformatics.nl/~kauts001/ltr/bigslice/paper_data/scripts/) that we wrote to perform all analyses and generate figures for the manuscript.
+
 What kind of software is this, anyway?
 ---------------------
 ![bgc_gcf_illustration](https://i.ibb.co/FmBfmHW/bgc-gcf-illustration.png)
