@@ -27,6 +27,7 @@ user@local:~$ bigslice --version .
 ~~~console
 user@local:~$ bigslice -i <input_folder> <output_folder>
 ~~~
+For a "minimal" test run, you can use the [example input folder](https://github.com/medema-group/bigslice/tree/master/misc/input_folder_template) that we provided.
 
 **!Important!** Please read [this note](https://github.com/medema-group/bigslice/issues/19) before taking results from **BiG-SLiCE** for your analysis.
 
