@@ -704,6 +704,12 @@ def main():
 
     # TODO: check requirements
 
+    # a dirty workaround, but alas
+    if "--version" in argv:
+        import sys
+        sys.argv = [argv[0]]
+        sys.argv.extend(["--version", "."])
+
     # program parameters
     parser = argparse.ArgumentParser(
         description=(

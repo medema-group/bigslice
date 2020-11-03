@@ -39,6 +39,10 @@ user@local:~$ bigslice --query <antismash_output_folder> --n_ranks <int> <output
 ~~~
 Which will perform a query analysis on the latest clustering result contained inside the output folder (see [wiki: Program parameters](https://github.com/medema-group/bigslice/wiki/Program-parameters) for more advanced options). Top-(n_ranks) matching GCFs will be returned along with their similarity measurements. You can then view the query results using the user interactive output (see below).
 
+Custom GenBank input
+---------------------
+To perform GCF analyses on BGCs not covered by antiSMASH/MIBiG (i.e., from tools like [ClusterFinder](https://github.com/petercim/ClusterFinder) and [DeepBGC](https://github.com/Merck/deepbgc), or BGCs with manually-refined cluster borders), you can use the [converter script](https://github.com/medema-group/bigslice/blob/master/misc/generate_antismash_gbk/generate_antismash_gbk.py) that we provided, which will take a (genome) GenBank file along with a comma-separated descriptor file for every BGCs to be generated (please see the example input files provided in the [script's folder](https://github.com/medema-group/bigslice/blob/master/misc/generate_antismash_gbk/generate_antismash_gbk.py)).
+
 User Interactive output
 ---------------------
 **BiG-SLiCE**'s output folder contains both the processed input data (in the form of an [SQLite3](https://www.sqlite.org/index.html) database file) and some scripts that power a mini web-app to visualize that data. To run this visualization engine, follow these steps:
