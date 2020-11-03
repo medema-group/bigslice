@@ -104,12 +104,6 @@ def fetch_runs_summary(db_path):
                     " where run_id=?"),
                 (run_id, )
             ).fetchall()[0][0]
-            # fetch threshold
-            threshold = cur.execute((
-                "select threshold"
-                " from clustering"
-                " where run_id=?"
-            ), (run_id, )).fetchall()[0][0]
             # fetch gcf counts
             if run_status >= 5:  # CLUSTERING_FINISHED
                 gcf_count = cur.execute(
@@ -119,8 +113,15 @@ def fetch_runs_summary(db_path):
                         " and clustering.run_id=?"),
                     (run_id, )
                 ).fetchall()[0][0]
+                # fetch threshold
+                threshold = cur.execute((
+                    "select threshold"
+                    " from clustering"
+                    " where run_id=?"
+                ), (run_id, )).fetchall()[0][0]
             else:
                 gcf_count = "n/a"
+                threshold = -1
             # fetch start time
             try:
                 run_start = cur.execute(
