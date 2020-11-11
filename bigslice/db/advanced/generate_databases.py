@@ -10,9 +10,8 @@ to do its feature extractions
 """
 
 # python imports
-from os import path, makedirs, remove, rename, SEEK_END
+from os import path, makedirs, remove, rename, SEEK_END, sched_getaffinity
 from shutil import copy, rmtree, copyfileobj
-from multiprocessing import cpu_count
 from hashlib import md5
 import urllib.request
 import gzip
@@ -358,7 +357,7 @@ def main():
             "hmmsearch",
             "--acc",
             "--cut_ga",
-            "--cpu", str(cpu_count()),
+            "--cpu", str(len(sched_getaffinity(0))),
             "-o", ref_prot_hmmtxt,
             core_hmms_path,
             path.join(tmp_dir_path, stored_ref_prot_filename)
@@ -534,7 +533,7 @@ def build_subpfam(input_fasta, output_hmm):
             command = [
                 "hmmbuild",
                 "--cpu",
-                str(cpu_count()),
+                str(len(sched_getaffinity(0))),
                 "-n",
                 hmm_name,
                 "-o",

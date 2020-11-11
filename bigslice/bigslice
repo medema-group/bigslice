@@ -8,13 +8,13 @@
 
 import argparse
 from argparse import RawTextHelpFormatter
-from os import getpid, path, makedirs, remove
+from os import getpid, path, makedirs, remove, sched_getaffinity
 from sys import argv
 from tempfile import TemporaryDirectory
 import glob
 import re
 import shutil
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 import bigslice  # for referencing module folders
 from bigslice.modules.data.database import Database
 from bigslice.modules.data.bgc import BGC
@@ -51,13 +51,16 @@ def get_elapsed():
 
 
 def fetch_pool(num_threads: int):
+    num_cpus = len(sched_getaffinity(0))
+    if num_threads > num_cpus:
+        print("There were more threads ({}) requested than CPUs available ({}), setting num_threads to {}\n".format(num_threads, num_cpus, num_cpus))
+        num_threads = num_cpus
     pool = Pool(processes=num_threads)
-
     try:
         # set cores for the multiprocessing pools
         all_cpu_ids = set()
         for i, p in enumerate(pool._pool):
-            cpu_id = str(cpu_count() - (i % cpu_count()) - 1)
+            cpu_id = str(list(sched_getaffinity(0))[i])
             subprocess.run(["taskset",
                             "-p", "-c",
                             cpu_id,
@@ -72,7 +75,6 @@ def fetch_pool(num_threads: int):
 
     except FileNotFoundError:
         pass  # running in OSX?
-
     return pool
 
 
@@ -817,7 +819,7 @@ def main():
         ))
     arg_group_perf.add_argument(
         "-t", "--num_threads",
-        default=cpu_count(), type=int, metavar="<N>",
+        default=len(sched_getaffinity(0)), type=int, metavar="<N>",
         help=("The number of parallel jobs to run (default: %(default)s)."))
     arg_group_perf.add_argument(
         "--hmmscan_chunk_size",

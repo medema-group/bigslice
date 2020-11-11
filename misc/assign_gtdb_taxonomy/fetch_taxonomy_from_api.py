@@ -1,7 +1,7 @@
 import urllib.request
 import pickle
 from sys import argv
-from os import path, cpu_count, getpid
+from os import path, getpid, sched_getaffinity
 from multiprocessing import Pool, Manager
 import subprocess
 import json
@@ -9,13 +9,16 @@ import argparse
 
 
 def fetch_pool(num_threads: int):
+    num_cpus = len(sched_getaffinity(0))
+    if num_threads > num_cpus:
+        print("There were more threads ({}) requested than CPUs available ({}), setting num_threads to {}\n".format(num_threads, num_cpus, num_cpus))
+        num_threads = num_cpus
     pool = Pool(processes=num_threads)
-
     try:
         # set cores for the multiprocessing pools
         all_cpu_ids = set()
         for i, p in enumerate(pool._pool):
-            cpu_id = str(cpu_count() - (i % cpu_count()) - 1)
+            cpu_id = str(list(sched_getaffinity(0))[i])
             subprocess.run(["taskset",
                             "-p", "-c",
                             cpu_id,
@@ -30,7 +33,6 @@ def fetch_pool(num_threads: int):
 
     except FileNotFoundError:
         pass  # running in OSX?
-
     return pool
 
 
