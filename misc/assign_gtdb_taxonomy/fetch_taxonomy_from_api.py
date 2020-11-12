@@ -10,15 +10,13 @@ import argparse
 
 def fetch_pool(num_threads: int):
     num_cpus = len(sched_getaffinity(0))
-    if num_threads > num_cpus:
-        print("There were more threads ({}) requested than CPUs available ({}), setting num_threads to {}\n".format(num_threads, num_cpus, num_cpus))
-        num_threads = num_cpus
+    available_cpu_ids = list(sched_getaffinity(0))
     pool = Pool(processes=num_threads)
     try:
         # set cores for the multiprocessing pools
         all_cpu_ids = set()
         for i, p in enumerate(pool._pool):
-            cpu_id = str(list(sched_getaffinity(0))[i])
+            cpu_id = str(available_cpu_ids[len(available_cpu_ids) - (i % len(available_cpu_ids)) - 1)]
             subprocess.run(["taskset",
                             "-p", "-c",
                             cpu_id,
@@ -34,7 +32,6 @@ def fetch_pool(num_threads: int):
     except FileNotFoundError:
         pass  # running in OSX?
     return pool
-
 
 def fetch_taxonomy(results, ncbi_acc, gtdb_version):
     with urllib.request.urlopen(
