@@ -1,7 +1,7 @@
 import urllib.request
 import pickle
 from sys import argv
-from os import path, cpu_count, getpid
+from os import path, getpid, sched_getaffinity
 from multiprocessing import Pool, Manager
 import subprocess
 import json
@@ -9,13 +9,13 @@ import argparse
 
 
 def fetch_pool(num_threads: int):
+    available_cpu_ids = list(sched_getaffinity(0))
     pool = Pool(processes=num_threads)
-
     try:
         # set cores for the multiprocessing pools
         all_cpu_ids = set()
         for i, p in enumerate(pool._pool):
-            cpu_id = str(cpu_count() - (i % cpu_count()) - 1)
+            cpu_id = str(available_cpu_ids[len(available_cpu_ids) - (i % len(available_cpu_ids)) - 1])
             subprocess.run(["taskset",
                             "-p", "-c",
                             cpu_id,
@@ -30,9 +30,7 @@ def fetch_pool(num_threads: int):
 
     except FileNotFoundError:
         pass  # running in OSX?
-
     return pool
-
 
 def fetch_taxonomy(results, ncbi_acc, gtdb_version):
     with urllib.request.urlopen(
