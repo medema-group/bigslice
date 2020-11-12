@@ -9,7 +9,6 @@ import argparse
 
 
 def fetch_pool(num_threads: int):
-    num_cpus = len(sched_getaffinity(0))
     available_cpu_ids = list(sched_getaffinity(0))
     pool = Pool(processes=num_threads)
     try:
