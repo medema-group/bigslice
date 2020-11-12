@@ -57,7 +57,7 @@ def fetch_pool(num_threads: int):
         # set cores for the multiprocessing pools
         all_cpu_ids = set()
         for i, p in enumerate(pool._pool):
-            cpu_id = available_cpu_ids[len(available_cpu_ids) - (i % len(available_cpu_ids)) - 1)]
+            cpu_id = str(available_cpu_ids[len(available_cpu_ids) - (i % len(available_cpu_ids)) - 1])
             subprocess.run(["taskset",
                             "-p", "-c",
                             cpu_id,
