@@ -326,7 +326,7 @@ def process_input_folder(folder_path: str, database: Database,
 
             # second check: see if already exists in db
             if eligible_file:
-                gbk_path = gbk_full_path[len(dataset_folder_path) + 1:]
+                gbk_path = path.join(path.dirname(gbk_full_path).split("/")[-1], path.basename(gbk_full_path))
                 # note: this check is turned off for now,
                 # see above note
                 # check_gbk_exists(dataset_id, gbk_path, database)
