@@ -883,15 +883,20 @@ def main():
         except FileNotFoundError:
             print("Can't find HMM model libraries!")
             return 1
+        # try fetching HMM database models version
+        db_folder_info = HMMDatabase.fetch_db_folder_info(program_db_folder)
         # print
         print((
             "==============\n"
             "BiG-SLiCE version {}\n"
+            "HMM databases version: {}\n"
             "Biosynthetic-pfam md5: {}\n"
             "Sub-pfam md5: {}\n"
             "==============\n"
         ).format(
             version,
+            "custom" if db_folder_info == None\
+            else db_folder_info["name"],
             md5_biosyn_pfam,
             md5_sub_pfam
         ))
@@ -973,6 +978,21 @@ def main():
     get_elapsed()
     with Database(data_db_path, use_memory) as output_db:
         print("[{}s] loading sqlite3 database".format(get_elapsed()))
+
+        # check/verify HMM databases folder
+        db_folder_info = HMMDatabase.fetch_db_folder_info(program_db_folder)
+        if db_folder_info == None:
+            print(("[!!] Using customized HMM databases"
+                " (if this is not intended, please reinstall"
+                " your HMM databases)"
+                ))
+        else:
+            print(("Using HMM database version '{}'"
+                " (built using antiSMASH version {})"
+                ).format(
+                    db_folder_info["name"],
+                    db_folder_info["antismash_ver"]
+                ))
 
         # load HMM databases
         print("Loading HMM databases...")

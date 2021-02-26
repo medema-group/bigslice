@@ -141,11 +141,9 @@ class BGC:
                             break
 
                 elif gbk_type == "as5":
-                    # get all candidate clusters that are
-                    # single, interleaved, or chemical_hybrid
+                    # get all regions
                     for feature in gbk.features:
                         qual = feature.qualifiers
-                        # capture regions
                         if feature.type == "region":
                             reg = feature
                             name = path.splitext(orig_gbk_path)[0]
@@ -167,35 +165,6 @@ class BGC:
                                 "cds": [BGC.CDS.from_feature(f)
                                         for f in cds_features]
                             }))
-                        # this was a piece of code to fetch cand_clusters
-                        # instead of region. It is disabled now
-                        # TODO: decide what's best to use
-                        # if feature.type == "cand_cluster" and \
-                        #        qual.get("kind", [""])[0] in \
-                        #        ("single", "interleaved", "chemical_hybrid"):
-                        #    cc = feature
-                        #    name = path.splitext(orig_gbk_path)[0] + \
-                        #        ".cc" + \
-                        #        qual["candidate_cluster_number"][0]
-                        #    on_edge = qual["contig_edge"][0] == "True"
-                        #    loc = cc.location
-                        #    len_nt = loc.end - loc.start
-                        #    chem_subclasses = qual["product"]
-                        #    cds_features = [f for f in
-                        #                    gbk[loc.start:loc.end].features if
-                        #                    f.type == "CDS"]
-                        #    results.append(BGC({
-                        #        "name": name,
-                        #        "type": gbk_type,
-                        #        "on_contig_edge": on_edge,
-                        #        "length_nt": len_nt,
-                        #        "orig_folder": path.dirname(orig_gbk_path),
-                        #        "orig_filename": path.basename(orig_gbk_path),
-                        #        "chem_subclasses": chem_subclasses,
-                        #        "taxons": taxons,
-                        #        "cds": [BGC.CDS.from_feature(f)
-                        #                for f in cds_features]
-                        #    }))
 
             else:  # assume antiSMASH 4
                 cluster = None

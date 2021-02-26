@@ -13,6 +13,7 @@ performing hmmscan of aa sequences
 from os import path
 from .database import Database
 import glob
+import json
 
 
 class HMMDatabase:
@@ -144,6 +145,30 @@ class HMMDatabase:
             return HMMDatabase(hmm_db)
 
         return None
+
+    @staticmethod
+    def fetch_db_folder_info(db_folder_path: str):
+        """Checks hmm models folder and match to the list of
+        references in 'official_models.json'
+        """
+
+        # get md5sums values
+        md5_biosyn_pfam = open(path.join(
+            db_folder_path, "biosynthetic_pfams",
+            "biopfam.md5sum"), "r").readline().rstrip()
+        md5_sub_pfam = open(path.join(
+            db_folder_path, "sub_pfams",
+            "corepfam.md5sum"), "r").readline().rstrip()
+
+
+        with open(path.join(path.dirname(path.abspath(__file__)),
+            "official_models.json"), "r") as fstream:
+            reference_dbs = json.load(fstream)
+            for db_data in reference_dbs:
+                if db_data["md5sums"] == [md5_biosyn_pfam, md5_sub_pfam]:
+                    return db_data
+            return None # using customized database
+
 
     @staticmethod
     def load_folder(db_folder_path: str, database: Database):
