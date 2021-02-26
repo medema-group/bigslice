@@ -805,7 +805,7 @@ def main():
               " (you can check the list of run ids in the output"
               " visualization)."))
     arg_group_combine.add_argument(
-        "--n_ranks", default=5, type=int,
+        "--n_ranks", default=1, type=int,
         help=("Takes N-best GCF hits for each BGC's membership assignment"
               " procedure (default: %(default)s)."))
 
