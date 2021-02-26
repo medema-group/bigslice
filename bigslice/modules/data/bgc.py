@@ -94,11 +94,12 @@ class BGC:
             antismash_dict = gbk.annotations.get(
                 "structured_comment", {}).get(
                 "antiSMASH-Data", {})
-            if antismash_dict.get("Version", "").startswith("5."):
+            antismash_version = antismash_dict.get("Version", "")
+            if antismash_version.split(".")[0] in ["5", "6"]:
                 for feature in gbk.features:
                     if feature.type == "protocluster":
-                        # is antiSMASH5 clustergbk
-                        gbk_type = "as5"
+                        # is antiSMASH5/6 clustergbk
+                        gbk_type = "as" + antismash_version.split(".")[0]
                         break
                     elif feature.type == "subregion":
                         if "aStool" in feature.qualifiers and \
@@ -140,7 +141,7 @@ class BGC:
                             }))
                             break
 
-                elif gbk_type == "as5":
+                elif gbk_type in ["as5", "as6"]:
                     # get all regions
                     for feature in gbk.features:
                         qual = feature.qualifiers
