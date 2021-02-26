@@ -120,7 +120,7 @@ class BGC:
                                 qual["aStool"][0] == "mibig":
                             subreg = feature
                             name = gbk.id
-                            on_edge = False
+                            on_edge = True
                             loc = subreg.location
                             len_nt = loc.end - loc.start
                             chem_subclasses = [label.strip() for label in
