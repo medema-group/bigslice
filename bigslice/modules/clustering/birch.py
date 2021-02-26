@@ -96,8 +96,11 @@ class BirchClustering:
         """ run clustering and returns object """
 
         def preprocess(features: np.array):
-            # todo: preprocess!
             preprocessed_features = features.astype(np.float)
+            preprocessed_features = preprocessed_features[
+                np.argsort(np.sum(preprocessed_features, axis=1)),
+                :
+            ]
             return preprocessed_features
 
         def fetch_threshold(df: pd.DataFrame,
