@@ -116,18 +116,32 @@ def main():
         )
         of.write("\n")
         for ncbi_acc, taxa in results.items():
-            of.write("\t".join([
-                ncbi_acc + "/",
-                taxa["domain"],
-                taxa["phylum"],
-                taxa["class"],
-                taxa["order"],
-                taxa["family"],
-                taxa["genus"],
-                taxa["species"],
-                ""
-            ]))
-            of.write("\n")
+            if taxa == None:
+                of.write("\t".join([
+                    ncbi_acc + "/",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    "",
+                    ""
+                ]))
+                of.write("\n")
+            else:
+                of.write("\t".join([
+                    ncbi_acc + "/",
+                    taxa["domain"],
+                    taxa["phylum"],
+                    taxa["class"],
+                    taxa["order"],
+                    taxa["family"],
+                    taxa["genus"],
+                    taxa["species"],
+                    ""
+                ]))
+                of.write("\n")
 
 
 if __name__ == "__main__":
