@@ -76,5 +76,5 @@ This software was initially developed and is currently maintained by **Satria Ka
 
 Find our software useful? Please cite!
 ---------------------
-Kautsar, Satria A., Justin J.J. van der Hooft, Dick De Ridder, and Marnix H. Medema. "BiG-SLiCE: A Highly Scalable Tool Maps the Diversity of 1.2 Million Biosynthetic Gene Clusters." BioRxiv (2020).
-[https://doi.org/10.1101/2020.08.17.240838](https://doi.org/10.1101/2020.08.17.240838)
+Satria A Kautsar, Justin J J van der Hooft, Dick de Ridder, Marnix H Medema, BiG-SLiCE: A highly scalable tool maps the diversity of 1.2 million biosynthetic gene clusters, GigaScience, Volume 10, Issue 1, January 2021, giaa154.
+[https://doi.org/10.1093/gigascience/giaa154](https://doi.org/10.1093/gigascience/giaa154)
