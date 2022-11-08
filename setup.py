@@ -26,7 +26,7 @@ setuptools.setup(
     install_requires=[
         "numpy",
         "pandas",
-        "biopython >= 1.73, <= 1.76",
+        "biopython >= 1.73",
         "scikit-learn",
         "pysqlite3"
     ]
