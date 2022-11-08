@@ -837,6 +837,12 @@ def main():
         "--scratch", action="store_true",
         help=("Don't load the Sqlite3 database into memory"
               " (lower RAM usage, but potentially slower)."))
+    arg_group_perf.add_argument(
+        "--early_dumping", action="store_true",
+        help=("Dump the in-memory Sqlite3 db into a file after"
+                " finishing every phase (will enable resume in"
+                " case of crashes, but will increase overall "
+                "runtime)."))
 
     # [Misc] Other optional parameters
     arg_group_misc = parser.add_argument_group(
@@ -869,6 +875,7 @@ def main():
     resume = args.resume
     input_run_id = args.run_id
     use_memory = not args.scratch
+    early_dumping = args.early_dumping
 
     # show --version
     if args.version:
@@ -1083,7 +1090,7 @@ def main():
             output_db.commit_inserts()
             run.log("run created " + str(len(run.bgcs)) + " BGCs")
 
-            if use_memory:
+            if use_memory and early_dumping and early_dumping:
                 output_db.dump_db_file()
 
         # set up parameters (that are re-load-able from run if --resume is on)
@@ -1239,7 +1246,7 @@ def main():
             bgc_status_bin[1] = bgc_status_bin[1] - hmm_scanned
             bgc_status_bin[2].update(hmm_scanned)
 
-            if len(to_be_hmmscanned) > 0 and use_memory:
+            if len(to_be_hmmscanned) > 0 and use_memory and early_dumping:
                 output_db.dump_db_file()
 
             # garbage collection
@@ -1416,7 +1423,7 @@ def main():
             print("[{}s] sub_pfam scan".format(get_elapsed()))
             run.log("sub_pfam end")
 
-            if len(to_be_subpfam_scanned) > 0 and use_memory:
+            if len(to_be_subpfam_scanned) > 0 and use_memory and early_dumping:
                 output_db.dump_db_file()
 
         if len(bgc_status_bin[2]) == 0:
@@ -1494,7 +1501,7 @@ def main():
             print("[{}s] features extraction".format(get_elapsed()))
             run.log("features_extraction end")
 
-            if len(to_be_extracted) > 0 and use_memory:
+            if len(to_be_extracted) > 0 and use_memory and early_dumping:
                 output_db.dump_db_file()
 
         if len(bgc_status_bin[3]) == 0:
@@ -1527,8 +1534,6 @@ def main():
             )
             clustering.save(output_db, cache_folder=cache_folder)
             output_db.commit_inserts()
-            if use_memory:
-                output_db.dump_db_file()
             del clustering
             run.log("BIRCH run end")
 
