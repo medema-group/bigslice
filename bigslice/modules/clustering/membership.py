@@ -15,6 +15,7 @@ from ..utils import store_pickle, load_pickle
 import numpy as np
 import pandas as pd
 from sklearn.neighbors import NearestNeighbors
+from sklearn.preprocessing import normalize
 
 
 class Membership:
@@ -65,6 +66,13 @@ class Membership:
                 " run is probably corrupted.")
 
         # prepare data frames
+        hmm_db_id = database.select(
+            "run",
+            "WHERE run.id=?",
+            parameters=(run_id, ),
+            props=["run.hmm_db_id"],
+            as_tuples=True
+        )[0][0]
         # columns
         hmm_ids = [row[0] for row in database.select(
             "hmm,run",
@@ -77,28 +85,10 @@ class Membership:
 
         # bgc_features
         if not bgc_database:  # normal run
-            bgc_ids = [row[0] for row in database.select(
-                "bgc,run_bgc_status",
-                "WHERE run_bgc_status.run_id=?" +
-                " AND run_bgc_status.bgc_id=bgc.id",
-                parameters=(run_id, ),
-                props=["bgc.id"],
-                as_tuples=True
-            )]
-            bgc_features = pd.DataFrame(
-                np.zeros((len(bgc_ids), len(hmm_ids)), dtype=np.uint8),
-                index=bgc_ids, columns=hmm_ids)
-            # fill bgc_features
-            for bgc_id, hmm_id, value in database.select(
-                "bgc_features,run_bgc_status",
-                "WHERE run_bgc_status.run_id=?" +
-                " AND run_bgc_status.bgc_id=bgc_features.bgc_id",
-                parameters=(run_id, ),
-                props=["bgc_features.bgc_id",
-                       "bgc_features.hmm_id", "bgc_features.value"],
-                as_tuples=True
-            ):
-                bgc_features.at[bgc_id, hmm_id] = value
+            bgc_features = pd.read_pickle(
+                path.join(
+                cache_folder, "bgc_features_{}.pkl".format(hmm_db_id))
+            ).reindex(columns=hmm_ids)
         else:  # query run
             bgc_ids = [row[0] for row in bgc_database.select(
                 "bgc",
@@ -119,6 +109,12 @@ class Membership:
             ):
                 bgc_features.at[bgc_id, hmm_id] = value
 
+        bgc_features = pd.DataFrame(
+            normalize(bgc_features, norm="l2", copy=False),
+            index=bgc_features.index,
+            columns=bgc_features.columns
+        )
+
         # gcf_features
         gcf_features = None
         clustering_id = database.select(
@@ -130,7 +126,7 @@ class Membership:
         )[0][0]
         if cache_folder:
             pickled_file_path = path.join(
-                cache_folder, "clustering_{}.pkl".format(clustering_id))
+                cache_folder, "gcf_models_{}.pkl".format(clustering_id))
             gcf_features = load_pickle(pickled_file_path)
         if gcf_features is not None:
             gcf_ids = gcf_features.index.astype(int)
@@ -196,7 +192,7 @@ class Membership:
             Membership({
                 "bgc_id": bgc_id,
                 "membership": [
-                    (int(gcf_ids[centroids_idx[i][n]]), int(dists[i][n]))
+                    (int(gcf_ids[centroids_idx[i][n]]), float(dists[i][n]))
                     for n in range(centroids_idx[i].shape[0])
                 ]})
             for i, bgc_id in enumerate(bgc_ids)]

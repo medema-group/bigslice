@@ -27,11 +27,14 @@ from bigslice.modules.clustering.birch import BirchClustering
 from bigslice.modules.clustering.membership import Membership
 from bigslice.modules.utils import reversed_fp_iter, get_chunk
 from bigslice.modules.utils import copy_output_template
+from bigslice.modules.utils import store_pickle
 from time import time
 from datetime import datetime
 import subprocess
 from typing import List
 import sqlite3
+import pandas as pd
+import numpy as np
 
 
 _last_timestamp = None
@@ -757,11 +760,11 @@ def main():
               "(antiSMASH > 4.2 BGCs annotated with 'on_contig_edge'"
               " = False)."))
     arg_group_main.add_argument(
-        "--threshold", default=300, type=float, metavar="T",
+        "--threshold", default=0.4, type=float, metavar="T",
         help=(
             "Clustering threshold (T) used in GCF models building"
-            " (BIRCH algorithm) and membership assignment. Mutually"
-            " exclusive with --threshold_pct, use '-1' to turn off"
+            " (BIRCH algorithm) and membership assignment [0-1.2]."
+            " Mutually exclusive with --threshold_pct, use '-1' to turn off"
             " this parameter (default: %(default)s)."))
     arg_group_main.add_argument(
         "--threshold_pct", default=-1, type=float, metavar="<N>",
@@ -1445,25 +1448,28 @@ def main():
             run.log("features_extraction start " +
                     str(len(run.bgcs)) + " BGCs")
 
-            features_extracted = set()
+            bgc_features = {}
 
             # check if already features_extracted in previous run
-            for chunk, chunk_name in get_chunk(
-                    list(bgc_status_bin[3]),
-                    args.num_threads, extraction_chunk_size):
-                for bgc_id in check_features_extracted_in_db(
-                        chunk, hmm_db.id, output_db):
-                    if update_bgc_status(bgc_id, run.id, 4, output_db) == 1:
-                        features_extracted.add(bgc_id)
-                    else:
-                        print("Failed to update bgc status " +
-                              "(bgc_id: " + str(bgc_id) + ") " +
-                              "(run_id: " + str(run.id) + ")")
-                        return 1
+            pickled_file_path = path.join(
+                cache_folder, "bgc_features_{}.pkl".format(hmm_db.id))
+            if path.exists(pickled_file_path):
+                bgc_features = pd.read_pickle(pickled_file_path).to_dict(orient='index')
+
+            # update status for previously-extracted features
+            for bgc_id in bgc_features:
+                if update_bgc_status(bgc_id, run.id, 4, output_db) == 1:
+                    pass
+                else:
+                    print("Failed to update bgc status " +
+                          "(bgc_id: " + str(bgc_id) + ") " +
+                          "(run_id: " + str(run.id) + ")")
+                    return 1
 
             print("{} BGCs are already extracted in previous run".format(
-                len(features_extracted)))
+                len(bgc_features)))
 
+            features_extracted = set(bgc_features.keys())
             to_be_extracted = list(bgc_status_bin[3] - features_extracted)
             if len(to_be_extracted) > 0:
 
@@ -1480,6 +1486,9 @@ def main():
                         chunk, hmm_db.id, output_db
                     ):
                         feature.save(output_db)
+                        if feature.bgc_id not in bgc_features:
+                            bgc_features[feature.bgc_id] = {}
+                        bgc_features[feature.bgc_id][feature.hmm_id] = feature.value
                     output_db.commit_inserts()
 
                     for bgc_id in chunk:
@@ -1490,6 +1499,20 @@ def main():
                             print("Failed to update bgc status " +
                                   "(bgc_id: " + str(bgc_id) + ") " +
                                   "(run_id: " + str(run.id) + ")")
+
+                run.log("dumping pickled bgc features...")
+                hmm_ids = [row[0] for row in output_db.select(
+                    "hmm,run",
+                    "WHERE hmm.db_id=run.hmm_db_id" +
+                    " AND run.id=?",
+                    parameters=(run.id, ),
+                    props=["hmm.id"],
+                    as_tuples=True
+                )]
+                bgc_features = pd.DataFrame.from_dict(
+                    bgc_features, orient='index'
+                ).reindex(columns=hmm_ids).fillna(0).astype(np.uint8)
+                store_pickle(bgc_features, pickled_file_path)
 
             # update status bin
             for bgc_id in features_extracted:
@@ -1528,6 +1551,7 @@ def main():
             clustering = BirchClustering.run(
                 run.id,
                 output_db,
+                cache_folder,
                 complete_only=clustering_complete_only,
                 threshold=clustering_threshold,
                 threshold_percentile=clustering_threshold_percentile

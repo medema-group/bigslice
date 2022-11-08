@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 from sklearn.cluster import Birch
 from sklearn.metrics import pairwise_distances
+from sklearn.preprocessing import normalize
 
 
 class BirchClustering:
@@ -32,7 +33,7 @@ class BirchClustering:
         self.clustering_method = properties["method"]
         self.centroids = properties["centroids"]
 
-    def save(self, database: Database, cache_folder: str = None):
+    def save(self, database: Database, cache_folder: str):
         """commits clustering data"""
         existing = database.select(
             "clustering",
@@ -76,19 +77,20 @@ class BirchClustering:
                     {
                         "gcf_id": gcf_id,
                         "hmm_id": hmm_id,
-                        "value": int(self.centroids.at[gcf_id, hmm_id])
+                        "value": float(self.centroids.at[gcf_id, hmm_id])
                     }
                 )
 
             if cache_folder:
                 # save pickled cache for quick membership assignment
                 pickled_file_path = path.join(
-                    cache_folder, "clustering_{}.pkl".format(self.id))
+                    cache_folder, "gcf_models_{}.pkl".format(self.id))
                 store_pickle(self.centroids, pickled_file_path)
 
     @ staticmethod
     def run(run_id: int,
             database: Database,
+            cache_folder: str,
             complete_only: bool=True,
             threshold: np.float=-1,
             threshold_percentile: np.float=-1,
@@ -101,6 +103,7 @@ class BirchClustering:
                 np.argsort(np.sum(preprocessed_features, axis=1)),
                 :
             ]
+            preprocessed_features = normalize(preprocessed_features, norm="l2", copy=False)
             return preprocessed_features
 
         def fetch_threshold(df: pd.DataFrame,
@@ -133,6 +136,29 @@ class BirchClustering:
         }
 
         # prepare features_df
+        hmm_db_id = database.select(
+            "run",
+            "WHERE run.id=?",
+            parameters=(run_id, ),
+            props=["run.hmm_db_id"],
+            as_tuples=True
+        )[0][0]
+        hmm_ids = [row[0] for row in database.select(
+            "hmm,run",
+            "WHERE hmm.db_id=run.hmm_db_id" +
+            " AND run.id=?",
+            parameters=(run_id, ),
+            props=["hmm.id"],
+            as_tuples=True
+        )]
+
+        # fetch cached feature values
+        features_df = pd.read_pickle(
+            path.join(
+            cache_folder, "bgc_features_{}.pkl".format(hmm_db_id))
+        ).reindex(columns=hmm_ids)
+
+        # apply filter
         if complete_only:
             selector = " AND bgc.on_contig_edge is 0"
         else:
@@ -148,36 +174,7 @@ class BirchClustering:
         )]
         if len(bgc_ids) < 1:  # check if no bgc_ids
             raise Exception("Not enough input for clustering.")
-        hmm_ids = [row[0] for row in database.select(
-            "hmm,run",
-            "WHERE hmm.db_id=run.hmm_db_id" +
-            " AND run.id=?",
-            parameters=(run_id, ),
-            props=["hmm.id"],
-            as_tuples=True
-        )]
-        features_df = pd.DataFrame(
-            np.zeros((len(bgc_ids), len(hmm_ids)), dtype=np.uint8),
-            index=bgc_ids, columns=hmm_ids)
-
-        # fetch feature values from db
-        for bgc_id, hmm_id, value in database.select(
-            "bgc,run_bgc_status,run,hmm,bgc_features",
-            "WHERE run_bgc_status.bgc_id=bgc.id" +
-            " AND run.id=?" +
-            " AND run_bgc_status.bgc_id=bgc.id" +
-            " AND run.id=run_bgc_status.run_id" +
-            " AND run.hmm_db_id=hmm.db_id" +
-            " AND bgc_features.bgc_id=bgc.id" +
-            " AND bgc_features.hmm_id=hmm.id" +
-            selector,
-            parameters=(run_id, ),
-            props=["bgc_features.bgc_id",
-                   "bgc_features.hmm_id",
-                   "bgc_features.value"],
-            as_tuples=True
-        ):
-            features_df.at[bgc_id, hmm_id] = value
+        features_df = features_df.loc[bgc_ids]
 
         # initiate birch object
         birch = Birch(
@@ -211,7 +208,7 @@ class BirchClustering:
 
         # save centroids
         properties["centroids"] = pd.DataFrame(
-            np.uint8(birch.subcluster_centers_),
+            birch.subcluster_centers_,
             columns=features_df.columns)
 
         return BirchClustering(properties)

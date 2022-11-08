@@ -297,7 +297,7 @@ CREATE INDEX IF NOT EXISTS gcf_clustering ON gcf(clustering_id, id_in_run);
 CREATE TABLE IF NOT EXISTS gcf_models (
     gcf_id INTEGER NOT NULL,
     hmm_id INTEGER NOT NULL,
-    value INTEGER NOT NULL,
+    value REAL NOT NULL,
     UNIQUE(gcf_id, hmm_id),
     FOREIGN KEY(gcf_id) REFERENCES gcf(id),
     FOREIGN KEY(hmm_id) REFERENCES hmm(id)
@@ -311,7 +311,7 @@ CREATE INDEX IF NOT EXISTS gcf_models_hmm_value ON gcf_models(value, hmm_id, gcf
 CREATE TABLE IF NOT EXISTS gcf_membership (
     gcf_id INTEGER NOT NULL,
     bgc_id INTEGER NOT NULL,
-    membership_value INTEGER NOT NULL,
+    membership_value REAL NOT NULL,
     rank INTEGER NOT NULL,
     FOREIGN KEY(gcf_id) REFERENCES gcf(id),
     FOREIGN KEY(bgc_id) REFERENCES bgc(id)
