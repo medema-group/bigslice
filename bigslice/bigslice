@@ -65,14 +65,14 @@ def fetch_pool(num_threads: int):
             subprocess.run(["taskset",
                             "-p", "-c",
                             cpu_id,
-                            str(p.pid)], check=True)
+                            str(p.pid)], check=True, shell=True)
             all_cpu_ids.add(cpu_id)
 
         # set core for the main python script
         subprocess.run(["taskset",
                         "-p", "-c",
                         ",".join(all_cpu_ids),
-                        str(getpid())], check=True)
+                        str(getpid())], check=True, shell=True)
 
     except FileNotFoundError:
         pass  # running in OSX?
@@ -111,7 +111,7 @@ def run_hmmscan(arguments: tuple):
         ] + command[1:]
 
     try:
-        ret = subprocess.run(command, check=True)
+        ret = subprocess.run(command, check=True, shell=True)
         if ret.returncode != 0 and path.exists(result_path):
             remove(result_path)
         return ret.returncode == 0
@@ -1204,6 +1204,7 @@ def main():
                                     out_result_path, "ga", True))
                     pbar.update(len(chunk))
                 pbar.close()
+                sys.exit(1)
 
                 print("Running hmmscans in parallel..." +
                         str(len(to_be_hmmscanned)) + " BGCs" +
