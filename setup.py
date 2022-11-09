@@ -28,6 +28,7 @@ setuptools.setup(
         "pandas",
         "biopython >= 1.73",
         "scikit-learn",
-        "pysqlite3"
+        "pysqlite3",
+        "tqdm"
     ]
 )

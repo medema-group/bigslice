@@ -35,6 +35,7 @@ from typing import List
 import sqlite3
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 
 
 _last_timestamp = None
@@ -347,7 +348,7 @@ def process_input_folder(folder_path: str, database: Database,
 
         # parse and insert new GBKs #
         print("Parsing and inserting {} GBKs...".format(len(files_to_process)))
-        pool_results = mp_pool.map(parse_input_gbk, files_to_process)
+        pool_results = [x for x in tqdm(mp_pool.imap(parse_input_gbk, files_to_process), total=len(files_to_process), mininterval=1)]
         for file_path, bgcs in pool_results:
             for bgc in bgcs:
                 bgc.save(dataset_id, database)
@@ -377,7 +378,7 @@ def process_input_folder(folder_path: str, database: Database,
                     "Organism"
                 ]
                 total_bgcs_assigned = 0
-                for line in fp:
+                for line in tqdm(fp, mininterval=1):
                     line = line.rstrip("\n")
                     if not line.startswith("#"):
                         tax_dict = {
@@ -1120,7 +1121,7 @@ def main():
             7: set()   # RUN_FINISHED
         }
         print("Checking run status of {} BGCs...".format(len(run.bgcs)))
-        for bgc_id, bgc_status in run.bgcs.items():
+        for bgc_id, bgc_status in tqdm(run.bgcs.items()):
             if bgc_status > run.status:
                 print("bgc_id {} run_status is {} while the whole run is \
                     {}. the run data might be corrupted!".format(
@@ -1139,6 +1140,8 @@ def main():
             hmm_scanned = set()
 
             # check if already hmmscanned in previous run
+            run.log("check existing hmmscan results...")
+            pbar = tqdm(total=len(bgc_status_bin[1]), mininterval=1)
             for chunk, chunk_name in get_chunk(
                     list(bgc_status_bin[1]), args.num_threads, 1000):
                 for bgc_id in check_hmmscanned_in_db(
@@ -1150,6 +1153,8 @@ def main():
                               "(bgc_id: " + str(bgc_id) + ") " +
                               "(run_id: " + str(run.id) + ")")
                         return 1
+                pbar.update(len(chunk))
+            pbar.close()
 
             print("{} BGCs are already scanned in previous run".format(
                 len(hmm_scanned)))
@@ -1178,6 +1183,7 @@ def main():
                 hmm_path = path.join(program_db_folder,
                                      "biosynthetic_pfams",
                                      "Pfam-A.biosynthetic.hmm")
+                pbar = tqdm(total=len(to_be_hmmscanned), mininterval=1)
                 for chunk, chunk_name in get_chunk(
                         to_be_hmmscanned,
                         args.num_threads,
@@ -1196,14 +1202,19 @@ def main():
                             hmmscan_queues.add(
                                 (in_fasta_path, hmm_path,
                                     out_result_path, "ga", True))
+                    pbar.update(len(chunk))
+                pbar.close()
 
-                print("Running hmmscans in parallel...")
+                print("Running hmmscans in parallel..." +
+                        str(len(to_be_hmmscanned)) + " BGCs" +
+                        " (in " + str(len(hmmscan_queues)) + " chunks)")
                 run.log("hmmscan run " +
-                        str(len(to_be_hmmscanned)) + " BGCs")
+                        str(len(to_be_hmmscanned)) + " BGCs" +
+                        " (in " + str(len(hmmscan_queues)) + " chunks)")
 
                 # do hmmscans in parallel
-                _ = pool.map(
-                    run_hmmscan, hmmscan_queues)
+                _ = list(tqdm(pool.imap(
+                    run_hmmscan, hmmscan_queues), total=len(hmmscan_queues), mininterval=1))
 
                 print("Parsing hmmscans results...")
                 run.log("hmmscan parse " +
@@ -1213,6 +1224,7 @@ def main():
                 hmm_ids = {
                     hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
 
+                pbar = tqdm(total=len(to_be_hmmscanned), mininterval=1)
                 for chunk, chunk_name in get_chunk(
                         to_be_hmmscanned,
                         args.num_threads,
@@ -1239,6 +1251,9 @@ def main():
                     # clean up
                     remove(in_fasta_path)
                     remove(out_result_path)
+
+                    pbar.update(len(chunk))
+                pbar.close()
 
                 del hmm_ids
 
@@ -1283,6 +1298,8 @@ def main():
             subpfam_scanned = set()
 
             # check if already subpfam_scanned in previous run
+            run.log("check existing hmmscan results...")
+            pbar = tqdm(total=len(bgc_status_bin[2]), mininterval=1)
             for chunk, chunk_name in get_chunk(
                     list(bgc_status_bin[2]),
                     args.num_threads, subpfam_chunk_size):
@@ -1295,6 +1312,8 @@ def main():
                               "(bgc_id: " + str(bgc_id) + ") " +
                               "(run_id: " + str(run.id) + ")")
                         return 1
+                pbar.update(len(chunk))
+            pbar.close()
 
             print("{} BGCs are already scanned in previous run".format(
                 len(subpfam_scanned)))
@@ -1333,6 +1352,7 @@ def main():
                 run.log("hmmscan prepare " +
                         str(len(to_be_subpfam_scanned)) + " BGCs")
                 hmmscan_queues = set()
+                pbar = tqdm(total=len(to_be_subpfam_scanned), mininterval=1)
                 for chunk, chunk_name in get_chunk(
                         to_be_subpfam_scanned,
                         args.num_threads,
@@ -1366,17 +1386,24 @@ def main():
                                 20,  # for subpfam_scan
                                 False
                              ))
+                    pbar.update(len(chunk))
+                pbar.close()
 
                 # do hmmscans in parallel
-                print("Running subpfam_scans in parallel...")
+                print("Running subpfam_scans in parallel... " +
+                        str(len(to_be_subpfam_scanned)) + " BGCs" +
+                        " (in " + str(len(hmmscan_queues)) + " chunks)")
                 run.log("hmmscan run " +
-                        str(len(to_be_subpfam_scanned)) + " BGCs")
-                _ = pool.map(
-                    run_hmmscan, hmmscan_queues)
+                        str(len(to_be_subpfam_scanned)) + " BGCs" +
+                        " (in " + str(len(hmmscan_queues)) + " chunks)")
+
+                _ = list(tqdm(pool.imap(
+                    run_hmmscan, hmmscan_queues), total=len(hmmscan_queues), mininterval=1))
 
                 print("Parsing subpfam_scans results...")
                 run.log("hmmscan parse " +
                         str(len(to_be_subpfam_scanned)) + " BGCs")
+                pbar = tqdm(total=len(to_be_subpfam_scanned), mininterval=1)
                 for chunk, chunk_name in get_chunk(
                         to_be_subpfam_scanned,
                         args.num_threads,
@@ -1415,6 +1442,9 @@ def main():
                             chunk_name, parent_hmm_id))
                         remove(hmm_result_path(
                             chunk_name, parent_hmm_id))
+
+                    pbar.update(len(chunk))
+                pbar.close()
 
             # update status bin
             for bgc_id in subpfam_scanned:
@@ -1477,6 +1507,7 @@ def main():
                 run.log("features_extraction extract " +
                         str(len(to_be_extracted)) + " BGCs")
 
+                pbar = tqdm(total=len(to_be_extracted), mininterval=1)
                 for chunk, chunk_name in get_chunk(
                         to_be_extracted,
                         args.num_threads,
@@ -1499,6 +1530,9 @@ def main():
                             print("Failed to update bgc status " +
                                   "(bgc_id: " + str(bgc_id) + ") " +
                                   "(run_id: " + str(run.id) + ")")
+
+                    pbar.update(len(chunk))
+                pbar.close()
 
                 run.log("dumping pickled bgc features...")
                 hmm_ids = [row[0] for row in output_db.select(
