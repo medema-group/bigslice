@@ -29,6 +29,7 @@ setuptools.setup(
         "biopython >= 1.73",
         "scikit-learn",
         "pysqlite3",
-        "tqdm"
+        "tqdm",
+        "pyhmmer"
     ]
 )
