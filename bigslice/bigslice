@@ -1247,167 +1247,72 @@ def main():
                     pbar.update(len(chunk))
                 pbar.close()
 
-                use_pyhmmer = True
-                use_pyhmmer_single_cpus = False
-                if use_pyhmmer:
-                    if use_pyhmmer_single_cpus:
-                        print("Running hmmsearch in parallel (using pyhmmer)..." +
-                                str(len(to_be_hmmscanned)) + " BGCs" +
-                                " (in " + str(len(hmmscan_queues)) + " chunks)")
-                        hmm_ids = {
-                            hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
+                print("Running hmmsearch in parallel..." +
+                        str(len(to_be_hmmscanned)) + " BGCs" +
+                        " (in " + str(len(hmmscan_queues)) + " chunks)")
+                hmm_ids = {
+                    hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
+                pbar = tqdm(total=len(to_be_hmmscanned), mininterval=1)
+                for chunk, chunk_name in get_chunk(
+                        to_be_hmmscanned,
+                        args.num_threads,
+                        hmmscan_chunk_size):
 
-                        hmmscan_queues = []
-                        for chunk, chunk_name in get_chunk(
-                                to_be_hmmscanned,
-                                args.num_threads,
-                                hmmscan_chunk_size):
+                    in_fasta_path = fasta_path(chunk_name)
 
-                            hmmscan_queues.append((
-                                fasta_path(chunk_name), hmm_path, hmm_ids
-                            ))
+                    sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
+                    with plan7.HMMFile(hmm_path) as hmm_file:
+                        for top_hits in hmmer.hmmsearch(
+                            hmm_file, sequences,
+                            cpus=args.num_threads, bit_cutoffs="gathering"
+                            ):
+                            for hit in top_hits:
+                                target_name = hit.name.decode()
+                                hmm_name = top_hits.query_accession.decode()
+                                alignment = hit.best_domain.alignment
 
-                        pbar = tqdm(total=len(hmmscan_queues), mininterval=1)
-                        for hsps in pool.imap(run_pyhmmer, hmmscan_queues):
-                            for hsp in hsps:
-                                hsp.save(output_db)
-                            output_db.commit_inserts()
-                            pbar.update(1)
-                        pbar.close()
+                                bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
+                                bgc_id = int(bgc_id.split("bgc:")[-1])
+                                cds_id = int(cds_id.split("cds:")[-1])
+                                parent_hsp_id = int(parent_hsp_id.split("hsp:")[-1])
+                                locs = tuple(map(int, locs.split("-")))
 
-                        for chunk, chunk_name in get_chunk( # !!!
-                                to_be_hmmscanned,
-                                args.num_threads,
-                                hmmscan_chunk_size):
-                            for bgc_id in chunk:
-                                if update_bgc_status(
-                                        bgc_id, run.id, 2, output_db) == 1:
-                                    hmm_scanned.add(bgc_id)
-                                else:
-                                    print("Failed to update bgc status " +
-                                          "(bgc_id: " + str(bgc_id) + ") " +
-                                          "(run_id: " + str(run.id) + ")")
+                                hsp_alignment = {
+                                    "model_start": alignment.hmm_from - 1,
+                                    "model_end": alignment.hmm_to,
+                                    "model_gaps": [i for i, c
+                                                   in enumerate(alignment.hmm_sequence)
+                                                   if c == '.'],
+                                    "cds_start": alignment.target_from + locs[0] - 1,
+                                    "cds_end": alignment.target_to + locs[0],
+                                    "cds_gaps": [i for i, c
+                                                 in enumerate(str(alignment.target_sequence))
+                                                 if c == '-']
+                                }
+                                HSP({
+                                    "cds_id": cds_id,
+                                    "hmm_id": hmm_ids[hmm_name],
+                                    "parent_hsp_id": parent_hsp_id,
+                                    "bitscore": int(hit.best_domain.score),
+                                    "alignment": hsp_alignment
+                                }).save(output_db)
 
-                            # clean up
-                            #remove(fasta_path(chunk_name))
+                    output_db.commit_inserts()
 
-                    else:
-                        print("Running hmmsearch in parallel (using pyhmmer)..." +
-                                str(len(to_be_hmmscanned)) + " BGCs" +
-                                " (in " + str(len(hmmscan_queues)) + " chunks)")
-                        hmm_ids = {
-                            hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
-                        pbar = tqdm(total=len(to_be_hmmscanned), mininterval=1)
-                        for chunk, chunk_name in get_chunk(
-                                to_be_hmmscanned,
-                                args.num_threads,
-                                hmmscan_chunk_size):
+                    for bgc_id in chunk:
+                        if update_bgc_status(
+                                bgc_id, run.id, 2, output_db) == 1:
+                            hmm_scanned.add(bgc_id)
+                        else:
+                            print("Failed to update bgc status " +
+                                  "(bgc_id: " + str(bgc_id) + ") " +
+                                  "(run_id: " + str(run.id) + ")")
 
-                            in_fasta_path = fasta_path(chunk_name)
+                    # clean up
+                    remove(in_fasta_path)
 
-                            sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
-                            with plan7.HMMFile(hmm_path) as hmm_file:
-                                for top_hits in hmmer.hmmsearch(
-                                    hmm_file, sequences,
-                                    cpus=args.num_threads, bit_cutoffs="gathering"
-                                    ):
-                                    for hit in top_hits:
-                                        target_name = hit.name.decode()
-                                        hmm_name = top_hits.query_accession.decode()
-                                        alignment = hit.best_domain.alignment
-
-                                        bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
-                                        bgc_id = int(bgc_id.split("bgc:")[-1])
-                                        cds_id = int(cds_id.split("cds:")[-1])
-                                        parent_hsp_id = int(parent_hsp_id.split("hsp:")[-1])
-                                        locs = tuple(map(int, locs.split("-")))
-
-                                        hsp_alignment = {
-                                            "model_start": alignment.hmm_from - 1,
-                                            "model_end": alignment.hmm_to,
-                                            "model_gaps": [i for i, c
-                                                           in enumerate(alignment.hmm_sequence)
-                                                           if c == '.'],
-                                            "cds_start": alignment.target_from + locs[0] - 1,
-                                            "cds_end": alignment.target_to + locs[0],
-                                            "cds_gaps": [i for i, c
-                                                         in enumerate(str(alignment.target_sequence))
-                                                         if c == '-']
-                                        }
-                                        HSP({
-                                            "cds_id": cds_id,
-                                            "hmm_id": hmm_ids[hmm_name],
-                                            "parent_hsp_id": parent_hsp_id,
-                                            "bitscore": int(hit.best_domain.score),
-                                            "alignment": hsp_alignment
-                                        }).save(output_db)
-
-                            output_db.commit_inserts()
-
-                            for bgc_id in chunk:
-                                if update_bgc_status(
-                                        bgc_id, run.id, 2, output_db) == 1:
-                                    hmm_scanned.add(bgc_id)
-                                else:
-                                    print("Failed to update bgc status " +
-                                          "(bgc_id: " + str(bgc_id) + ") " +
-                                          "(run_id: " + str(run.id) + ")")
-
-                            # clean up
-                            #remove(in_fasta_path)
-
-                            pbar.update(len(chunk))
-                        pbar.close()
-                else:
-                    print("Running hmmscans in parallel..." +
-                            str(len(to_be_hmmscanned)) + " BGCs" +
-                            " (in " + str(len(hmmscan_queues)) + " chunks)")
-                    run.log("hmmscan run " +
-                            str(len(to_be_hmmscanned)) + " BGCs" +
-                            " (in " + str(len(hmmscan_queues)) + " chunks)")
-
-                    # do hmmscans in parallel
-                    _ = list(tqdm(pool.imap(
-                        run_hmmscan, hmmscan_queues), total=len(hmmscan_queues), mininterval=1))
-
-                    print("Parsing hmmscans results...")
-                    run.log("hmmscan parse " +
-                            str(len(to_be_hmmscanned)) + " BGCs")
-                    # parse hmmscan txts and create database
-                    # entries for them, then update bgc_status
-                    hmm_ids = {
-                        hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
-
-                    pbar = tqdm(total=len(to_be_hmmscanned), mininterval=1)
-                    for chunk, chunk_name in get_chunk(
-                            to_be_hmmscanned,
-                            args.num_threads,
-                            hmmscan_chunk_size):
-
-                        in_fasta_path = fasta_path(chunk_name)
-                        out_result_path = hmm_result_path(chunk_name)
-
-                        for hsp_object in HSP.parse_hmmtext(
-                                out_result_path, hmm_ids):
-                            hsp_object.save(output_db)
-
-                        output_db.commit_inserts()
-
-                        for bgc_id in chunk:
-                            if update_bgc_status(
-                                    bgc_id, run.id, 2, output_db) == 1:
-                                hmm_scanned.add(bgc_id)
-                            else:
-                                print("Failed to update bgc status " +
-                                      "(bgc_id: " + str(bgc_id) + ") " +
-                                      "(run_id: " + str(run.id) + ")")
-
-                        # clean up
-                        #remove(in_fasta_path)
-                        #remove(out_result_path)
-
-                        pbar.update(len(chunk))
-                    pbar.close()
+                    pbar.update(len(chunk))
+                pbar.close()
 
             # update status bin
             for bgc_id in hmm_scanned:
