@@ -41,18 +41,19 @@ from pyhmmer import easel, hmmer, plan7
 
 _last_timestamp = None
 
-def run_pyhmmer(tuples):
-    in_fasta_path, hmm_path, hmm_ids = tuples
+def run_subpfam_scan(tuples):
+    top_k = 3
+    in_fasta_path, hmm_path, sub_pfam_ids = tuples
     sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
     with plan7.HMMFile(hmm_path) as hmm_file:
-        results = []
+        parsed = {}
         for top_hits in hmmer.hmmsearch(
-            hmm_file, sequences,
-            cpus=1, bit_cutoffs="gathering"
+                hmm_file, sequences,
+                cpus=1, T=20
             ):
             for hit in top_hits:
                 target_name = hit.name.decode()
-                hmm_name = top_hits.query_accession.decode()
+                hmm_name = top_hits.query_name.decode()
                 alignment = hit.best_domain.alignment
 
                 bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
@@ -61,25 +62,59 @@ def run_pyhmmer(tuples):
                 parent_hsp_id = int(parent_hsp_id.split("hsp:")[-1])
                 locs = tuple(map(int, locs.split("-")))
 
-                hsp_alignment = {
-                    "model_start": alignment.hmm_from - 1,
-                    "model_end": alignment.hmm_to,
-                    "model_gaps": [i for i, c
-                                   in enumerate(alignment.hmm_sequence)
-                                   if c == '.'],
-                    "cds_start": alignment.target_from + locs[0] - 1,
-                    "cds_end": alignment.target_to + locs[0],
-                    "cds_gaps": [i for i, c
-                                 in enumerate(str(alignment.target_sequence))
-                                 if c == '-']
-                }
-                results.append(HSP({
+                if target_name not in parsed:
+                    parsed[target_name] = []
+                parsed[target_name].append({
                     "cds_id": cds_id,
-                    "hmm_id": hmm_ids[hmm_name],
+                    "hmm_id": sub_pfam_ids[hmm_name],
                     "parent_hsp_id": parent_hsp_id,
-                    "bitscore": int(hit.best_domain.score),
-                    "alignment": hsp_alignment
-                }))
+                    "bitscore": int(hit.best_domain.score)
+                })
+
+        results = []
+        for target_name, hsps in parsed.items():
+            for i, hsp in enumerate(
+                sorted(hsps, key=lambda x: x["bitscore"], reverse=True)
+            ):
+                if i >= top_k:
+                    break
+                adjusted_bitscore = 255 - int((255 / top_k) * i)
+                hsp["bitscore"] = adjusted_bitscore
+                results.append(hsp)
+
+        return results
+
+
+def run_subpfam_scan_hmmscan(tuples):
+    top_k = 3
+    in_fasta_path, hmm_path, sub_pfam_ids = tuples
+
+    with easel.SequenceFile(in_fasta_path, digital=True) as sequencefile:
+        results = []
+        pipeline = plan7.Pipeline(easel.Alphabet.amino(), T=40)
+
+        for sequence in sequencefile:
+            with plan7.HMMFile(hmm_path) as hmm_file:
+                for i, hit in enumerate(pipeline.scan_seq(sequence, hmm_file)):
+                    # this will return a sorted high-to-low hits, so no need to re-sort
+                    if i >= top_k:
+                        break
+                    target_name = sequence.name.decode()
+                    hmm_name = hit.name.decode()
+
+                    bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
+                    bgc_id = int(bgc_id.split("bgc:")[-1])
+                    cds_id = int(cds_id.split("cds:")[-1])
+                    parent_hsp_id = int(parent_hsp_id.split("hsp:")[-1])
+                    locs = tuple(map(int, locs.split("-")))
+
+                    results.append({
+                        "cds_id": cds_id,
+                        "hmm_id": sub_pfam_ids[hmm_name],
+                        "parent_hsp_id": parent_hsp_id,
+                        "bitscore": int(255 - int((255 / top_k) * i))
+                    })
+
         return results
 
 
@@ -1452,54 +1487,202 @@ def main():
                 run.log("hmmscan run " +
                         str(len(to_be_subpfam_scanned)) + " BGCs")
 
-                _ = list(tqdm(pool.imap(
-                    run_hmmscan, hmmscan_queues), total=len(hmmscan_queues), mininterval=1))
+                use_pyhmmer = True
+                use_multi_pyhmmer = True
+                use_pyhmmer_scan = False
+                top_k = 3
+                if use_pyhmmer:
+                    if use_multi_pyhmmer:
+                        subpfam_queues = []
+                        for chunk, chunk_name in get_chunk(
+                            to_be_subpfam_scanned,
+                            args.num_threads,
+                            subpfam_chunk_size):
+                            chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
+                            for parent_hmm_id in chunk_parent_pfams:
+                                in_fasta_path = fasta_path(
+                                    chunk_name, parent_hmm_id)
+                                sub_pfam_ids = {
+                                    hmm_obj.name: hmm_obj.id
+                                    for hmm_obj in
+                                    hmm_db.sub_pfams[core_pfam_accs[parent_hmm_id]]
+                                }
+                                hmm_path = path.join(program_db_folder,
+                                                     "sub_pfams",
+                                                     "hmm",
+                                                     core_pfam_accs[
+                                                         parent_hmm_id] +
+                                                     ".subpfams.hmm")
+                                subpfam_queues.append((in_fasta_path, hmm_path, sub_pfam_ids))
 
-                print("Parsing subpfam_scans results...")
-                run.log("hmmscan parse " +
-                        str(len(to_be_subpfam_scanned)) + " BGCs")
-                pbar = tqdm(total=len(to_be_subpfam_scanned), mininterval=1)
-                for chunk, chunk_name in get_chunk(
-                        to_be_subpfam_scanned,
-                        args.num_threads,
-                        subpfam_chunk_size):
-                    chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
-                    for parent_hmm_id in chunk_parent_pfams:
-                        out_result_path = hmm_result_path(
-                            chunk_name, parent_hmm_id)
-                        sub_pfam_ids = {
-                            hmm_obj.name: hmm_obj.id
-                            for hmm_obj in
-                            hmm_db.sub_pfams[core_pfam_accs[parent_hmm_id]]
-                        }
-
-                        for hsp_object in HSP.parse_hmmtext(
-                                out_result_path, sub_pfam_ids,
-                                save_alignment=False,
-                                top_k=3,
-                                rank_normalize=True):
-                            hsp_object.save(output_db)
-
-                    output_db.commit_inserts()
-
-                    for bgc_id in chunk:
-                        if update_bgc_status(
-                                bgc_id, run.id, 3, output_db) == 1:
-                            subpfam_scanned.add(bgc_id)
+                        if use_pyhmmer_scan:
+                            parallel_proc_func = run_subpfam_scan_hmmscan
                         else:
-                            print("Failed to update bgc status " +
-                                  "(bgc_id: " + str(bgc_id) + ") " +
-                                  "(run_id: " + str(run.id) + ")")
+                            parallel_proc_func = run_subpfam_scan
 
-                    # clean up
-                    for parent_hmm_id in chunk_parent_pfams:
-                        remove(fasta_path(
-                            chunk_name, parent_hmm_id))
-                        remove(hmm_result_path(
-                            chunk_name, parent_hmm_id))
+                        for results in tqdm(
+                            pool.imap(parallel_proc_func, subpfam_queues
+                        ), total=len(subpfam_queues), mininterval=1):
+                            for hsp in results:
+                                HSP(hsp).save(output_db)
 
-                    pbar.update(len(chunk))
-                pbar.close()
+                        output_db.commit_inserts()
+
+                        
+                        for chunk, chunk_name in get_chunk(
+                            to_be_subpfam_scanned,
+                            args.num_threads,
+                            subpfam_chunk_size):                            
+                            for bgc_id in chunk:
+                                if update_bgc_status(
+                                        bgc_id, run.id, 3, output_db) == 1:
+                                    subpfam_scanned.add(bgc_id)
+                                else:
+                                    print("Failed to update bgc status " +
+                                          "(bgc_id: " + str(bgc_id) + ") " +
+                                          "(run_id: " + str(run.id) + ")")
+
+
+                        # clean up
+                        for chunk, chunk_name in get_chunk(
+                            to_be_subpfam_scanned,
+                            args.num_threads,
+                            subpfam_chunk_size):
+                            chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
+                            for parent_hmm_id in chunk_parent_pfams:
+                                for parent_hmm_id in chunk_parent_pfams:
+                                    pass
+                                    #remove(fasta_path(
+                                    #    chunk_name, parent_hmm_id))
+
+                    else:
+                        pbar = tqdm(total=len(hmmscan_queues), mininterval=1)
+                        for chunk, chunk_name in get_chunk(
+                                to_be_subpfam_scanned,
+                                args.num_threads,
+                                subpfam_chunk_size):
+                            chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
+                            for parent_hmm_id in chunk_parent_pfams:
+                                in_fasta_path = fasta_path(
+                                    chunk_name, parent_hmm_id)
+                                sub_pfam_ids = {
+                                    hmm_obj.name: hmm_obj.id
+                                    for hmm_obj in
+                                    hmm_db.sub_pfams[core_pfam_accs[parent_hmm_id]]
+                                }
+                                hmm_path = path.join(program_db_folder,
+                                                     "sub_pfams",
+                                                     "hmm",
+                                                     core_pfam_accs[
+                                                         parent_hmm_id] +
+                                                     ".subpfams.hmm")
+
+                                results = {}
+                                sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
+                                with plan7.HMMFile(hmm_path) as hmm_file:
+                                    for top_hits in hmmer.hmmsearch(
+                                        hmm_file, sequences,
+                                        cpus=args.num_threads, T=20
+                                        ):
+                                        for hit in top_hits:
+                                            target_name = hit.name.decode()
+                                            hmm_name = top_hits.query_name.decode()
+                                            alignment = hit.best_domain.alignment
+
+                                            bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
+                                            bgc_id = int(bgc_id.split("bgc:")[-1])
+                                            cds_id = int(cds_id.split("cds:")[-1])
+                                            parent_hsp_id = int(parent_hsp_id.split("hsp:")[-1])
+                                            locs = tuple(map(int, locs.split("-")))
+
+                                            if target_name not in results:
+                                                results[target_name] = []
+                                            results[target_name].append({
+                                                "cds_id": cds_id,
+                                                "hmm_id": sub_pfam_ids[hmm_name],
+                                                "parent_hsp_id": parent_hsp_id,
+                                                "bitscore": int(hit.best_domain.score)
+                                            })
+
+                                for target_name, hsps in results.items():
+                                    for i, hsp in enumerate(
+                                        sorted(hsps, key=lambda x: x["bitscore"], reverse=True)
+                                    ):
+                                        if i >= top_k:
+                                            break
+                                        adjusted_bitscore = 255 - int((255 / top_k) * i)
+                                        HSP(hsp).save(output_db)
+
+                                pbar.update(1)
+
+                            for bgc_id in chunk:
+                                if update_bgc_status(
+                                        bgc_id, run.id, 3, output_db) == 1:
+                                    subpfam_scanned.add(bgc_id)
+                                else:
+                                    print("Failed to update bgc status " +
+                                          "(bgc_id: " + str(bgc_id) + ") " +
+                                          "(run_id: " + str(run.id) + ")")
+
+                            output_db.commit_inserts()
+
+                            # clean up
+                            for parent_hmm_id in chunk_parent_pfams:
+                                remove(fasta_path(
+                                    chunk_name, parent_hmm_id))
+
+                        pbar.close()
+
+                else:
+
+                    _ = list(tqdm(pool.imap(
+                        run_hmmscan, hmmscan_queues), total=len(hmmscan_queues), mininterval=1))
+
+                    print("Parsing subpfam_scans results...")
+                    run.log("hmmscan parse " +
+                            str(len(to_be_subpfam_scanned)) + " BGCs")
+                    pbar = tqdm(total=len(to_be_subpfam_scanned), mininterval=1)
+                    for chunk, chunk_name in get_chunk(
+                            to_be_subpfam_scanned,
+                            args.num_threads,
+                            subpfam_chunk_size):
+                        chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
+                        for parent_hmm_id in chunk_parent_pfams:
+                            out_result_path = hmm_result_path(
+                                chunk_name, parent_hmm_id)
+                            sub_pfam_ids = {
+                                hmm_obj.name: hmm_obj.id
+                                for hmm_obj in
+                                hmm_db.sub_pfams[core_pfam_accs[parent_hmm_id]]
+                            }
+
+                            for hsp_object in HSP.parse_hmmtext(
+                                    out_result_path, sub_pfam_ids,
+                                    save_alignment=False,
+                                    top_k=top_k,
+                                    rank_normalize=True):
+                                hsp_object.save(output_db)
+
+                        output_db.commit_inserts()
+
+                        for bgc_id in chunk:
+                            if update_bgc_status(
+                                    bgc_id, run.id, 3, output_db) == 1:
+                                subpfam_scanned.add(bgc_id)
+                            else:
+                                print("Failed to update bgc status " +
+                                      "(bgc_id: " + str(bgc_id) + ") " +
+                                      "(run_id: " + str(run.id) + ")")
+
+                        # clean up
+                        for parent_hmm_id in []:#chunk_parent_pfams:
+                            remove(fasta_path(
+                                chunk_name, parent_hmm_id))
+                            remove(hmm_result_path(
+                                chunk_name, parent_hmm_id))
+
+                        pbar.update(len(chunk))
+                    pbar.close()
 
             # update status bin
             for bgc_id in subpfam_scanned:
