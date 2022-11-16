@@ -1302,6 +1302,9 @@ def main():
                             cpus=args.num_threads, bit_cutoffs="gathering"
                             ):
                             for hit in top_hits:
+                                if hit.best_domain.score < top_hits.domT:
+                                    continue
+
                                 target_name = hit.name.decode()
                                 hmm_name = top_hits.query_accession.decode()
                                 alignment = hit.best_domain.alignment
@@ -1328,7 +1331,7 @@ def main():
                                     "cds_id": cds_id,
                                     "hmm_id": hmm_ids[hmm_name],
                                     "parent_hsp_id": parent_hsp_id,
-                                    "bitscore": int(hit.best_domain.score),
+                                    "bitscore": hit.best_domain.score,
                                     "alignment": hsp_alignment
                                 }).save(output_db)
 
