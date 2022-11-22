@@ -19,11 +19,12 @@ import csv
 import glob
 from tempfile import TemporaryDirectory
 import subprocess
-import tarfile
+import tarfile, zipfile
 from sys import exit
 
 # external imports
 import numpy as np
+import pandas as pd
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import pairwise_distances
 from Bio import AlignIO
@@ -44,8 +45,7 @@ def main():
     # prepare generate_hmm steps
 
     antismash_folder = path.join(tmp_dir_path,
-                                 db_config["ANTISMASH_VERSION"],
-                                 "antismash")
+                                 db_config["ANTISMASH_VERSION"])
 
     biosyn_pfam_tsv = path.join(dir_path, "biosynthetic_pfams", "biopfam.tsv")
     biosyn_pfam_hmm = path.join(
@@ -73,21 +73,50 @@ def main():
 
     # download and extract antiSMASH models
     if not path.exists(antismash_folder):
-        antismash_zipped_file = path.join(tmp_dir_path, "antismash.tar.gz")
-        if not path.exists(antismash_zipped_file):
-            print("Downloading antismash.tar.gz...")
-            urllib.request.urlretrieve(
-                db_config["ANTISMASH_URL"], path.join(
-                    tmp_dir_path, "antismash.tar.gz"))
+        if db_config["ANTISMASH_URL"].endswith(".git"):
+            # use git
+            subprocess.run("git clone {} {}".format(
+                db_config["ANTISMASH_URL"],
+                antismash_folder
+            ), shell=True)
 
-        print("Extracting antismash.tar.gz...")
-        with tarfile.open(antismash_zipped_file, "r:gz") as as_zipped:
-            as_zipped.extractall(path=tmp_dir_path)
+        elif db_config["ANTISMASH_URL"].endswith(".tar.gz"):
+            # e.g., from releases
+            antismash_zipped_file = antismash_folder.rstrip("/") + ".tar.gz"
+            if not path.exists(antismash_zipped_file):
+                print("Downloading antismash.tar.gz...")
+                urllib.request.urlretrieve(
+                    db_config["ANTISMASH_URL"], antismash_zipped_file)
+
+            print("Extracting antismash.tar.gz...")
+            with tarfile.open(antismash_zipped_file, "r:gz") as as_zipped:
+                as_zipped.extractall(path=antismash_folder)
+                subprocess.run("mv {} {}".format(
+                    path.join(antismash_folder, "*/*"),
+                    antismash_folder
+                ), shell=True)
+
+        elif db_config["ANTISMASH_URL"].endswith(".zip"):
+            # e.g., from releases
+            antismash_zipped_file = antismash_folder.rstrip("/") + ".zip"
+            if not path.exists(antismash_zipped_file):
+                print("Downloading antismash.zip...")
+                urllib.request.urlretrieve(
+                    db_config["ANTISMASH_URL"], antismash_zipped_file)
+
+            print("Extracting antismash.tar.gz...")
+            with zipfile.ZipFile(antismash_zipped_file, "r") as as_zipped:
+                as_zipped.extractall(antismash_folder)
+                subprocess.run("mv {} {}".format(
+                    path.join(antismash_folder, "*/*"),
+                    antismash_folder
+                ), shell=True)
 
     # parse antiSMASH hmmdetails.txt
     antismash_domains = {}
     antismash_from_pfams = set()
     antismash_data_folder = path.join(antismash_folder,
+                                      "antismash",
                                       "detection",
                                       "hmm_detection",
                                       "data")
@@ -122,17 +151,15 @@ def main():
     # parse antiSMASH cluster_rules to get a list of
     # core domains
     cluster_rules_dir = path.join(antismash_folder,
+                                  "antismash",
                                   "detection",
                                   "hmm_detection",
                                   "cluster_rules")
+    
     antismash_core_list = set()
-    for cluster_rules_file in glob.iglob(
-            path.join(cluster_rules_dir, "*.txt")):
-        with open(cluster_rules_file, "r") as cr_handle:
-            rules = parse_antismash_rules(cr_handle)
-            for rule, rule_prop in rules.items():
-                antismash_core_list.update(
-                    fetch_antismash_domain_names(rule_prop["conditions"]))
+    for rule, rule_prop in parse_antismash_rules(cluster_rules_dir).items():
+        antismash_core_list.update(
+            fetch_antismash_domain_names(rule_prop["conditions"]))
 
     as_domains = set(antismash_domains.keys())
     for core in antismash_core_list:
@@ -184,6 +211,9 @@ def main():
                             skipping = True
                 biopfam.write("//\n")
 
+        with open(path.join(tmp_dir_path, "missing_pfams.txt"), "w") as oo:
+            for pfam in biosynthetic_pfams:
+                oo.write("{}\n".format(pfam))
         assert len(biosynthetic_pfams) == 0
 
         # add antismash domains
@@ -453,8 +483,8 @@ def main():
         f.write(sub_pfams_md5sum)
 
     # remove temp directory
-    print("Removing temp directory...")
-    rmtree(tmp_dir_path)
+    #print("Removing temp directory...")
+    #rmtree(tmp_dir_path)
 
     print("done.")
     exit(0)
@@ -501,6 +531,11 @@ def build_subpfam(input_fasta, output_hmm):
     assert len(labels) == len(sequences)
     uniques = np.unique(sequences)
     X = np.searchsorted(uniques, sequences)
+
+    # apply random filter to get only 10K sequences
+    # to alleviate out of memory error (TODO: properly fix)
+    if X.shape[0] > 10000:
+        X = pd.DataFrame(X).sample(10000).values
 
     # calculate pdist
     dist = pairwise_distances(
@@ -551,34 +586,75 @@ def build_subpfam(input_fasta, output_hmm):
                         hm.write(line)
 
 
-def parse_antismash_rules(file_handle):
+def parse_antismash_rules(cluster_rules_dir):
     conds = {}
-    cur_cond = {}
-    parsing_cond = False
-    for line in file_handle:
-        line = line.split("#")[0]
-        line = line.rstrip().lstrip()
-        if line.startswith("RULE "):
+    defines = {}
+    for cluster_rules_file in glob.iglob(
+            path.join(cluster_rules_dir, "*.txt")):
+        with open(cluster_rules_file, "r") as file_handle:
+            cur_cond = {}
+            cur_define = None
+            parsing_cond = False
+            skip_line = False
+            parsing_define = False
+            for line in file_handle:
+                line = line.split("#")[0]
+                line = line.rstrip().lstrip()
+                if line.startswith("RULE "):
+                    skip_line = False
+                    parsing_cond = False
+                    cur_define = None
+                    if "rule" in cur_cond:
+                        conds[cur_cond["rule"]] = cur_cond
+                    cur_cond = {
+                        "rule": line.split(" ")[-1]
+                    }
+                    parsing_cond = False
+                elif line.startswith("DEFINE "):
+                    skip_line = False
+                    parsing_cond = False
+                    key, val = line.split(" AS ")
+                    key = key.split()[-1]
+                    cur_define = key
+                    defines[key] = val
+                elif parsing_cond:
+                    if len(line) > 0:
+                        cur_cond["conditions"] += " " + line
+                elif cur_define != None:
+                    if len(line) > 0:
+                        defines[cur_define] += " " + line
+                elif line.startswith("COMMENT "):
+                    skip_line = False
+                    parsing_cond = False
+                    cur_define = None
+                    cur_cond["comment"] = line.split(" ")[-1]
+                elif line.startswith("CUTOFF "):
+                    skip_line = False
+                    parsing_cond = False
+                    cur_define = None
+                    cur_cond["cutoff"] = int(line.split(" ")[-1])
+                elif line.startswith("NEIGHBOURHOOD "):
+                    skip_line = False
+                    parsing_cond = False
+                    cur_define = None
+                    cur_cond["neighbourhood"] = int(line.split(" ")[-1])
+                elif line.startswith("SUPERIORS "):
+                    skip_line = True
+                    parsing_cond = False
+                    cur_define = None
+                elif line.startswith("CONDITIONS "):
+                    skip_line = False
+                    parsing_cond = True
+                    cur_define = None
+                    cur_cond["conditions"] = line.split("CONDITIONS ")[-1]
+                elif skip_line:
+                    pass
             if "rule" in cur_cond:
                 conds[cur_cond["rule"]] = cur_cond
-            cur_cond = {
-                "rule": line.split(" ")[-1]
-            }
-            parsing_cond = False
-        elif parsing_cond:
-            if len(line) > 0:
-                cur_cond["conditions"] += " " + line
-        elif line.startswith("COMMENT "):
-            cur_cond["comment"] = line.split(" ")[-1]
-        elif line.startswith("CUTOFF "):
-            cur_cond["cutoff"] = int(line.split(" ")[-1])
-        elif line.startswith("NEIGHBOURHOOD "):
-            cur_cond["neighbourhood"] = int(line.split(" ")[-1])
-        elif line.startswith("CONDITIONS "):
-            cur_cond["conditions"] = line.split("CONDITIONS ")[-1]
-            parsing_cond = True
-    if "rule" in cur_cond:
-        conds[cur_cond["rule"]] = cur_cond
+
+    for cond, item in conds.items():
+        for key, val in defines.items():
+            item["conditions"] = item["conditions"].replace(key, val)
 
     return conds
 
