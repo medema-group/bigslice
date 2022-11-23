@@ -49,9 +49,11 @@ def run_subpfam_scan(tuples):
         parsed = {}
         for top_hits in hmmer.hmmsearch(
                 hmm_file, sequences,
-                cpus=1, T=20
+                cpus=1, T=20, domT=20
             ):
             for hit in top_hits:
+                if hit.best_domain.score < top_hits.domT:
+                    continue
                 target_name = hit.name.decode()
                 hmm_name = top_hits.query_name.decode()
                 alignment = hit.best_domain.alignment
@@ -91,7 +93,7 @@ def run_subpfam_scan_hmmscan(tuples):
 
     with easel.SequenceFile(in_fasta_path, digital=True) as sequencefile:
         results = []
-        pipeline = plan7.Pipeline(easel.Alphabet.amino(), T=40)
+        pipeline = plan7.Pipeline(easel.Alphabet.amino(), T=20)
 
         for sequence in sequencefile:
             with plan7.HMMFile(hmm_path) as hmm_file:
