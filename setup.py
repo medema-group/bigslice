@@ -2,10 +2,11 @@ import setuptools
 
 setuptools.setup(
     name="bigslice",
-    version="1.1.1",
+    version="2.0rc",
     scripts=[
         "bigslice/bigslice",
-        "bigslice/download_bigslice_hmmdb"
+        "bigslice/download_bigslice_hmmdb",
+        "bigslice/vectorize_bgcs"
     ],
     author="Satria A. Kautsar",
     author_email="satriaphd@gmail.com",
@@ -22,7 +23,7 @@ setuptools.setup(
     classifiers=[
         "Programming Language :: Python :: 3"
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.7',
     install_requires=[
         "numpy",
         "pandas",
@@ -30,6 +31,7 @@ setuptools.setup(
         "scikit-learn",
         "pysqlite3",
         "tqdm",
-        "pyhmmer"
+        "pyhmmer",
+        "pyarrow"
     ]
 )
