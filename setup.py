@@ -29,7 +29,6 @@ setuptools.setup(
         "pandas",
         "biopython >= 1.73",
         "scikit-learn",
-        "pysqlite3",
         "tqdm",
         "pyhmmer",
         "pyarrow"
