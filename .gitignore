@@ -16,3 +16,10 @@ __pycache__/
 *.DS_Store
 build/
 bigslice.egg-info/
+
+# Adding to .gitignore to ensure some standard PyCharm directories are ignored
+.idea/
+.env
+.venv
+venv/
+ENV/
