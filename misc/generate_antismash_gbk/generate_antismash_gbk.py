@@ -65,7 +65,8 @@ def main():
             # generate regiongbks
             for region_meta in bgc_coordinates[gbk.id]:
                 region_gbk = gbk[region_meta["start"]:region_meta["end"]]
-
+                # add molecule type
+                region_gbk.annotations["molecule_type"] = "dna"
                 # make antiSMASH5-like structured comment
                 region_gbk.annotations["structured_comment"] = {
                     "antiSMASH-Data": {
