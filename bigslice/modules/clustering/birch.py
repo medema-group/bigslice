@@ -92,13 +92,13 @@ class BirchClustering:
             database: Database,
             cache_folder: str,
             complete_only: bool=True,
-            threshold: np.float=-1,
-            threshold_percentile: np.float=-1,
+            threshold: float=-1,
+            threshold_percentile: float=-1,
             random_seed: int=randint(1, 9999999)):
         """ run clustering and returns object """
 
         def preprocess(features: np.array):
-            preprocessed_features = features.astype(np.float)
+            preprocessed_features = features.astype(float)
             preprocessed_features = preprocessed_features[
                 np.argsort(np.sum(preprocessed_features, axis=1)),
                 :
@@ -107,7 +107,7 @@ class BirchClustering:
             return preprocessed_features
 
         def fetch_threshold(df: pd.DataFrame,
-                            percentile: np.float,
+                            percentile: float,
                             num_iter: int=100,
                             num_sample: int=1000
                             ):
