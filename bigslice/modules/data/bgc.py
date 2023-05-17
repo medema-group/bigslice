@@ -95,7 +95,7 @@ class BGC:
                 "structured_comment", {}).get(
                 "antiSMASH-Data", {})
             antismash_version = antismash_dict.get("Version", "")
-            if antismash_version.split(".")[0] in ["5", "6"]:
+            if antismash_version.split(".")[0] in ["5", "6", "7"]:
                 for feature in gbk.features:
                     if feature.type == "protocluster":
                         # is antiSMASH5/6 clustergbk
@@ -141,7 +141,7 @@ class BGC:
                             }))
                             break
 
-                elif gbk_type in ["as5", "as6"]:
+                elif gbk_type in ["as5", "as6", "as7"]:
                     # get all regions
                     for feature in gbk.features:
                         qual = feature.qualifiers
