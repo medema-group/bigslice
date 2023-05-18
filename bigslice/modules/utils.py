@@ -54,7 +54,7 @@ def reversed_fp_iter(fp, buf_size=8192):
         yield segment
 
 
-def get_chunk(list_of_ids: List, num_threads, chunk_size: int=100, spread_input: bool=False):
+def get_chunk(list_of_ids: List, num_threads, chunk_size: int=100, spread_input: bool=True):
     """generate chunks from a list of id,
     also generate an md5 hash of the ids in the chunk
     """
