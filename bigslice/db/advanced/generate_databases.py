@@ -21,6 +21,7 @@ from tempfile import TemporaryDirectory
 import subprocess
 import tarfile, zipfile
 from sys import exit
+import logging
 
 # external imports
 import numpy as np
@@ -32,6 +33,30 @@ from Bio.SearchIO import parse
 
 # local imports
 from config import db_config
+
+# Initiate and configure the logging functions for proper Python style logging. For now we will only print the logging
+# to the screen and not to a log file. In case the logging also needs to be written to a logfile it will be required to
+# set file_handler next to the already present console_handler. At current the log level is set to DEBUG, this holds
+# that all logs of the level DEBUG or higher are being send to the screen. When needed you can make a difference in the
+# level of what is send to a file and what is send to the standard output console.
+
+# Create a logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Create a console handler and set its level to debug
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+
+# Create a formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Add the formatter to the console handler
+console_handler.setFormatter(formatter)
+
+# Add the console handler to the logger
+logger.addHandler(console_handler)
+
 
 
 def main():
@@ -84,11 +109,11 @@ def main():
             # e.g., from releases
             antismash_zipped_file = antismash_folder.rstrip("/") + ".tar.gz"
             if not path.exists(antismash_zipped_file):
-                print("Downloading antismash.tar.gz...")
+                logger.info("Downloading antismash.tar.gz...")
                 urllib.request.urlretrieve(
                     db_config["ANTISMASH_URL"], antismash_zipped_file)
 
-            print("Extracting antismash.tar.gz...")
+            logger.info("Extracting antismash.tar.gz...")
             with tarfile.open(antismash_zipped_file, "r:gz") as as_zipped:
                 as_zipped.extractall(path=antismash_folder)
                 subprocess.run("mv {} {}".format(
@@ -100,11 +125,11 @@ def main():
             # e.g., from releases
             antismash_zipped_file = antismash_folder.rstrip("/") + ".zip"
             if not path.exists(antismash_zipped_file):
-                print("Downloading antismash.zip...")
+                logger.info("Downloading antismash.zip...")
                 urllib.request.urlretrieve(
                     db_config["ANTISMASH_URL"], antismash_zipped_file)
 
-            print("Extracting antismash.tar.gz...")
+            logger.info("Extracting antismash.tar.gz...")
             with zipfile.ZipFile(antismash_zipped_file, "r") as as_zipped:
                 as_zipped.extractall(antismash_folder)
                 subprocess.run("mv {} {}".format(
@@ -165,13 +190,14 @@ def main():
     for core in antismash_core_list:
         if core not in as_domains:
             raise Exception(core + " is not found in antiSMASH domains!")
+        # TODO change to logger
 
     # check if Pfam-A.biosynthetic.hmm exists
     if not path.exists(biosyn_pfam_hmm):
 
         # (down)loads Pfam-A.hmm
         if not path.exists(path.join(tmp_dir_path, "Pfam-A.hmm.gz")):
-            print("Downloading Pfam-A.hmm.gz...")
+            logger.info("Downloading Pfam-A.hmm.gz...")
             urllib.request.urlretrieve(
                 db_config["PFAM_DB_URL"], path.join(
                     tmp_dir_path, "Pfam-A.hmm.gz"))
@@ -184,14 +210,14 @@ def main():
                 if row["Status"] == "included":
                     # check if included in antismash
                     if row["Acc"].split(".")[0] in antismash_from_pfams:
-                        print(row["Acc"] + " is in antiSMASH pfam, skipping..")
+                        logger.info("Acc"] + " is in antiSMASH pfam, skipping..")
                         continue
                     biosynthetic_pfams.append(row["Acc"])
 
         # apply biosynthetic pfams filtering
         with gzip.open(path.join(tmp_dir_path, "Pfam-A.hmm.gz"), "rt") as pfam:
             with open(biosyn_pfam_hmm, "w") as biopfam:
-                print("Generating Pfam-A.biosynthetic.hmm...")
+                logger.info("Generating Pfam-A.biosynthetic.hmm...")
                 temp_buffer = ""  # for saving a temporary hmm entry
                 skipping = False
                 for line in pfam:
@@ -256,7 +282,7 @@ def main():
                     raise Exception(biosyn_pfam_hmm + " exists " +
                                     "but the md5sum is not the same, " +
                                     "please check or remove the old hmm file!")
-        print("Pfam-A.biosynthetic.hmm exists!")
+        logger.info("Pfam-A.biosynthetic.hmm exists!")
 
     hmm_presses = get_pressed_hmm_filepaths(biosyn_pfam_hmm)
     hmm_pressed = True
@@ -265,7 +291,7 @@ def main():
             hmm_pressed = False
             break
     if not hmm_pressed:
-        print("Running hmmpress on Pfam-A.biosynthetic.hmm")
+        logger.info("Running hmmpress on Pfam-A.biosynthetic.hmm")
         for hmm_press_file in hmm_presses:
             if path.exists(hmm_press_file):
                 remove(hmm_press_file)
@@ -293,8 +319,7 @@ def main():
             else:
                 # check if included in antismash
                 if pfam_accession.split(".")[0] in antismash_from_pfams:
-                    print(pfam_accession +
-                          " is in antiSMASH pfam, skipping subpfam..")
+                    logger.info(pfam_accession + " is in antiSMASH pfam, skipping subpfam..")
                     continue
                 sub_pfams[pfam_accession] = {
                     "name": pfam_name,
@@ -355,7 +380,7 @@ def main():
     stored_ref_prot_filename = "subpfam_refprot.fa"
     if not path.exists(path.join(tmp_dir_path, stored_ref_prot_filename)):
         if not path.exists(path.join(tmp_dir_path, ref_prot_filename)):
-            print("Downloading " + ref_prot_filename)
+            logger.info("Downloading " + ref_prot_filename)
             urllib.request.urlretrieve(
                 db_config["REFERENCE_PROTEINS_URL"], path.join(
                     tmp_dir_path, ref_prot_filename))
@@ -366,7 +391,7 @@ def main():
                 path.join(tmp_dir_path, stored_ref_prot_filename)
             )
         elif file_ext == ".gz":
-            print("Extracting reference proteins...")
+            logger.info("Extracting reference proteins...")
             with gzip.open(
                 path.join(tmp_dir_path, ref_prot_filename), 'rb'
             ) as f_in:
@@ -377,7 +402,7 @@ def main():
         else:
             raise Exception("Unrecognized file format! " + file_ext)
 
-    print("HMMScanning reference proteins...")
+    logger.info("HMMScanning reference proteins...")
 
     # run hmmscan to get aligned fasta files
     ref_prot_hmmtxt = path.join(
@@ -403,7 +428,8 @@ def main():
                     ref_prot_hmmtxt +
                     " is broken, please remove and rerun the script")
 
-    print("Parsing hmmscan results")
+    logger.info("Parsing hmmscan results")
+
     # parse hmmtxt into alignment fastas
     core_pfam_hit_counts = {acc: 0 for acc in sub_pfams.keys()}
     for run_result in parse(ref_prot_hmmtxt, "hmmer3-text"):
@@ -437,7 +463,7 @@ def main():
     # filter for subpfams not having any hits
     for acc, count in core_pfam_hit_counts.items():
         if count < db_config["MIN_PROTEIN_SEQUENCES"]:
-            print("skipping subpfam " + acc + ", not enough reference...")
+            logger.info("skipping subpfam " + acc + ", not enough reference...")
             del sub_pfams[acc]
 
     # build subpfams
@@ -445,7 +471,7 @@ def main():
         subpfam_hmm_path = path.join(
             sub_pfams_hmms, "{}.subpfams.hmm".format(pfam_accession))
         if not path.exists(subpfam_hmm_path):
-            print("Building {}...".format(subpfam_hmm_path))
+            logger.info("Building {}...".format(subpfam_hmm_path))
             aligned_multifasta_path = path.join(
                 tmp_dir_path,
                 pfam_accession + ".aligned.fa"
@@ -467,7 +493,7 @@ def main():
                 hmm_pressed = False
                 break
         if not hmm_pressed:
-            print("Running hmmpress on {}".format(subpfam_hmm_path))
+            logger.info("Running hmmpress on {}".format(subpfam_hmm_path))
             for hmm_press_file in hmm_presses:
                 if path.exists(hmm_press_file):
                     remove(hmm_press_file)
@@ -478,7 +504,7 @@ def main():
                 raise
 
     # update md5sum
-    print("Writing md5sums...")
+    logger.info("Writing md5sums...")
     with open(sub_pfams_md5sum_path, "w") as f:
         f.write(sub_pfams_md5sum)
 
@@ -486,7 +512,7 @@ def main():
     #print("Removing temp directory...")
     #rmtree(tmp_dir_path)
 
-    print("done.")
+    logger.info("Done.")
     exit(0)
 
 
@@ -499,7 +525,7 @@ def fetch_alignment_file(pfam_accession, folder_path):
     if not path.exists(stockholm_path):
         url_download = "http://pfam.xfam.org/family/{}/alignment/rp15".format(
             pfam_accession.split(".")[0])
-        print("Downloading from {}...".format(url_download))
+        logger.info("Downloading from {}...".format(url_download))
         urllib.request.urlretrieve(url_download, stockholm_path)
     else:
         # print("Found {}".format(stockholm_path))

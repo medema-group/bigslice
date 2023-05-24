@@ -16,6 +16,30 @@ import tarfile
 from os import path, makedirs
 from hashlib import md5
 from sys import argv
+import logging
+
+# Initiate and configure the logging functions for proper Python style logging. For now we will only print the logging
+# to the screen and not to a log file. In case the logging also needs to be written to a logfile it will be required to
+# set file_handler next to the already present console_handler. At current the log level is set to DEBUG, this holds
+# that all logs of the level DEBUG or higher are being send to the screen. When needed you can make a difference in the
+# level of what is send to a file and what is send to the standard output console.
+
+# Create a logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Create a console handler and set its level to debug
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+
+# Create a formatter
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Add the formatter to the console handler
+console_handler.setFormatter(formatter)
+
+# Add the console handler to the logger
+logger.addHandler(console_handler)
 
 
 # static variables
@@ -38,27 +62,33 @@ def main():
     if not path.exists(models_folder):
         zipped_file = "bigslice_models.tar.gz"
         if not path.exists(zipped_file):
-            print("Downloading bigslice_models.tar.gz...")
-            urllib.request.urlretrieve(_SOURCE_PATH, zipped_file)
+            logger.error("Downloading bigslice_models.tar.gz...")
+            try:
+                urllib.request.urlretrieve(_SOURCE_PATH, zipped_file)
+            except Exception as e:
+                # Handle the exception
+                logger.error("An error occurred while downloading bigslice_models.tar.gz: {e}")
+                return(1)
+
 
         if _MD5_CHECKSUM:
-            print("Checking MD5 sums...")
+            logger.info("Checking MD5 sums...")
             md5sum_downloaded = md5sum(zipped_file)
             if _MD5_CHECKSUM != md5sum_downloaded:
-                print("'{}' vs '{}': doesn't match!".format(
+                logger.error("'{}' vs '{}': doesn't match!".format(
                     _MD5_CHECKSUM, md5sum_downloaded))
                 return(1)
 
-        print("Extracting bigslice_models.tar.gz...")
+        logger.info("Extracting bigslice_models.tar.gz...")
         makedirs(models_folder)
         with tarfile.open(zipped_file, "r:gz") as fp:
             fp.extractall(path=models_folder)
 
-        print("done! (please remove the downloaded tar.gz file manually)")
+        logger.info("done! (please remove the downloaded tar.gz file manually)")
         return(0)
 
     else:
-        print("models folder exists!")
+        logger.error("models folder exists!")
         return(1)
 
 
