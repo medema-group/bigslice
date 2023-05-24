@@ -1,0 +1,12 @@
+name: bigslice
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - hmmer=3.3.1
+  - pip
+  - pip:
+    - bigslice
+    - flask
+    - pysqlite3
