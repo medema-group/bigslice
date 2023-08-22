@@ -172,9 +172,15 @@ class BirchClustering:
             props=["bgc.id"],
             as_tuples=True
         )]
+
+        final_bgc_ids = []
+        for id in bgc_ids:
+            if id in features_df.index.values:
+                final_bgc_ids.append(id)
+
         if len(bgc_ids) < 1:  # check if no bgc_ids
             raise Exception("Not enough input for clustering.")
-        features_df = features_df.loc[bgc_ids]
+        features_df = features_df.loc[final_bgc_ids]
 
         # initiate birch object
         birch = Birch(
