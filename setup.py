@@ -23,7 +23,7 @@ setuptools.setup(
     classifiers=[
         "Programming Language :: Python :: 3"
     ],
-    python_requires='>=3.7,<3.12',
+    python_requires='>=3.7',
     install_requires=[
         "pyhmmer",
         "biopython>=1.73,<=1.83",
