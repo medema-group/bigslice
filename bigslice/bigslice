@@ -651,25 +651,58 @@ def query_mode(report_name, input_folder, input_run_id, pool,
                                 out_result_path, "ga", True))
 
             print("Running hmmscans in parallel...")
-            _ = pool.map(
-                run_hmmscan, hmmscan_queues)
-
-            print("Parsing hmmscans results...")
             hmm_ids = {
                 hmm.accession: hmm.id for hmm in hmm_db.biosyn_pfams}
 
+            pbar = tqdm(total=len(hmmscan_queues), mininterval=1)
             for chunk, chunk_name in get_chunk(
                     bgc_ids,
                     pool._processes,
                     5):
 
                 in_fasta_path = path.join(tmpdir, "bio_" + chunk_name + ".fa")
-                out_result_path = path.join(
-                    tmpdir, "bio_" + chunk_name + ".hmmtxt")
+                sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
 
-                for hsp_object in HSP.parse_hmmtext(
-                        out_result_path, hmm_ids):
-                    hsp_object.save(query_db)
+                with plan7.HMMFile(hmm_path) as hmm_file:
+                    for top_hits in hmmer.hmmsearch(
+                        hmm_file, sequences,
+                        cpus=1, bit_cutoffs="gathering"
+                        ):
+                        for hit in top_hits:
+                            if hit.best_domain.score < top_hits.domT:
+                                continue
+
+                            target_name = hit.name.decode()
+                            hmm_name = top_hits.query_accession.decode()
+                            alignment = hit.best_domain.alignment
+
+                            bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
+                            bgc_id = int(bgc_id.split("bgc:")[-1])
+                            cds_id = int(cds_id.split("cds:")[-1])
+                            parent_hsp_id = int(parent_hsp_id.split("hsp:")[-1])
+                            locs = tuple(map(int, locs.split("-")))
+
+                            hsp_alignment = {
+                                "model_start": alignment.hmm_from - 1,
+                                "model_end": alignment.hmm_to,
+                                "model_gaps": [i for i, c
+                                               in enumerate(alignment.hmm_sequence)
+                                               if c == '.'],
+                                "cds_start": alignment.target_from + locs[0] - 1,
+                                "cds_end": alignment.target_to + locs[0],
+                                "cds_gaps": [i for i, c
+                                             in enumerate(str(alignment.target_sequence))
+                                             if c == '-']
+                            }
+                            HSP({
+                                "cds_id": cds_id,
+                                "hmm_id": hmm_ids[hmm_name],
+                                "parent_hsp_id": parent_hsp_id,
+                                "bitscore": hit.best_domain.score,
+                                "alignment": hsp_alignment
+                            }).save(query_db)
+                            pbar.update(1)
+            pbar.close()
             query_db.commit_inserts()
 
             # perform subpfam_scan
@@ -716,29 +749,35 @@ def query_mode(report_name, input_folder, input_run_id, pool,
                             False
                          ))
             print("Running subpfam_scans in parallel...")
-            _ = pool.map(
-                run_hmmscan, hmmscan_queues)
-            print("Parsing subpfam_scans results...")
+            subpfam_queues = []
             for chunk, chunk_name in get_chunk(
                     bgc_ids,
                     pool._processes,
                     5):
                 chunk_parent_pfams = chunks_and_pfam_ids[chunk_name]
                 for parent_hmm_id in chunk_parent_pfams:
-                    out_result_path = path.join(
-                        tmpdir, "sub_bgc_{}_hmm_{}.hmmtxt".format(
+                    in_fasta_path = path.join(
+                        tmpdir, "sub_bgc_{}_hmm_{}.fa".format(
                             chunk_name, parent_hmm_id))
                     sub_pfam_ids = {
                         hmm_obj.name: hmm_obj.id
                         for hmm_obj in
                         hmm_db.sub_pfams[core_pfam_accs[parent_hmm_id]]
                     }
-                    for hsp_object in HSP.parse_hmmtext(
-                            out_result_path, sub_pfam_ids,
-                            save_alignment=False,
-                            top_k=3,
-                            rank_normalize=True):
-                        hsp_object.save(query_db)
+                    hmm_path = path.join(program_db_folder,
+                                         "sub_pfams",
+                                         "hmm",
+                                         core_pfam_accs[
+                                             parent_hmm_id] +
+                                         ".subpfams.hmm")
+                    subpfam_queues.append((in_fasta_path, hmm_path, sub_pfam_ids))
+
+            for results in tqdm(
+                pool.imap(run_subpfam_scan, subpfam_queues
+            ), total=len(subpfam_queues), mininterval=1):
+                for hsp in results:
+                    HSP(hsp).save(query_db)
+
             query_db.commit_inserts()
 
             # perform features extraction
