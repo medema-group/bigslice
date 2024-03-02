@@ -3,5 +3,10 @@
 		"name": "bigslice-models-R01",
 		"md5sums": ["15023fc91301a8117e520449e7ce6b4c", "76d4d4efddaf70a24629fecbb57d2781"],
 		"antismash_ver": "5.1.1"
+	},
+	{
+		"name": "bigslice-models-2022-11-30",
+		"md5sums": ["37495cac452bf1dd8aff2c4ad92065fe", "2e6b41d06f3c318c61dffb022798091e"],
+		"antismash_ver": "7.0.0"
 	}
 ]
