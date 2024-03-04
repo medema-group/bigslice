@@ -42,41 +42,40 @@ console_handler.setFormatter(formatter)
 logger.addHandler(console_handler)
 
 
-# static variables
-_SOURCE_PATH = "https://github.com/medema-group/bigslice/releases/download/v2.0.0rc/bigslice-models.2022-11-30.tar.gz"
-_MD5_CHECKSUM = "aaabde911ec107d08e5c24f68aaf31d1"
-
-
 def main():
+
+    # static variables
+    SOURCE_PATH = "https://github.com/medema-group/bigslice/releases/download/v2.0.0rc/bigslice-models.2022-11-30.tar.gz"
+    MD5_CHECKSUM = "aaabde911ec107d08e5c24f68aaf31d1"
 
     dir_path = path.abspath(path.dirname(__file__))
     models_folder = path.join(dir_path, "bigslice-models")
 
     if len(argv) > 1:
-        _SOURCE_PATH = argv[1]
+        SOURCE_PATH = argv[1]
         if len(argv) > 2:
-            _MD5_CHECKSUM = argv[2]
+            MD5_CHECKSUM = argv[2]
         else:
-            _MD5_CHECKSUM = None
+            MD5_CHECKSUM = None
 
     if not path.exists(models_folder):
         zipped_file = "bigslice_models.tar.gz"
         if not path.exists(zipped_file):
-            logger.error("Downloading bigslice_models.tar.gz...")
+            logger.info("Downloading bigslice_models.tar.gz...")
             try:
-                urllib.request.urlretrieve(_SOURCE_PATH, zipped_file)
+                urllib.request.urlretrieve(SOURCE_PATH, zipped_file)
             except Exception as e:
                 # Handle the exception
-                logger.error("An error occurred while downloading bigslice_models.tar.gz: {e}")
+                logger.error("An error occurred while downloading bigslice_models.tar.gz: {}".format(e))
                 return(1)
 
 
-        if _MD5_CHECKSUM:
+        if MD5_CHECKSUM:
             logger.info("Checking MD5 sums...")
             md5sum_downloaded = md5sum(zipped_file)
-            if _MD5_CHECKSUM != md5sum_downloaded:
+            if MD5_CHECKSUM != md5sum_downloaded:
                 logger.error("'{}' vs '{}': doesn't match!".format(
-                    _MD5_CHECKSUM, md5sum_downloaded))
+                    MD5_CHECKSUM, md5sum_downloaded))
                 return(1)
 
         logger.info("Extracting bigslice_models.tar.gz...")
