@@ -28,6 +28,7 @@ from bigslice.modules.clustering.membership import Membership
 from bigslice.modules.utils import reversed_fp_iter, get_chunk
 from bigslice.modules.utils import copy_output_template
 from bigslice.modules.utils import store_pickle
+from bigslice.modules.output.csv import export_tsv_to_folder
 from time import time
 from datetime import datetime
 import subprocess
@@ -974,6 +975,10 @@ def main():
         "-h", "--help", action="help",
         help="Show this help message.")
     arg_group_misc.add_argument(
+        "--export-tsv", type=str, metavar='<folder_path>',
+        help=("Export existing pre-calculated output data into"
+            " TSVs (specify the target folder path)"))
+    arg_group_misc.add_argument(
         "--program_db_folder",
         default=path.join(path.dirname(
             path.realpath(__file__)),
@@ -1061,6 +1066,10 @@ def main():
                           pool, program_db_folder, data_db_path,
                           args.n_ranks, reports_folder,
                           cache_folder)
+
+    # check if export-tsv mode
+    if args.export_tsv:
+        return export_tsv_to_folder(output_folder, args.export_tsv)
 
     # check if specified folders exist
     if args.input_folder:
