@@ -822,7 +822,7 @@ def query_mode(report_name, input_folder, input_run_id, pool,
 
 def main():
     # bigscape version
-    version = "2.0.0rc"
+    version = "2.0.0"
 
     # TODO: check requirements
 
