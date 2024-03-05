@@ -2,38 +2,53 @@
 ----------------------
 ***Bi**osynthetic **G**ene clusters - **S**uper **Li**near **C**lustering **E**ngine*
 
+Version 2.0 is here!
+---------------------
+- Clustering now uses __cosine-like__ (via l2-normalization) distances (as in https://www.nature.com/articles/s41564-022-01110-2)
+- pHMM databases have been updated to __PFAM 35.0__
+- BGC class definition has been updated to __antiSMASH v7.0.0__
+- Switching from HMMER to [pyHMMER](https://github.com/althonos/pyhmmer) (__speed-ups__, can now be fully installed via __pip__)
+- General __speed__ improvement
+- Ability to __export pre-calculated BGCs and GCFs table into TSVs__ (use __--export-csv__ parameter)
+
 Quick start
 ---------------------
-1. Make sure you have [HMMer](http://hmmer.org/) (version 3.2b1 or later) installed.
+1. ~Make sure you have [HMMer](http://hmmer.org/) (version 3.2b1 or later) installed.~
 2. Install **BiG-SLiCE** using pip:
 - from PyPI (stable)
 ~~~console
 user@local:~$ pip install bigslice
 ~~~
-- from source (bleeding edge)
+- from source (bleeding edge -- only do this when you know what you are doing!)
 ~~~console
-user@local:~$ git clone git@github.com:medema-group/bigslice.git
-user@local:~$ pip install ./bigslice/
+user@local:~$ pip install git+https://github.com/medema-group/bigslice.git
 ~~~
-3. Fetch the latest HMM models (± 470MB gzipped):
+3. Fetch the latest HMM models (± 271MB gzipped):
 ~~~console
 user@local:~$ download_bigslice_hmmdb
 ~~~
 4. Check your installation:
 ~~~console
 user@local:~$ bigslice --version .
+
+==============
+BiG-SLiCE version 2.0.0
+HMM databases version: bigslice-models-2022-11-30
+Biosynthetic-pfam md5: 37495cac452bf1dd8aff2c4ad92065fe
+Sub-pfam md5: 2e6b41d06f3c318c61dffb022798091e
+==============
+
 ~~~
+
 5. Run **BiG-SLiCE** clustering analysis: (see [wiki:Input folder](https://github.com/medema-group/bigslice/wiki/Input-folder) on how to prepare the input folder)
 ~~~console
 user@local:~$ bigslice -i <input_folder> <output_folder>
 ~~~
 For a "minimal" test run, you can use the [example input folder](https://github.com/medema-group/bigslice/tree/master/misc/input_folder_template) that we provided.
 
-**!Important!** Please read [this note](https://github.com/medema-group/bigslice/issues/19) before taking results from **BiG-SLiCE** for your analysis.
-
 Querying [antiSMASH](https://antismash.secondarymetabolites.org/) BGCs
 ---------------------
-Using the `--query` mode, you can perform a blazing-fast query of a putative BGC against the pre-processed set of Gene Cluster Family (GCF) models that **BiG-SLiCE** outputs (for example, you can use our [pre-processed result on ~1.2M microbial BGCs from the NCBI database](http://bioinformatics.nl/~kauts001/ltr/bigslice/paper_data/data/full_run_result.zip) -- a 17GB zipped file download). You will get a ranked list of GCFs and BGCs similar to the BGC in question, which will help in determining the function and/or novelty of said BGC. To perform a GCF query, simply use:
+Using the `--query` mode, you can perform a blazing-fast query of a putative BGC against the pre-processed set of Gene Cluster Family (GCF) models that **BiG-SLiCE** outputs (~for example, you can use our [pre-processed result on ~1.2M microbial BGCs from the NCBI database](http://bioinformatics.nl/~kauts001/ltr/bigslice/paper_data/data/full_run_result.zip) -- a 17GB zipped file download~ _there is currently no pre-processed result for BiG-SLiCE v2, we will work to make it available soon._). You will get a ranked list of GCFs and BGCs similar to the BGC in question, which will help in determining the function and/or novelty of said BGC. To perform a GCF query, simply use:
 ~~~console
 user@local:~$ bigslice --query <antismash_output_folder> --n_ranks <int> <output_folder>
 ~~~
