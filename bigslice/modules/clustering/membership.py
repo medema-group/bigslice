@@ -45,7 +45,8 @@ class Membership:
                top_hits: int = 3,
                threshold: int = None,
                bgc_database: Database = None,
-               cache_folder: str = None
+               cache_folder: str = None,
+               normalize_feature: bool = True
                ):
         """ assign membership """
 
@@ -109,11 +110,12 @@ class Membership:
             ):
                 bgc_features.at[bgc_id, hmm_id] = value
 
-        bgc_features = pd.DataFrame(
-            normalize(bgc_features, norm="l2", copy=False),
-            index=bgc_features.index,
-            columns=bgc_features.columns
-        )
+        if normalize_feature:
+            bgc_features = pd.DataFrame(
+                normalize(bgc_features, norm="l2", copy=False),
+                index=bgc_features.index,
+                columns=bgc_features.columns
+            )
 
         # gcf_features
         gcf_features = None
