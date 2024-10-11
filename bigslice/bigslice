@@ -1345,7 +1345,7 @@ def main():
 
                     in_fasta_path = fasta_path(chunk_name)
 
-                    sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
+                    sequences = list(easel.SequenceFile(in_fasta_path, digital=True, alphabet=easel.Alphabet.amino()))
                     with plan7.HMMFile(hmm_path) as hmm_file:
                         for top_hits in hmmer.hmmsearch(
                             hmm_file, sequences,
