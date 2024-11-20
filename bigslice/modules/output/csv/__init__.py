@@ -28,11 +28,11 @@ def export_bgc_metadata(result_folder, csv_path, sep=","):
             )
 
             try:
-                taxa_bgc_ids, taxa_names = list(zip(*cur.execute((
+                taxa_bgc_ids, taxon_names = list(zip(*cur.execute((
                     "select bgc_taxonomy.bgc_id, taxon.name from bgc_taxonomy, taxon "
                     "where taxon.id=bgc_taxonomy.taxon_id and taxon.level=?"
                     ), (taxon_level,)).fetchall()))
-                taxa_names[taxa_bgc_ids] = taxa_names
+                taxa_names[taxa_bgc_ids] = taxon_names
             except:
                 pass
             taxonomy_info.append((taxon_title, taxa_names))
