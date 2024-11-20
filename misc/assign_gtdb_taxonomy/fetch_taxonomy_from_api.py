@@ -32,21 +32,29 @@ def fetch_pool(num_threads: int):
         pass  # running in OSX?
     return pool
 
-def fetch_taxonomy(results, ncbi_acc, gtdb_version):
+def fetch_taxonomy(results, ncbi_acc):
     with urllib.request.urlopen(
-        "https://gtdb.ecogenomic.org/api/v1/taxonomy/genome/" + ncbi_acc
+        "https://gtdb-api.ecogenomic.org/genome/" + ncbi_acc + "/card"
     ) as response:
         try:
             resp = json.loads(response.read())
-            if gtdb_version in resp["gtdb_taxonomy"]:
-                results[ncbi_acc] = {
-                    taxon: name[3:]
-                    for taxon, name
-                    in resp["gtdb_taxonomy"][gtdb_version].items()
-                }
-                print("Fetched: " + ncbi_acc)
-            else:
+            if ("detail", "Genome not found") in resp.items():
                 print("No entry: " + ncbi_acc)
+                return
+
+            ltr_key = {
+                "d": "domain",
+                "p": "phylum",
+                "c": "class",
+                "o": "order",
+                "f": "family",
+                "g": "genus",
+                "s": "species"
+            }
+            tax_dict = { ltr_key.get(k): v for k,v in [ t['taxon'].split('__') for t in resp['ncbiTaxonomyFiltered'] ] }
+            tax_dict['organism'] = resp['metadataTaxonomy']['ncbi_taxonomy_unfiltered'].split(';')[-1].split('__')[1]
+
+            results[ncbi_acc] = tax_dict
         except Exception:
             print("Error: " + ncbi_acc)
 
@@ -62,14 +70,11 @@ def main():
                         help=('output tsv file path'))
     parser.add_argument('-t', dest='threads', type=int, default=1,
                         help='number of threads to use (default: %(default)s)')
-    parser.add_argument('--gtdb', dest='gtdb_version', type=str, default="R95",
-                        help='number of threads to use (default: %(default)s)')
     args = parser.parse_args()
 
     ncbi_acc_path = path.abspath(args.ncbi_acc_list)
     output_file_path = path.abspath(args.output_file)
     threads = args.threads
-    gtdb_version = args.gtdb_version
 
     # checks
     if path.exists(output_file_path):
@@ -92,8 +97,7 @@ def main():
         pool.apply_async(
             fetch_taxonomy, args=(
                 results,
-                ncbi_acc,
-                gtdb_version
+                ncbi_acc
             )
         )
     pool.close()
@@ -117,6 +121,7 @@ def main():
         of.write("\n")
         for ncbi_acc, taxa in results.items():
             if taxa == None:
+                print("No taxonomy for " + ncbi_acc)
                 of.write("\t".join([
                     ncbi_acc + "/",
                     "",
@@ -139,7 +144,7 @@ def main():
                     taxa["family"],
                     taxa["genus"],
                     taxa["species"],
-                    ""
+                    taxa["organism"]
                 ]))
                 of.write("\n")
 
