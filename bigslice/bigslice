@@ -45,7 +45,7 @@ _last_timestamp = None
 def run_subpfam_scan(tuples):
     top_k = 3
     in_fasta_path, hmm_path, sub_pfam_ids = tuples
-    sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
+    sequences = list(easel.SequenceFile(in_fasta_path, digital=True, alphabet=easel.Alphabet.amino()))
     with plan7.HMMFile(hmm_path) as hmm_file:
         parsed = {}
         for top_hits in hmmer.hmmsearch(
@@ -92,7 +92,7 @@ def run_subpfam_scan_hmmscan(tuples):
     top_k = 3
     in_fasta_path, hmm_path, sub_pfam_ids = tuples
 
-    with easel.SequenceFile(in_fasta_path, digital=True) as sequencefile:
+    with easel.SequenceFile(in_fasta_path, digital=True, alphabet=easel.Alphabet.amino()) as sequencefile:
         results = []
         pipeline = plan7.Pipeline(easel.Alphabet.amino(), T=20)
 
@@ -662,7 +662,7 @@ def query_mode(report_name, input_folder, input_run_id, pool,
                     5):
 
                 in_fasta_path = path.join(tmpdir, "bio_" + chunk_name + ".fa")
-                sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
+                sequences = list(easel.SequenceFile(in_fasta_path, digital=True, alphabet=easel.Alphabet.amino()))
 
                 with plan7.HMMFile(hmm_path) as hmm_file:
                     for top_hits in hmmer.hmmsearch(
@@ -1345,7 +1345,7 @@ def main():
 
                     in_fasta_path = fasta_path(chunk_name)
 
-                    sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
+                    sequences = list(easel.SequenceFile(in_fasta_path, digital=True, alphabet=easel.Alphabet.amino()))
                     with plan7.HMMFile(hmm_path) as hmm_file:
                         for top_hits in hmmer.hmmsearch(
                             hmm_file, sequences,
@@ -1631,7 +1631,7 @@ def main():
                                                      ".subpfams.hmm")
 
                                 results = {}
-                                sequences = list(easel.SequenceFile(in_fasta_path, digital=True))
+                                sequences = list(easel.SequenceFile(in_fasta_path, digital=True, alphabet=easel.Alphabet.amino()))
                                 with plan7.HMMFile(hmm_path) as hmm_file:
                                     for top_hits in hmmer.hmmsearch(
                                         hmm_file, sequences,
