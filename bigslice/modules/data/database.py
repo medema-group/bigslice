@@ -158,8 +158,7 @@ class Database:
             if path.exists(self._db_path):
                 move(self._db_path, self._db_path + ".bak")
             with sqlite3.connect(self._db_path) as out_db:
-                query = "".join([line for line in self._connection.iterdump()])
-                out_db.executescript(query)
+                self._connection.backup(out_db)
             print("{0:.4f}s".format(time() - start))
         else:
             raise(Exception("not an in-memory database"))
