@@ -11,25 +11,23 @@ Version 2.0 is here!
 - General __speed__ improvement
 - Ability to __export pre-calculated BGCs and GCFs table into TSVs__ (use __--export-csv__ parameter)
 
+for v1 users:
+~~~console
+BiG-SLiCE 2.0 uses PyHMMER — a Python-native HMM scanning library — replacing the standalone HMMER suite required in BiG-SLiCE 1.x. This eliminates the need for a separate HMMER installation and significantly simplifies setup. If upgrading from v1.x, no HMMER path configuration is required. Upgrading to v2.0 is strongly recommended, as it provides substantially improved clustering sensitivity across all BGC classes through the updated cosine-like distance metric.
+~~~
+
 Quick start
 ---------------------
-1. ~Make sure you have [HMMer](http://hmmer.org/) (version 3.2b1 or later) installed.~
-2. Install **BiG-SLiCE** using pip:
-- from PyPI (stable)
+- Install **BiG-SLiCE** on your local machine or HPC. The recommended method is via conda/mamba:
 ~~~console
-user@local:~$ pip install bigslice
+mamba env create -n bigslice -c conda-forge -c bioconda bigslice
+mamba activate bigslice
+download_bigslice_hmmdb
 ~~~
-- from source (bleeding edge -- only do this when you know what you are doing!)
+
+- you can now run BiG-SLiCE anywhere:
 ~~~console
-user@local:~$ pip install git+https://github.com/medema-group/bigslice.git
-~~~
-3. Fetch the latest HMM models (± 271MB gzipped):
-~~~console
-user@local:~$ download_bigslice_hmmdb
-~~~
-4. Check your installation:
-~~~console
-user@local:~$ bigslice --version .
+bigslice --version
 
 ==============
 BiG-SLiCE version 2.0.0
@@ -37,10 +35,9 @@ HMM databases version: bigslice-models-2022-11-30
 Biosynthetic-pfam md5: 37495cac452bf1dd8aff2c4ad92065fe
 Sub-pfam md5: 2e6b41d06f3c318c61dffb022798091e
 ==============
-
 ~~~
 
-5. Run **BiG-SLiCE** clustering analysis: (see [wiki:Input folder](https://github.com/medema-group/bigslice/wiki/Input-folder) on how to prepare the input folder)
+- Running **BiG-SLiCE** clustering analysis: (see [wiki:Input folder](https://github.com/medema-group/bigslice/wiki/Input-folder) on how to prepare the input folder)
 ~~~console
 user@local:~$ bigslice -i <input_folder> <output_folder>
 ~~~
