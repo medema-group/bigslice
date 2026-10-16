@@ -185,8 +185,7 @@ class BirchClustering:
         # initiate birch object
         birch = Birch(
             n_clusters=None,  # no global clustering
-            compute_labels=False,  # only calc centroids
-            copy=False  # data already copied
+            compute_labels=False  # only calc centroids
         )
 
         # set threshold

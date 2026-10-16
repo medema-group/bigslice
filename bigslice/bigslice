@@ -55,8 +55,8 @@ def run_subpfam_scan(tuples):
             for hit in top_hits:
                 if hit.best_domain.score < top_hits.domT:
                     continue
-                target_name = hit.name.decode()
-                hmm_name = top_hits.query_name.decode()
+                target_name = hit.name
+                hmm_name = top_hits.query.name
                 alignment = hit.best_domain.alignment
 
                 bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
@@ -102,8 +102,8 @@ def run_subpfam_scan_hmmscan(tuples):
                     # this will return a sorted high-to-low hits, so no need to re-sort
                     if i >= top_k:
                         break
-                    target_name = sequence.name.decode()
-                    hmm_name = hit.name.decode()
+                    target_name = sequence.name
+                    hmm_name = hit.name
 
                     bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
                     bgc_id = int(bgc_id.split("bgc:")[-1])
@@ -673,8 +673,8 @@ def query_mode(report_name, input_folder, input_run_id, pool,
                             if hit.best_domain.score < top_hits.domT:
                                 continue
 
-                            target_name = hit.name.decode()
-                            hmm_name = top_hits.query_accession.decode()
+                            target_name = hit.name
+                            hmm_name = top_hits.query.accession
                             alignment = hit.best_domain.alignment
 
                             bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
@@ -1365,8 +1365,8 @@ def main():
                                 if hit.best_domain.score < top_hits.domT:
                                     continue
 
-                                target_name = hit.name.decode()
-                                hmm_name = top_hits.query_accession.decode()
+                                target_name = hit.name
+                                hmm_name = top_hits.query.accession
                                 alignment = hit.best_domain.alignment
 
                                 bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
@@ -1648,8 +1648,8 @@ def main():
                                         cpus=args.num_threads, T=20
                                         ):
                                         for hit in top_hits:
-                                            target_name = hit.name.decode()
-                                            hmm_name = top_hits.query_name.decode()
+                                            target_name = hit.name
+                                            hmm_name = top_hits.query.name
                                             alignment = hit.best_domain.alignment
 
                                             bgc_id, cds_id, parent_hsp_id, locs = target_name.split("|")
